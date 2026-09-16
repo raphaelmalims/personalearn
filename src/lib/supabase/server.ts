@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { clampAuthCookieOptions } from "@/lib/auth/session-policy";
 import { getSupabaseEnv } from "@/lib/supabase/env";
 
 export async function createClient() {
@@ -14,7 +15,7 @@ export async function createClient() {
         setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              cookieStore.set(name, value, clampAuthCookieOptions(name, options))
             );
           } catch {
             // Called from a Server Component — middleware will refresh sessions.
