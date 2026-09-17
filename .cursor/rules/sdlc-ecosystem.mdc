@@ -30,6 +30,22 @@ A **GitHub Issue is REQUIRED** for every feature and bug **before** a Jira `PSL-
 
 If work does not link to a GitHub Issue and `PSL-N`, treat it as unofficial until triaged.
 
+## Writing standard (gold floor)
+
+When creating or editing **GitHub Issues**, **Jira descriptions**, or **PR bodies**, **fill from** the repo templates — do not invent thinner formats:
+
+- Issues: `.github/ISSUE_TEMPLATE/bug_report.yml` and `.github/ISSUE_TEMPLATE/feature_request.yml`
+- PRs: `.github/pull_request_template.md`
+- Canonical headings and examples: [`docs/sdlc-writing-standard.md`](../../docs/sdlc-writing-standard.md)
+
+**Gold floor** = quality of [PSL-110](https://nervustechnologies.atlassian.net/browse/PSL-110), [GitHub issue #129](https://github.com/raphaelmalims/personalearn/issues/129), [PR #130](https://github.com/raphaelmalims/personalearn/pull/130):
+
+- **Bugs:** Severity, **Acceptance criteria** (checkbox markdown), Summary with **root cause** when known; optional likely-cause notes
+- **PR Summary:** prose covering what changed and **why** / root cause — not bullets-only
+- **Jira comments:** branch → PR + Preview + CI context → review verdict → merged + AC/Issue closed
+
+Agents and humans use the same structure; triage copies Issue ACs into Jira.
+
 ## Jira workflow (PSL)
 
 | Status | Meaning |

@@ -6,6 +6,9 @@ contact_links:
   - name: PersonaLearn Confluence (specs & SDLC)
     url: https://nervustechnologies.atlassian.net/wiki/spaces/PLEARN/overview
     about: Official specs, ADRs, release notes, and retros — linked from Jira tickets.
+  - name: SDLC writing standard (in-repo)
+    url: https://github.com/raphaelmalims/personalearn/blob/develop/docs/sdlc-writing-standard.md
+    about: Canonical headings for GitHub Issues, Jira tickets, and PR bodies.
   - name: Testing guide
-    url: https://github.com/nervustech/personalearn/blob/develop/docs/testing.md
+    url: https://github.com/raphaelmalims/personalearn/blob/develop/docs/testing.md
     about: How we test PersonaLearn (Vitest, Playwright, CI).
