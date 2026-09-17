@@ -12,7 +12,9 @@ body:
 
         Feature requests are **not implemented directly from GitHub Issues** — Jira is the system of record.
 
-        On create this issue is assigned to **nervustech**, labelled `needs-triage` + `type-feature`, and should get a **milestone** (current sprint or Backlog) at triage.
+        On create this issue is assigned to **nervustech**, labelled `needs-triage` + `type-feature`, and should get a **milestone** (current sprint or Backlog) at triage. Triage adds exactly one **`area-*`** label when the work is scheduled.
+
+        **Gold bar:** See [docs/sdlc-writing-standard.md](https://github.com/raphaelmalims/personalearn/blob/develop/docs/sdlc-writing-standard.md).
 
   - type: textarea
     id: problem
@@ -41,6 +43,18 @@ body:
       required: true
 
   - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance criteria
+      description: Checkbox-friendly list of done conditions (copied to Jira when triaged).
+      placeholder: |
+        - [ ] Teacher can ...
+        - [ ] Error states handled when ...
+        - [ ] Tests or manual verify steps documented
+    validations:
+      required: true
+
+  - type: textarea
     id: scope
     attributes:
       label: Scope notes
@@ -51,6 +65,12 @@ body:
 
         Out of scope (later):
         - ...
+
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of scope / notes
+      description: Optional — explicit exclusions, dependencies, or follow-up ideas.
 
   - type: dropdown
     id: priority

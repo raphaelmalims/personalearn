@@ -11,6 +11,16 @@ description: >-
 
 Follow `git-workflow.mdc` and `sdlc-ecosystem.mdc` for constraints. This skill is the **procedure**.
 
+## Writing from templates (required)
+
+Before opening an Issue, Jira ticket body, or PR:
+
+1. **GitHub Issues** — use fields from `.github/ISSUE_TEMPLATE/bug_report.yml` or `feature_request.yml` (Summary, Severity, **Acceptance criteria**, optional root-cause / notes).
+2. **PR body** — copy structure from `.github/pull_request_template.md` (`## Summary` prose with why/root cause, `## Test plan`, `## Links`, metadata, `## Risks / notes`).
+3. **Do not** substitute one-line summaries or bullet-only PR summaries.
+
+**Gold floor:** PSL-110 / [#129](https://github.com/raphaelmalims/personalearn/issues/129) / [#130](https://github.com/raphaelmalims/personalearn/pull/130). Headings reference: [`docs/sdlc-writing-standard.md`](https://github.com/raphaelmalims/personalearn/blob/develop/docs/sdlc-writing-standard.md).
+
 ## Pre-flight
 
 1. `getJiraIssue(PSL-N)` with fields including `customfield_10001` (Team), `customfield_10016` (points), `customfield_10015` (start), `duedate`, `priority`, `customfield_10020` (sprint) — read summary, ACs, labels, sprint, blockers, linked spec.
@@ -35,7 +45,7 @@ PSL-N — branch created: {branch-name}
 ## Open PR
 
 9. Rebase onto `origin/develop` before push.
-10. Push branch; open PR targeting `develop` via `gh pr create` (title includes `PSL-N`).
+10. Push branch; open PR targeting `develop` via `gh pr create` (title includes `PSL-N`). PR body must follow `.github/pull_request_template.md` (see **Writing from templates** above).
 11. Apply GitHub labels and metadata matching Jira:
 
 ```bash

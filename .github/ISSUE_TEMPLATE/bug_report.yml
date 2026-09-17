@@ -13,14 +13,17 @@ body:
 
         **Do not paste secrets** (passwords, API keys, `.env` values).
 
-        On create this issue is assigned to **nervustech**, labelled `needs-triage` + `type-bug`, and should get a **milestone** (current sprint or Backlog) at triage.
+        On create this issue is assigned to **nervustech**, labelled `needs-triage` + `type-bug` (not GitHub's default `bug` label), and should get a **milestone** (current sprint or Backlog) at triage. Triage adds exactly one **`area-*`** label (`area-auth`, `area-dashboard`, `area-classes`, `area-ai-rag`, `area-infra`, or `area-docs`).
+
+        **Gold bar:** See [docs/sdlc-writing-standard.md](https://github.com/raphaelmalims/personalearn/blob/develop/docs/sdlc-writing-standard.md) and [issue #129](https://github.com/raphaelmalims/personalearn/issues/129).
 
   - type: textarea
     id: summary
     attributes:
       label: Summary
-      description: One sentence — what is broken and for whom?
-      placeholder: "CSV import creates duplicate students in the roster"
+      description: One or more sentences — what is broken, for whom, and root cause if already known.
+      placeholder: |
+        After the PSL-104 fix, AI Hub stopped streaming because visibleMessages sliced off the active assistant message during isGenerating.
     validations:
       required: true
 
@@ -72,13 +75,34 @@ body:
     id: severity
     attributes:
       label: Severity
-      description: P0 = app unusable; P1 = major workflow blocked; P2 = annoyance
+      description: P0 = app unusable; P1 = major workflow blocked; P2 = annoyance (maps to Jira priority at triage)
       options:
         - P0 — Critical (cannot use the app)
         - P1 — Major (important workflow broken)
         - P2 — Minor (cosmetic or workaround exists)
     validations:
       required: true
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance criteria
+      description: Checkbox-friendly list of done conditions (copied to Jira when triaged).
+      placeholder: |
+        - [ ] Reproduction steps no longer trigger the bug
+        - [ ] Regression test or manual verify step documented
+        - [ ] Related workflows still work
+    validations:
+      required: true
+
+  - type: textarea
+    id: likely_cause
+    attributes:
+      label: Likely cause / notes
+      description: Optional — suspected root cause, related PRs/tickets, or investigation notes.
+      placeholder: |
+        Root cause: ...
+        Related: PSL-__ / PR #__
 
   - type: textarea
     id: evidence
@@ -99,4 +123,4 @@ body:
     id: extra
     attributes:
       label: Additional context
-      description: Frequency, related tickets, when it started, etc.
+      description: Frequency, when it started, etc.
