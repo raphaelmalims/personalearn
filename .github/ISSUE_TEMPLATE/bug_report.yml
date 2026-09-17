@@ -15,7 +15,7 @@ body:
 
         On create this issue is assigned to **nervustech**, labelled `needs-triage` + `type-bug` (not GitHub's default `bug` label), and should get a **milestone** (current sprint or Backlog) at triage. Triage adds exactly one **`area-*`** label (`area-auth`, `area-dashboard`, `area-classes`, `area-ai-rag`, `area-infra`, or `area-docs`).
 
-        **Gold bar:** See [docs/sdlc-writing-standard.md](../../docs/sdlc-writing-standard.md) and [issue #129](https://github.com/raphaelmalims/personalearn/issues/129).
+        **Gold bar:** See [docs/sdlc-writing-standard.md](https://github.com/raphaelmalims/personalearn/blob/develop/docs/sdlc-writing-standard.md) and [issue #129](https://github.com/raphaelmalims/personalearn/issues/129).
 
   - type: textarea
     id: summary

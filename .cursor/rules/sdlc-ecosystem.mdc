@@ -36,7 +36,7 @@ When creating or editing **GitHub Issues**, **Jira descriptions**, or **PR bodie
 
 - Issues: `.github/ISSUE_TEMPLATE/bug_report.yml` and `.github/ISSUE_TEMPLATE/feature_request.yml`
 - PRs: `.github/pull_request_template.md`
-- Canonical headings and examples: [`docs/sdlc-writing-standard.md`](../../docs/sdlc-writing-standard.md)
+- Canonical headings and examples: [`docs/sdlc-writing-standard.md`](https://github.com/raphaelmalims/personalearn/blob/develop/docs/sdlc-writing-standard.md)
 
 **Gold floor** = quality of [PSL-110](https://nervustechnologies.atlassian.net/browse/PSL-110), [GitHub issue #129](https://github.com/raphaelmalims/personalearn/issues/129), [PR #130](https://github.com/raphaelmalims/personalearn/pull/130):
 

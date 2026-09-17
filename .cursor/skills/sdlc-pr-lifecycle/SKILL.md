@@ -19,7 +19,7 @@ Before opening an Issue, Jira ticket body, or PR:
 2. **PR body** — copy structure from `.github/pull_request_template.md` (`## Summary` prose with why/root cause, `## Test plan`, `## Links`, metadata, `## Risks / notes`).
 3. **Do not** substitute one-line summaries or bullet-only PR summaries.
 
-**Gold floor:** PSL-110 / [#129](https://github.com/raphaelmalims/personalearn/issues/129) / [#130](https://github.com/raphaelmalims/personalearn/pull/130). Headings reference: [`docs/sdlc-writing-standard.md`](../../../docs/sdlc-writing-standard.md).
+**Gold floor:** PSL-110 / [#129](https://github.com/raphaelmalims/personalearn/issues/129) / [#130](https://github.com/raphaelmalims/personalearn/pull/130). Headings reference: [`docs/sdlc-writing-standard.md`](https://github.com/raphaelmalims/personalearn/blob/develop/docs/sdlc-writing-standard.md).
 
 ## Pre-flight
 

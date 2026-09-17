@@ -14,7 +14,7 @@ body:
 
         On create this issue is assigned to **nervustech**, labelled `needs-triage` + `type-feature`, and should get a **milestone** (current sprint or Backlog) at triage. Triage adds exactly one **`area-*`** label when the work is scheduled.
 
-        **Gold bar:** See [docs/sdlc-writing-standard.md](../../docs/sdlc-writing-standard.md).
+        **Gold bar:** See [docs/sdlc-writing-standard.md](https://github.com/raphaelmalims/personalearn/blob/develop/docs/sdlc-writing-standard.md).
 
   - type: textarea
     id: problem
