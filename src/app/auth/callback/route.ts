@@ -2,6 +2,7 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { ensureUserProfile } from "@/lib/auth/ensure-user-profile";
+import { clampAuthCookieOptions } from "@/lib/auth/session-policy";
 import { getSupabaseEnv } from "@/lib/supabase/env";
 
 export async function GET(request: Request) {
@@ -40,11 +41,11 @@ export async function GET(request: Request) {
         ) {
           cookiesToSet.forEach(({ name, value, options }) => {
             try {
-              cookieStore.set(name, value, options);
+              cookieStore.set(name, value, clampAuthCookieOptions(name, options));
             } catch {
               // Route handlers may not always propagate cookieStore writes to redirects.
             }
-            response.cookies.set(name, value, options);
+            response.cookies.set(name, value, clampAuthCookieOptions(name, options));
           });
         },
       },

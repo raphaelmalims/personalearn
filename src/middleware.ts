@@ -1,6 +1,7 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getPostLoginPath } from "@/lib/auth/post-login-path";
+import { clampAuthCookieOptions } from "@/lib/auth/session-policy";
 import { getSupabaseEnv } from "@/lib/supabase/env";
 
 const loginPath = "/login";
@@ -81,7 +82,7 @@ export async function middleware(request: NextRequest) {
           );
           response = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
+            response.cookies.set(name, value, clampAuthCookieOptions(name, options))
           );
         },
       },

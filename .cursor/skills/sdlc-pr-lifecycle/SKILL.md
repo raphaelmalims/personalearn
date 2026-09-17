@@ -11,6 +11,16 @@ description: >-
 
 Follow `git-workflow.mdc` and `sdlc-ecosystem.mdc` for constraints. This skill is the **procedure**.
 
+## Writing from templates (required)
+
+Before opening an Issue, Jira ticket body, or PR:
+
+1. **GitHub Issues** — use fields from `.github/ISSUE_TEMPLATE/bug_report.yml` or `feature_request.yml` (Summary, Severity, **Acceptance criteria**, optional root-cause / notes).
+2. **PR body** — copy structure from `.github/pull_request_template.md` (`## Summary` prose with why/root cause, `## Test plan`, `## Links`, metadata, `## Risks / notes`).
+3. **Do not** substitute one-line summaries or bullet-only PR summaries.
+
+**Gold floor:** PSL-110 / [#129](https://github.com/raphaelmalims/personalearn/issues/129) / [#130](https://github.com/raphaelmalims/personalearn/pull/130). Headings reference: [`docs/sdlc-writing-standard.md`](https://github.com/raphaelmalims/personalearn/blob/develop/docs/sdlc-writing-standard.md).
+
 ## Pre-flight
 
 1. `getJiraIssue(PSL-N)` with fields including `customfield_10001` (Team), `customfield_10016` (points), `customfield_10015` (start), `duedate`, `priority`, `customfield_10020` (sprint) — read summary, ACs, labels, sprint, blockers, linked spec.
@@ -35,7 +45,7 @@ PSL-N — branch created: {branch-name}
 ## Open PR
 
 9. Rebase onto `origin/develop` before push.
-10. Push branch; open PR targeting `develop` via `gh pr create` (title includes `PSL-N`).
+10. Push branch; open PR targeting `develop` via `gh pr create` (title includes `PSL-N`). PR body must follow `.github/pull_request_template.md` (see **Writing from templates** above).
 11. Apply GitHub labels and metadata matching Jira:
 
 ```bash
@@ -67,7 +77,8 @@ PSL-N — PR opened: {pr-url} — {one-line summary}
 
 16. Babysit CI until green (`gh pr checks`).
 17. **Verify labels + metadata + Test plan** — Jira ticket and PR must have the same `area-*` + `type-*`. PR must have **assignee**, **sprint milestone** (or Backlog), and a **requested reviewer** (or a posted solo-dev review comment). Run the PR **Test plan** (lint/test/build/manual/preview as listed). Edit the PR body so every item is `[x]`, or `[ ]` with **N/A — {reason}**. Do **not** Approve or ask to merge while any item is still an unchecked `[ ]`.
-18. Post GitHub review (`gh pr review` or review comment). Body must include:
+18. **Acceptance criteria gate (hard)** — walk every AC on the linked GitHub Issue (and Jira if it lists ACs). For each AC that is met, tick its checkbox on the **issue body** (`[ ]` → `[x]`). Mirror ticks on Jira when the ticket uses AC checkboxes. An AC walk in the review comment alone is **not** enough — leaving met boxes unchecked is a miss. Do **not** Approve or ask to merge while any claimed-met AC is still unchecked on the issue.
+19. Post GitHub review (`gh pr review` or review comment). Body must include:
 
 ```text
 PSL-N — {Approve | Request changes | Comment}
@@ -75,11 +86,12 @@ PSL-N — {Approve | Request changes | Comment}
 Labels: area-<x>, type-<y> — match Jira
 Assignee + milestone confirmed
 Test plan: all items [x] (or N/A with reason)
+Issue ACs: walked + met boxes ticked on GitHub Issue (and Jira if applicable)
 
 {findings}
 ```
 
-19. Mirror verdict on Jira:
+20. Mirror verdict on Jira:
 
 ```text
 PSL-N — PR reviewed: {Approve | Changes requested}
@@ -88,24 +100,25 @@ PSL-N — PR reviewed: {Approve | Changes requested}
 Labels confirmed: area-<x>, type-<y>
 Assignee + milestone confirmed
 Test plan checked
+Issue ACs walked + checkboxes updated
 ```
 
-20. If review surfaces follow-up debt, add `type-tech-debt` on a **new** triaged ticket — do not expand scope on the current PR.
+21. If review surfaces follow-up debt, add `type-tech-debt` on a **new** triaged ticket — do not expand scope on the current PR.
 
 ## Merge (human gate)
 
-21. **Stop** — ask user for merge approval unless they already requested merge. Abort merge if any Test plan item is still `[ ]` without an N/A reason.
-22. `gh pr merge --squash --delete-branch`.
-23. Close the linked GitHub Issue: `gh issue close <n> --reason completed`.
-24. `transitionJiraIssue` → **Done**.
-25. Jira comment:
+22. **Stop** — ask user for merge approval unless they already requested merge. Abort merge if any Test plan item is still `[ ]` without an N/A reason, or if any claimed-met Issue AC checkbox is still unchecked.
+23. `gh pr merge --squash --delete-branch`.
+24. Close the linked GitHub Issue: `gh issue close <n> --reason completed`.
+25. `transitionJiraIssue` → **Done**.
+26. Jira comment:
 
 ```text
 PSL-N — merged to develop: {pr-url}
 GitHub Issue closed: {issue-url}
 ```
 
-26. Slack:
+27. Slack:
 
 ```text
 PSL-N — merged: {pr-url} — {one-line summary}
@@ -132,6 +145,7 @@ When triaging a GitHub Issue before a Jira ticket exists:
 - [ ] CI green
 - [ ] GitHub review with verdict + label/assignee/milestone check
 - [ ] PR Test plan boxes checked (`[x]` or N/A + reason)
+- [ ] Issue ACs walked; met AC checkboxes ticked on GitHub Issue (and Jira if present)
 - [ ] Matching Jira review comment
 - [ ] User approved merge
 - [ ] GitHub Issue closed as completed
