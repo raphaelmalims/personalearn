@@ -29,8 +29,10 @@ export function ClassSelector() {
       term: cls.term,
     });
     queryClient.invalidateQueries();
-    if (pathname.startsWith("/classes")) {
-      router.push(`/classes/${cls.id}`);
+    const onClassIndex =
+      pathname === "/classes" || /^\/classes\/[^/]+\/?$/.test(pathname);
+    if (onClassIndex) {
+      router.push("/ai-hub");
     }
   }
 

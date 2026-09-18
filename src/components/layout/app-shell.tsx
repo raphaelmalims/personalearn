@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Menu, MoreHorizontal, School, WandSparkles } from "lucide-react";
+import { Home, Menu, MoreHorizontal, WandSparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { BrandMark } from "@/components/layout/brand-mark";
@@ -14,7 +14,6 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 const navItems = [
   { href: "/dashboard", label: "Home", icon: Home },
   { href: "/ai-hub", label: "AI Hub", icon: WandSparkles },
-  { href: "/classes", label: "Classes", icon: School },
 ];
 
 function isActivePath(pathname: string, href: string) {

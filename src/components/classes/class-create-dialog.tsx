@@ -60,7 +60,7 @@ export function ClassCreateDialog({
           redirectOnSuccess={null}
           onSuccess={(created) => {
             setOpen(false);
-            router.push(`/classes/${created.id}`);
+            router.push("/ai-hub");
             router.refresh();
           }}
         />

@@ -46,7 +46,7 @@ describe("resolveClassDeepLinkTarget", () => {
     });
   });
 
-  it("stays on the class page when the assessment has no linked resource", () => {
+  it("falls through to Hub when the assessment has no linked resource", () => {
     expect(
       resolveClassDeepLinkTarget({
         classId,
@@ -58,7 +58,7 @@ describe("resolveClassDeepLinkTarget", () => {
     ).toEqual({ status: "stay" });
   });
 
-  it("stays on the class page for an unknown assessment", () => {
+  it("falls through to Hub for an unknown assessment", () => {
     expect(
       resolveClassDeepLinkTarget({
         classId,
@@ -70,7 +70,7 @@ describe("resolveClassDeepLinkTarget", () => {
     ).toEqual({ status: "stay" });
   });
 
-  it("stays on the class page when there is no deep link", () => {
+  it("falls through to Hub when there is no deep link", () => {
     expect(
       resolveClassDeepLinkTarget({
         classId,

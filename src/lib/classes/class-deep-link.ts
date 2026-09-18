@@ -13,14 +13,15 @@ type ClassDeepLinkInput = {
 type ClassDeepLinkTarget =
   /** Nothing to resolve yet — keep the query params. */
   | { status: "waiting" }
-  /** Consume the params and stay on the class page. */
+  /** No resource target — caller should send the teacher to the Hub. */
   | { status: "stay" }
   /** Consume the params and navigate to the resource route. */
   | { status: "redirect"; href: string };
 
 /**
- * Resources moved to the Hub class panel in PSL-114, so the class page no
- * longer opens them inline — both deep links resolve to the resource route.
+ * `/classes/[classId]` is only a redirect shim (PSL-114). Resource and
+ * assessment query params resolve to the resource route; otherwise the
+ * caller sends the teacher to the Hub.
  */
 export function resolveClassDeepLinkTarget({
   classId,

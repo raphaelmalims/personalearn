@@ -82,10 +82,10 @@ export default function DashboardPage() {
                     health, and recent activity.
                   </p>
                   <Link
-                    href="/classes"
+                    href="/ai-hub"
                     className="inline-flex h-9 items-center rounded-xl bg-primary px-4 text-xs font-medium text-primary-foreground hover:bg-primary/90"
                   >
-                    Go to classes
+                    Open AI Hub
                   </Link>
                 </div>
               )}

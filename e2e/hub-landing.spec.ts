@@ -51,18 +51,12 @@ test.describe("hub landing", () => {
       ).toBeVisible();
     });
 
-    test("keeps class, resource, and evaluation routes reachable", async ({
-      page,
-    }) => {
+    test("sends /classes bookmarks to the Hub", async ({ page }) => {
       await page.goto("/classes");
-      await page.waitForURL(/\/classes\/[0-9a-f-]+/);
-
-      // Slim class page: metadata + evaluations + a route back into the Hub.
+      await page.waitForURL(/\/ai-hub/);
       await expect(
-        page.getByRole("link", { name: "Open in Hub" })
+        page.getByRole("complementary", { name: "Class panel" })
       ).toBeVisible();
-      await page.getByRole("link", { name: "Open in Hub" }).click();
-      await expect(page).toHaveURL(/\/ai-hub/);
     });
   });
 });
