@@ -7,6 +7,7 @@ import {
   ArrowUp,
   ChevronDown,
   MessagesSquare,
+  PanelRight,
   Paperclip,
   Plus,
   RotateCcw,
@@ -22,6 +23,12 @@ import {
   readSidebarCollapsedPreference,
   writeSidebarCollapsedPreference,
 } from "@/components/ai-hub/conversation-sidebar";
+import {
+  HubClassPanel,
+  readClassPanelCollapsedPreference,
+  writeClassPanelCollapsedPreference,
+  type HubClassPanelTab,
+} from "@/components/ai-hub/hub-class-panel";
 import { ThinkingBubble } from "@/components/ai-hub/thinking-bubble";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -96,6 +103,10 @@ export function AiHubChat() {
     PendingAttachment[]
   >([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [classPanelCollapsed, setClassPanelCollapsed] = useState(true);
+  const [classPanelTab, setClassPanelTab] =
+    useState<HubClassPanelTab>("resources");
+  const [classPanelSearch, setClassPanelSearch] = useState("");
   const isMobile = useIsMobile();
   const conversationIdRef = useRef<string | null>(null);
   const setSelectedConversationIdRef = useRef(setSelectedConversationId);
@@ -129,6 +140,24 @@ export function AiHubChat() {
     if (!isMobile || sidebarCollapsed) return;
     handleSidebarCollapsedChange(true);
   }
+
+  useEffect(() => {
+    const stored = readClassPanelCollapsedPreference();
+    if (stored === null) {
+      // No preference yet: collapsed on mobile, expanded on desktop.
+      setClassPanelCollapsed(
+        window.matchMedia("(max-width: 767px)").matches
+      );
+      return;
+    }
+    setClassPanelCollapsed(stored);
+  }, []);
+
+  function handleClassPanelCollapsedChange(collapsed: boolean) {
+    setClassPanelCollapsed(collapsed);
+    writeClassPanelCollapsedPreference(collapsed);
+  }
+
 
   const {
     data: conversations = [],
@@ -301,6 +330,7 @@ export function AiHubChat() {
     clearError();
     setActionError(null);
     setEditingMessageId(null);
+    setClassPanelSearch("");
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only when active class changes
   }, [activeClass?.id]);
 
@@ -647,8 +677,12 @@ export function AiHubChat() {
             : cn(
                 "grid gap-3 sm:gap-4",
                 sidebarCollapsed
-                  ? "grid-cols-[auto_minmax(0,1fr)]"
-                  : "grid-cols-[minmax(11rem,17rem)_minmax(0,1fr)]"
+                  ? classPanelCollapsed
+                    ? "grid-cols-[auto_minmax(0,1fr)_auto]"
+                    : "grid-cols-[auto_minmax(0,1fr)_minmax(14rem,20rem)]"
+                  : classPanelCollapsed
+                    ? "grid-cols-[minmax(11rem,17rem)_minmax(0,1fr)_auto]"
+                    : "grid-cols-[minmax(11rem,17rem)_minmax(0,1fr)_minmax(14rem,20rem)]"
               )
         )}
       >
@@ -682,17 +716,30 @@ export function AiHubChat() {
               >
                 <MessagesSquare className="h-5 w-5" />
               </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-1 top-2 z-10 h-9 w-9 rounded-full bg-background/80 backdrop-blur-sm"
-                onClick={handleNewConversation}
-                title="New conversation"
-                aria-label="New conversation"
-              >
-                <SquarePen className="h-5 w-5" />
-              </Button>
+              <div className="absolute right-1 top-2 z-10 flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 rounded-full bg-background/80 backdrop-blur-sm"
+                  onClick={handleNewConversation}
+                  title="New conversation"
+                  aria-label="New conversation"
+                >
+                  <SquarePen className="h-5 w-5" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 rounded-full bg-background/80 backdrop-blur-sm"
+                  onClick={() => handleClassPanelCollapsedChange(false)}
+                  title="Class panel"
+                  aria-label="Open class panel"
+                >
+                  <PanelRight className="h-5 w-5" />
+                </Button>
+              </div>
             </>
           ) : null}
 
@@ -917,6 +964,37 @@ export function AiHubChat() {
             </div>
           </div>
         </section>
+
+        {!isMobile ? (
+          <HubClassPanel
+            collapsed={classPanelCollapsed}
+            onCollapsedChange={handleClassPanelCollapsedChange}
+            activeTab={classPanelTab}
+            onTabChange={setClassPanelTab}
+            searchQuery={classPanelSearch}
+            onSearchQueryChange={setClassPanelSearch}
+          />
+        ) : null}
+
+        {isMobile && !classPanelCollapsed ? (
+          <div
+            className="absolute inset-0 z-30 flex flex-col bg-background"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Class panel"
+          >
+            <HubClassPanel
+              collapsed={false}
+              onCollapsedChange={handleClassPanelCollapsedChange}
+              activeTab={classPanelTab}
+              onTabChange={setClassPanelTab}
+              searchQuery={classPanelSearch}
+              onSearchQueryChange={setClassPanelSearch}
+              className="h-full w-full rounded-none border-0 bg-background shadow-none backdrop-blur-none"
+              sheetMode
+            />
+          </div>
+        ) : null}
 
         {isMobile && !sidebarCollapsed ? (
           <div
