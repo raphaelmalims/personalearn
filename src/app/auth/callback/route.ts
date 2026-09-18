@@ -2,13 +2,14 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { ensureUserProfile } from "@/lib/auth/ensure-user-profile";
+import { getPostLoginPath } from "@/lib/auth/post-login-path";
 import { clampAuthCookieOptions } from "@/lib/auth/session-policy";
 import { getSupabaseEnv } from "@/lib/supabase/env";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/dashboard";
+  const next = searchParams.get("next") ?? getPostLoginPath(true);
   const oauthError = searchParams.get("error");
   const oauthErrorCode = searchParams.get("error_code");
   const oauthErrorDescription = searchParams.get("error_description");
@@ -26,7 +27,7 @@ export async function GET(request: Request) {
   }
 
   if (code) {
-    const safePath = next.startsWith("/") ? next : "/dashboard";
+    const safePath = next.startsWith("/") ? next : getPostLoginPath(true);
     const response = NextResponse.redirect(`${origin}${safePath}`);
     const cookieStore = await cookies();
     const { url, anonKey } = getSupabaseEnv();

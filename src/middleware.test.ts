@@ -57,6 +57,17 @@ describe("middleware", () => {
     );
   });
 
+  it("redirects unauthenticated users from the AI Hub landing to login", async () => {
+    mockUnauthenticated();
+
+    const response = await middleware(createRequest("/ai-hub"));
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "http://localhost:3000/login?redirectTo=%2Fai-hub"
+    );
+  });
+
   it("redirects unauthenticated users from onboarding to login", async () => {
     mockUnauthenticated();
 
@@ -89,7 +100,19 @@ describe("middleware", () => {
     );
   });
 
-  it("redirects authenticated users with classes away from onboarding", async () => {
+  it("redirects authenticated users without classes from the AI Hub to onboarding", async () => {
+    mockAuthenticatedUser();
+    mockClassCount(0);
+
+    const response = await middleware(createRequest("/ai-hub"));
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "http://localhost:3000/onboarding"
+    );
+  });
+
+  it("redirects authenticated users with classes away from onboarding to the AI Hub", async () => {
     mockAuthenticatedUser();
     mockClassCount(2);
 
@@ -97,7 +120,7 @@ describe("middleware", () => {
 
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe(
-      "http://localhost:3000/dashboard"
+      "http://localhost:3000/ai-hub"
     );
   });
 
@@ -113,7 +136,7 @@ describe("middleware", () => {
     );
   });
 
-  it("redirects authenticated users on login to dashboard when they have classes", async () => {
+  it("redirects authenticated users on login to the AI Hub when they have classes", async () => {
     mockAuthenticatedUser();
     mockClassCount(1);
 
@@ -121,7 +144,7 @@ describe("middleware", () => {
 
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe(
-      "http://localhost:3000/dashboard"
+      "http://localhost:3000/ai-hub"
     );
   });
 
@@ -130,6 +153,16 @@ describe("middleware", () => {
     mockClassCount(1);
 
     const response = await middleware(createRequest("/dashboard"));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("location")).toBeNull();
+  });
+
+  it("allows authenticated users with classes to reach the AI Hub", async () => {
+    mockAuthenticatedUser();
+    mockClassCount(1);
+
+    const response = await middleware(createRequest("/ai-hub"));
 
     expect(response.status).toBe(200);
     expect(response.headers.get("location")).toBeNull();
@@ -160,7 +193,7 @@ describe("middleware", () => {
 
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe(
-      "http://localhost:3000/auth/callback?code=oauth-code&next=%2Fdashboard"
+      "http://localhost:3000/auth/callback?code=oauth-code&next=%2Fai-hub"
     );
   });
 

@@ -1,5 +1,5 @@
 export function getPostLoginPath(hasClasses: boolean) {
-  return hasClasses ? "/dashboard" : "/onboarding";
+  return hasClasses ? "/ai-hub" : "/onboarding";
 }
 
 export type LandingCtas = {
@@ -11,7 +11,7 @@ export type LandingCtas = {
   footerHref: string;
 };
 
-/** Landing CTAs stay public when signed out; signed-in teachers skip /dashboard when they have no class. */
+/** Landing CTAs stay public when signed out; signed-in teachers skip the Hub when they have no class. */
 export function getLandingCtas(
   signedIn: boolean,
   hasClasses: boolean
@@ -31,7 +31,7 @@ export function getLandingCtas(
   return {
     signedIn: true,
     headerHref: dest,
-    headerLabel: hasClasses ? "Open dashboard" : "Create class",
+    headerLabel: hasClasses ? "Open AI Hub" : "Create class",
     primaryHref: dest,
     secondaryHref: dest,
     footerHref: dest,

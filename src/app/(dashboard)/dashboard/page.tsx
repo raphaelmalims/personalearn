@@ -4,7 +4,6 @@ import Link from "next/link";
 import { CompetencySnapshot } from "@/components/dashboard/competency-snapshot";
 import { NotificationPreviews } from "@/components/dashboard/notification-previews";
 import { RecentActivityLists } from "@/components/dashboard/recent-activity-lists";
-import { WelcomeTour } from "@/components/onboarding/welcome-tour";
 import {
   Card,
   CardContent,
@@ -42,7 +41,6 @@ export default function DashboardPage() {
 
   return (
     <>
-      <WelcomeTour />
       <div className="space-y-6">
         <div className="text-center">
           <h1 className="font-display text-3xl font-semibold tracking-tight">

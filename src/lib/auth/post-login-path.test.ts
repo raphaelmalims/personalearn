@@ -6,8 +6,8 @@ describe("getPostLoginPath", () => {
     expect(getPostLoginPath(false)).toBe("/onboarding");
   });
 
-  it("returns dashboard when the teacher has classes", () => {
-    expect(getPostLoginPath(true)).toBe("/dashboard");
+  it("returns the AI Hub when the teacher has classes", () => {
+    expect(getPostLoginPath(true)).toBe("/ai-hub");
   });
 });
 
@@ -34,14 +34,14 @@ describe("getLandingCtas", () => {
     });
   });
 
-  it("sends signed-in teachers with classes to dashboard", () => {
+  it("sends signed-in teachers with classes to the AI Hub", () => {
     expect(getLandingCtas(true, true)).toEqual({
       signedIn: true,
-      headerHref: "/dashboard",
-      headerLabel: "Open dashboard",
-      primaryHref: "/dashboard",
-      secondaryHref: "/dashboard",
-      footerHref: "/dashboard",
+      headerHref: "/ai-hub",
+      headerLabel: "Open AI Hub",
+      primaryHref: "/ai-hub",
+      secondaryHref: "/ai-hub",
+      footerHref: "/ai-hub",
     });
   });
 });
