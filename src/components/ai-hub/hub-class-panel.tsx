@@ -1,10 +1,17 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, PanelRight, Search, X } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
+import { AddStudentDialog } from "@/components/classes/add-student-dialog";
+import { ClassResourcesSection } from "@/components/classes/class-resources-section";
 import { ClassSelector } from "@/components/classes/class-selector";
+import { CsvImportDialog } from "@/components/classes/csv-import-dialog";
+import { StudentRosterTable } from "@/components/classes/student-roster-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { filterStudentsByQuery } from "@/lib/classes/filter-class-lists";
+import { useStudents } from "@/lib/hooks/use-classes";
 import { cn } from "@/lib/utils";
 
 const CLASS_PANEL_COLLAPSED_KEY = "ai-hub-class-panel-collapsed";
@@ -17,6 +24,7 @@ export const HUB_CLASS_PANEL_TABS = [
 export type HubClassPanelTab = (typeof HUB_CLASS_PANEL_TABS)[number]["id"];
 
 type HubClassPanelProps = {
+  classId: string;
   collapsed: boolean;
   onCollapsedChange: (collapsed: boolean) => void;
   activeTab: HubClassPanelTab;
@@ -26,7 +34,6 @@ type HubClassPanelProps = {
   className?: string;
   /** Full-screen sheet (mobile): collapse control reads as back-to-chat. */
   sheetMode?: boolean;
-  children?: React.ReactNode;
 };
 
 /**
@@ -34,6 +41,7 @@ type HubClassPanelProps = {
  * the Resources / Students surfaces that used to live on the class page.
  */
 export function HubClassPanel({
+  classId,
   collapsed,
   onCollapsedChange,
   activeTab,
@@ -42,8 +50,13 @@ export function HubClassPanel({
   onSearchQueryChange,
   className,
   sheetMode = false,
-  children,
 }: HubClassPanelProps) {
+  const { data: students, isLoading: studentsLoading } = useStudents(classId);
+  const filteredStudents = useMemo(
+    () => filterStudentsByQuery(students ?? [], searchQuery),
+    [students, searchQuery]
+  );
+
   useEffect(() => {
     if (collapsed) {
       onSearchQueryChange("");
@@ -165,7 +178,42 @@ export function HubClassPanel({
         aria-labelledby={`hub-class-panel-tab-${activeTab}`}
         className="min-h-0 flex-1 overflow-y-auto px-3 pb-3"
       >
-        {children}
+        {activeTab === "resources" ? (
+          <ClassResourcesSection
+            classId={classId}
+            searchQuery={searchQuery}
+            compact
+          />
+        ) : (
+          <section className="space-y-3" aria-label="Student roster">
+            <div className="flex flex-wrap items-center gap-2">
+              <AddStudentDialog classId={classId} />
+              <CsvImportDialog classId={classId} />
+            </div>
+            {studentsLoading ? (
+              <div
+                className="space-y-2"
+                aria-busy="true"
+                aria-label="Loading students"
+              >
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <Skeleton key={index} className="h-10 w-full rounded-lg" />
+                ))}
+              </div>
+            ) : (
+              <StudentRosterTable
+                classId={classId}
+                students={filteredStudents}
+                compact
+                emptyMessage={
+                  hasQuery
+                    ? "No matching students."
+                    : "No students yet. Use the buttons above to add one or import a CSV."
+                }
+              />
+            )}
+          </section>
+        )}
       </div>
     </aside>
   );

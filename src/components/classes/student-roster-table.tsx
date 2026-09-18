@@ -27,11 +27,14 @@ import {
 } from "@/components/classes/eval-progress-dot";
 import { StudentEvalProfileDialog } from "@/components/classes/student-eval-profile-dialog";
 import { StartEvaluationDialog } from "@/components/classes/start-evaluation-dialog";
+import { cn } from "@/lib/utils";
 
 type StudentRosterTableProps = {
   classId: string;
   students: Student[];
   emptyMessage?: string;
+  /** Narrow container (Hub class panel): always use the stacked card list. */
+  compact?: boolean;
 };
 
 type N1EvalTarget = {
@@ -64,6 +67,7 @@ export function StudentRosterTable({
   classId,
   students,
   emptyMessage = "No students yet. Use the buttons above to add one or import a CSV.",
+  compact = false,
 }: StudentRosterTableProps) {
   const router = useRouter();
   const deleteStudent = useDeleteStudent(classId);
@@ -157,7 +161,7 @@ export function StudentRosterTable({
 
   return (
     <>
-      <div className="hidden md:block">
+      <div className={compact ? "hidden" : "hidden md:block"}>
         <Table containerClassName="overflow-visible">
           <TableHeader>
             <TableRow>
@@ -214,7 +218,7 @@ export function StudentRosterTable({
         </Table>
       </div>
 
-      <div className="space-y-2 md:hidden">
+      <div className={cn("space-y-2", !compact && "md:hidden")}>
         {students.map((student) => (
           <Card key={student.id}>
             <CardContent className="flex items-center justify-between p-4">

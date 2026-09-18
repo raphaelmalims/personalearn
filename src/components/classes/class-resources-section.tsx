@@ -19,6 +19,8 @@ type ClassResourcesSectionProps = {
   /** Open a resource from Home / assessment cube deep-link (PSL-66 / PSL-67). */
   openResourceId?: string | null;
   onOpenResourceConsumed?: () => void;
+  /** Narrow container (Hub class panel): no card chrome, stacked list only. */
+  compact?: boolean;
 };
 
 export function ClassResourcesSection({
@@ -27,6 +29,7 @@ export function ClassResourcesSection({
   searchQuery = "",
   openResourceId = null,
   onOpenResourceConsumed,
+  compact = false,
 }: ClassResourcesSectionProps) {
   const router = useRouter();
   const { data: resources, isLoading, error } = useResources(classId);
@@ -65,6 +68,45 @@ export function ClassResourcesSection({
     resources,
   ]);
 
+  const list = isLoading ? (
+    <div className="space-y-2" aria-busy="true" aria-label="Loading resources">
+      {Array.from({ length: 5 }).map((_, index) => (
+        <Skeleton key={index} className="h-10 w-full rounded-lg" />
+      ))}
+    </div>
+  ) : error ? (
+    <p className="text-sm text-destructive">
+      {error instanceof Error ? error.message : "Failed to load resources"}
+    </p>
+  ) : (
+    <ResourceListTable
+      classId={classId}
+      resources={filteredResources}
+      compact={compact}
+      emptyMessage={
+        hasQuery
+          ? "No matching resources."
+          : "No resources yet. Upload a scheme, notes, or assignment to get started."
+      }
+    />
+  );
+
+  const actions = (
+    <div className="flex flex-wrap items-center gap-2">
+      <StartEvaluationDialog classId={classId} />
+      <ResourceUploadDialog classId={classId} />
+    </div>
+  );
+
+  if (compact) {
+    return (
+      <section className="space-y-3" aria-label="Class resources">
+        {actions}
+        {list}
+      </section>
+    );
+  }
+
   return (
     <Card
       className={cn(
@@ -74,10 +116,7 @@ export function ClassResourcesSection({
     >
       <CardHeader className="flex shrink-0 flex-row flex-wrap items-center justify-between gap-2">
         <CardTitle className="text-lg">Class resources</CardTitle>
-        <div className="flex flex-wrap items-center gap-2">
-          <StartEvaluationDialog classId={classId} />
-          <ResourceUploadDialog classId={classId} />
-        </div>
+        {actions}
       </CardHeader>
       <CardContent
         className={cn(
@@ -91,33 +130,7 @@ export function ClassResourcesSection({
             scrollable && "overflow-y-auto pr-1"
           )}
         >
-          {isLoading ? (
-            <div
-              className="space-y-2"
-              aria-busy="true"
-              aria-label="Loading resources"
-            >
-              {Array.from({ length: 5 }).map((_, index) => (
-                <Skeleton key={index} className="h-10 w-full rounded-lg" />
-              ))}
-            </div>
-          ) : error ? (
-            <p className="text-sm text-destructive">
-              {error instanceof Error
-                ? error.message
-                : "Failed to load resources"}
-            </p>
-          ) : (
-            <ResourceListTable
-              classId={classId}
-              resources={filteredResources}
-              emptyMessage={
-                hasQuery
-                  ? "No matching resources."
-                  : "No resources yet. Upload a scheme, notes, or assignment to get started."
-              }
-            />
-          )}
+          {list}
         </div>
       </CardContent>
     </Card>

@@ -30,6 +30,7 @@ import {
   type HubClassPanelTab,
 } from "@/components/ai-hub/hub-class-panel";
 import { ThinkingBubble } from "@/components/ai-hub/thinking-bubble";
+import { ClassSelector } from "@/components/classes/class-selector";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -659,10 +660,11 @@ export function AiHubChat() {
 
   if (!activeClass) {
     return (
-      <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-border bg-card/40 p-8">
+      <div className="flex h-full flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-card/40 p-8">
         <p className="text-sm text-muted-foreground">
-          Select an active class from the header to use AI Hub.
+          Select an active class to use AI Hub.
         </p>
+        <ClassSelector />
       </div>
     );
   }
@@ -967,6 +969,7 @@ export function AiHubChat() {
 
         {!isMobile ? (
           <HubClassPanel
+            classId={activeClass.id}
             collapsed={classPanelCollapsed}
             onCollapsedChange={handleClassPanelCollapsedChange}
             activeTab={classPanelTab}
@@ -984,6 +987,7 @@ export function AiHubChat() {
             aria-label="Class panel"
           >
             <HubClassPanel
+              classId={activeClass.id}
               collapsed={false}
               onCollapsedChange={handleClassPanelCollapsedChange}
               activeTab={classPanelTab}

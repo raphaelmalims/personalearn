@@ -21,17 +21,21 @@ import {
   formatResourceType,
 } from "@/lib/resources/format";
 import { ResourceDeleteDialog } from "@/components/classes/resource-delete-dialog";
+import { cn } from "@/lib/utils";
 
 type ResourceListTableProps = {
   classId: string;
   resources: Resource[];
   emptyMessage?: string;
+  /** Narrow container (Hub class panel): always use the stacked card list. */
+  compact?: boolean;
 };
 
 export function ResourceListTable({
   classId,
   resources,
   emptyMessage = "No resources yet. Upload a scheme, notes, or assignment to get started.",
+  compact = false,
 }: ResourceListTableProps) {
   const deleteResource = useDeleteResource(classId);
   const [deleteTarget, setDeleteTarget] = useState<Resource | null>(null);
@@ -49,7 +53,7 @@ export function ResourceListTable({
 
   return (
     <>
-      <div className="hidden md:block">
+      <div className={compact ? "hidden" : "hidden md:block"}>
         <Table containerClassName="overflow-visible">
           <TableHeader>
             <TableRow>
@@ -103,7 +107,7 @@ export function ResourceListTable({
         </Table>
       </div>
 
-      <div className="space-y-2 md:hidden">
+      <div className={cn("space-y-2", !compact && "md:hidden")}>
         {resources.map((resource) => (
           <Card key={resource.id}>
             <CardContent className="flex items-start justify-between gap-3 p-4">
