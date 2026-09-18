@@ -4,6 +4,7 @@ import { Suspense, use, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { WandSparkles } from "lucide-react";
+import { resolveClassDeepLinkTarget } from "@/lib/classes/class-deep-link";
 import { useClasses } from "@/lib/hooks/use-classes";
 import { useAssessments } from "@/lib/hooks/use-evaluation";
 import { useActiveClassStore } from "@/lib/store/active-class";
@@ -64,25 +65,23 @@ function ClassDetailContent({
     window.history.replaceState(window.history.state, "", next);
   }, []);
 
-  // Resources no longer live on this page (PSL-114), so ?resource= and the
-  // assessment's linked resource go straight to the resource route.
   useEffect(() => {
-    if (pendingResourceId) {
-      const resourceId = pendingResourceId;
-      clearDeepLinkParams();
-      router.replace(`/classes/${classId}/resources/${resourceId}`);
-      return;
-    }
+    if (!pendingAssessmentId && !pendingResourceId) return;
 
-    if (!pendingAssessmentId || assessmentsLoading || !assessments) return;
+    const target = resolveClassDeepLinkTarget({
+      classId,
+      resourceId: pendingResourceId,
+      assessmentId: pendingAssessmentId,
+      assessments,
+      assessmentsLoading,
+    });
 
-    const assessment = assessments.find((row) => row.id === pendingAssessmentId);
+    if (target.status === "waiting") return;
+
     clearDeepLinkParams();
-    // Unknown assessment or no linked resource — stay on the class page.
-    if (!assessment?.resource_id) return;
-    router.replace(
-      `/classes/${classId}/resources/${assessment.resource_id}`
-    );
+    if (target.status === "redirect") {
+      router.replace(target.href);
+    }
   }, [
     assessments,
     assessmentsLoading,
