@@ -1,23 +1,15 @@
 "use client";
 
-import { Suspense, use, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, use, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { Search, X } from "lucide-react";
-import { useStudents } from "@/lib/hooks/use-classes";
+import { useRouter, useSearchParams } from "next/navigation";
+import { WandSparkles } from "lucide-react";
 import { useClasses } from "@/lib/hooks/use-classes";
-import { filterStudentsByQuery } from "@/lib/classes/filter-class-lists";
 import { useAssessments } from "@/lib/hooks/use-evaluation";
 import { useActiveClassStore } from "@/lib/store/active-class";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { StudentRosterTable } from "@/components/classes/student-roster-table";
-import { AddStudentDialog } from "@/components/classes/add-student-dialog";
-import { CsvImportDialog } from "@/components/classes/csv-import-dialog";
 import { ClassEditDialog } from "@/components/classes/class-edit-dialog";
-import { ClassResourcesSection } from "@/components/classes/class-resources-section";
+import { ClassMetaReveal } from "@/components/classes/class-meta-reveal";
 import { ClassEvaluationsSection } from "@/components/classes/class-evaluations-section";
 import { ClassDetailSkeleton } from "@/components/classes/class-detail-skeleton";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
@@ -40,8 +32,9 @@ function ClassDetailContent({
   params: Promise<{ classId: string }>;
 }) {
   const { classId } = use(params);
+  const router = useRouter();
   const searchParams = useSearchParams();
-  // Capture once so clearing the URL does not remount / lose the open dialog.
+  // Capture once so clearing the URL does not re-trigger the deep-link jump.
   const [pendingAssessmentId, setPendingAssessmentId] = useState<string | null>(
     () => searchParams.get("assessment")
   );
@@ -49,31 +42,10 @@ function ClassDetailContent({
     () => searchParams.get("resource")
   );
   const { data: classes, isLoading: classesLoading } = useClasses();
-  const { data: students, isLoading: studentsLoading } = useStudents(classId);
   const { data: assessments, isLoading: assessmentsLoading } =
     useAssessments(classId);
   const setActiveClass = useActiveClassStore((state) => state.setActiveClass);
-  const [searchQuery, setSearchQuery] = useState("");
   const cls = classes?.find((c) => c.id === classId);
-  const hasQuery = searchQuery.trim().length > 0;
-
-  const filteredStudents = useMemo(
-    () => filterStudentsByQuery(students ?? [], searchQuery),
-    [students, searchQuery]
-  );
-
-  const openResourceId = useMemo(() => {
-    if (pendingResourceId) return pendingResourceId;
-    if (!pendingAssessmentId || assessmentsLoading) return null;
-    if (!assessments) return null;
-    const assessment = assessments.find((row) => row.id === pendingAssessmentId);
-    return assessment?.resource_id ?? null;
-  }, [
-    pendingResourceId,
-    pendingAssessmentId,
-    assessments,
-    assessmentsLoading,
-  ]);
 
   const clearDeepLinkParams = useCallback(() => {
     setPendingAssessmentId(null);
@@ -89,24 +61,36 @@ function ClassDetailContent({
     }
     if (!changed) return;
     const next = url.pathname + (url.search ? url.search : "");
-    // Avoid router.replace — it remounts the page and closes the dialog.
     window.history.replaceState(window.history.state, "", next);
   }, []);
 
+  // Resources no longer live on this page (PSL-114), so ?resource= and the
+  // assessment's linked resource go straight to the resource route.
   useEffect(() => {
-    if (pendingResourceId) return;
-    if (!pendingAssessmentId || assessmentsLoading || !assessments) return;
-    const assessment = assessments.find((row) => row.id === pendingAssessmentId);
-    // Unknown assessment or no linked resource — drop the query.
-    if (!assessment?.resource_id) {
+    if (pendingResourceId) {
+      const resourceId = pendingResourceId;
       clearDeepLinkParams();
+      router.replace(`/classes/${classId}/resources/${resourceId}`);
+      return;
     }
+
+    if (!pendingAssessmentId || assessmentsLoading || !assessments) return;
+
+    const assessment = assessments.find((row) => row.id === pendingAssessmentId);
+    clearDeepLinkParams();
+    // Unknown assessment or no linked resource — stay on the class page.
+    if (!assessment?.resource_id) return;
+    router.replace(
+      `/classes/${classId}/resources/${assessment.resource_id}`
+    );
   }, [
-    pendingResourceId,
-    pendingAssessmentId,
     assessments,
     assessmentsLoading,
+    classId,
     clearDeepLinkParams,
+    pendingAssessmentId,
+    pendingResourceId,
+    router,
   ]);
 
   useEffect(() => {
@@ -144,88 +128,28 @@ function ClassDetailContent({
           { label: cls?.name ?? "Class" },
         ]}
       />
-      <div className="flex flex-col items-center text-center">
+      <div className="flex flex-col items-center gap-3 text-center">
         {cls ? (
-          <>
-            <h1 className="text-3xl font-semibold">{cls.name}</h1>
-            <div className="mt-1 flex flex-wrap items-center justify-center gap-1.5 text-muted-foreground">
-              <p>
-                Grade {cls.grade_level} · {cls.subject} · Term {cls.term}
-                {cls.section ? ` · Section ${cls.section}` : ""}
-              </p>
-              <ClassEditDialog cls={cls} />
-            </div>
-          </>
+          <ClassMetaReveal cls={cls} action={<ClassEditDialog cls={cls} />} />
         ) : (
           <>
             <Skeleton className="h-9 w-56" />
             <Skeleton className="mt-2 h-4 w-72" />
           </>
         )}
-        <div className="relative mt-4 w-full max-w-md">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search resources or students…"
-            className="h-9 pl-9 pr-9"
-            aria-label="Search resources or students"
-          />
-          {hasQuery ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 p-0 text-muted-foreground"
-              onClick={() => setSearchQuery("")}
-              aria-label="Clear search"
-            >
-              <X className="h-3.5 w-3.5" />
-            </Button>
-          ) : null}
-        </div>
+        <Link
+          href="/ai-hub"
+          className="inline-flex h-9 items-center gap-2 rounded-xl bg-primary px-4 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+        >
+          <WandSparkles className="h-4 w-4" />
+          Open in Hub
+        </Link>
+        <p className="text-xs text-muted-foreground">
+          Resources and students now live in the Hub class panel.
+        </p>
       </div>
 
       <ClassEvaluationsSection classId={classId} />
-
-      <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
-        <ClassResourcesSection
-          classId={classId}
-          scrollable
-          searchQuery={searchQuery}
-          openResourceId={openResourceId}
-          onOpenResourceConsumed={clearDeepLinkParams}
-        />
-
-        <Card className="flex min-h-0 flex-col lg:max-h-[min(70vh,40rem)]">
-          <CardHeader className="flex shrink-0 flex-row flex-wrap items-center justify-between gap-2">
-            <CardTitle className="text-lg">Student roster</CardTitle>
-            <div className="flex flex-wrap items-center gap-2">
-              <AddStudentDialog classId={classId} />
-              <CsvImportDialog classId={classId} />
-            </div>
-          </CardHeader>
-          <CardContent className="min-h-0 flex-1 overflow-y-auto">
-            {studentsLoading ? (
-              <div className="space-y-2" aria-busy="true" aria-label="Loading students">
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <Skeleton key={index} className="h-10 w-full rounded-lg" />
-                ))}
-              </div>
-            ) : (
-              <StudentRosterTable
-                classId={classId}
-                students={filteredStudents}
-                emptyMessage={
-                  hasQuery
-                    ? "No matching students."
-                    : "No students yet. Use the buttons above to add one or import a CSV."
-                }
-              />
-            )}
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }

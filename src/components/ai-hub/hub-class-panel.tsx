@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, PanelRight, Search, X } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { AddStudentDialog } from "@/components/classes/add-student-dialog";
 import { ClassResourcesSection } from "@/components/classes/class-resources-section";
+import { ClassMetaReveal } from "@/components/classes/class-meta-reveal";
 import { ClassSelector } from "@/components/classes/class-selector";
 import { CsvImportDialog } from "@/components/classes/csv-import-dialog";
 import { StudentRosterTable } from "@/components/classes/student-roster-table";
@@ -12,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { filterStudentsByQuery } from "@/lib/classes/filter-class-lists";
 import { useStudents } from "@/lib/hooks/use-classes";
+import { useActiveClassStore } from "@/lib/store/active-class";
 import { cn } from "@/lib/utils";
 
 const CLASS_PANEL_COLLAPSED_KEY = "ai-hub-class-panel-collapsed";
@@ -51,6 +53,7 @@ export function HubClassPanel({
   className,
   sheetMode = false,
 }: HubClassPanelProps) {
+  const activeClass = useActiveClassStore((state) => state.activeClass);
   const { data: students, isLoading: studentsLoading } = useStudents(classId);
   const filteredStudents = useMemo(
     () => filterStudentsByQuery(students ?? [], searchQuery),
@@ -105,8 +108,17 @@ export function HubClassPanel({
       )}
       aria-label="Class panel"
     >
-      <div className="flex shrink-0 items-center justify-between gap-2 px-3 py-3">
-        <ClassSelector />
+      <div className="flex shrink-0 items-start justify-between gap-2 px-3 py-3">
+        <div className="flex min-w-0 flex-col items-start gap-1.5">
+          <ClassSelector />
+          {activeClass ? (
+            <ClassMetaReveal
+              cls={activeClass}
+              className="items-start gap-0.5"
+              nameClassName="text-sm"
+            />
+          ) : null}
+        </div>
         <Button
           type="button"
           variant="secondary"
