@@ -140,6 +140,17 @@ describe("HubClassPanel", () => {
     expect(onTabChange).toHaveBeenCalledWith("students");
   });
 
+  it("moves between tabs with the arrow keys", async () => {
+    const user = userEvent.setup();
+    const onTabChange = vi.fn();
+    renderPanel({ onTabChange });
+
+    screen.getByRole("tab", { name: "Resources" }).focus();
+    await user.keyboard("{ArrowRight}");
+
+    expect(onTabChange).toHaveBeenCalledWith("students");
+  });
+
   it("renders the roster and its import entry points on the students tab", () => {
     renderPanel({ activeTab: "students" });
 
