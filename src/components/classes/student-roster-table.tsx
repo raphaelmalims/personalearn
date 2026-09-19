@@ -12,7 +12,6 @@ import {
 } from "@/lib/hooks/use-evaluation";
 import { useEvalScriptRealtime } from "@/lib/hooks/use-eval-script-realtime";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -33,7 +32,7 @@ type StudentRosterTableProps = {
   classId: string;
   students: Student[];
   emptyMessage?: string;
-  /** Narrow container (Hub class panel): always use the stacked card list. */
+  /** Narrow container (Hub class panel): conversation-row density, no card chrome. */
   compact?: boolean;
 };
 
@@ -218,19 +217,19 @@ export function StudentRosterTable({
         </Table>
       </div>
 
-      <div className={cn("space-y-2", !compact && "md:hidden")}>
+      <ul className={cn("space-y-1", !compact && "md:hidden")}>
         {students.map((student) => (
-          <Card key={student.id}>
-            <CardContent className="flex items-center justify-between p-4">
+          <li key={student.id}>
+            <div className="group relative rounded-xl transition-colors hover:bg-muted/80">
               <button
                 type="button"
-                className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                className="flex w-full min-w-0 items-center gap-2 py-2 pr-8 pl-2.5 text-left"
                 onClick={() => setSelectedStudent(student)}
               >
                 {renderDot(student)}
-                <span className="min-w-0">
-                  <p className="font-medium">{student.full_name}</p>
-                  <p className="text-xs text-muted-foreground">
+                <span className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{student.full_name}</p>
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">
                     {student.admission_number ?? "No admission no."}
                     {student.gender ? ` · ${student.gender}` : ""}
                   </p>
@@ -240,17 +239,17 @@ export function StudentRosterTable({
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                className="absolute top-1/2 right-0.5 h-7 w-7 -translate-y-1/2 p-0 text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 focus-visible:opacity-100"
                 disabled={deleteStudent.isPending}
                 onClick={() => deleteStudent.mutate(student.id)}
                 aria-label={`Remove ${student.full_name}`}
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </li>
         ))}
-      </div>
+      </ul>
 
       <StudentEvalProfileDialog
         classId={classId}
