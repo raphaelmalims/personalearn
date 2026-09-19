@@ -35,8 +35,8 @@ export default function ClassResourcePage({
       <div className="print:hidden">
         <Breadcrumbs
           items={[
-            { label: "Classes", href: "/classes" },
-            { label: classLabel, href: `/classes/${classId}` },
+            { label: "AI Hub", href: "/ai-hub" },
+            { label: classLabel, href: "/ai-hub" },
             { label: resource?.title ?? "Resource" },
           ]}
         />
@@ -53,15 +53,15 @@ export default function ClassResourcePage({
       ) : error ? (
         <p className="text-sm text-destructive">
           {error instanceof Error ? error.message : "Failed to load resource"}{" "}
-          <Link href={`/classes/${classId}`} className="text-primary hover:underline">
-            Back to class
+          <Link href="/ai-hub" className="text-primary hover:underline">
+            Back to Hub
           </Link>
         </p>
       ) : !resource || classMismatch ? (
         <p className="text-sm text-muted-foreground">
           Resource not found.{" "}
-          <Link href={`/classes/${classId}`} className="text-primary hover:underline">
-            Back to class
+          <Link href="/ai-hub" className="text-primary hover:underline">
+            Back to Hub
           </Link>
         </p>
       ) : (

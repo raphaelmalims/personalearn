@@ -20,15 +20,15 @@ const steps = [
   },
   {
     title: "Active class",
-    body: "Everything is scoped to your active class. Switch classes from the pill in the header.",
+    body: "Everything is scoped to your active class. Switch classes from the pill at the top of the class panel.",
   },
   {
     title: "Manage students",
-    body: "Add students manually or import a CSV from the Classes page.",
+    body: "Add students manually or import a CSV from the Students tab of the class panel.",
   },
   {
     title: "AI Hub",
-    body: "Upload a .txt scheme on your class page, then ask the co-pilot in AI Hub.",
+    body: "Upload a .txt scheme from the Resources tab, then ask the co-pilot right here.",
   },
 ];
 

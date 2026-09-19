@@ -120,15 +120,15 @@ export function RecentActivityLists({
           ) : recentResources.length === 0 ? (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                No resources yet. Upload a scheme, notes, or assignment on the
-                class page.
+                No resources yet. Upload a scheme, notes, or assignment in the
+                Hub class panel.
               </p>
               {classId ? (
                 <Link
-                  href={`/classes/${classId}`}
+                  href="/ai-hub"
                   className="inline-flex h-9 items-center rounded-xl bg-primary px-4 text-xs font-medium text-primary-foreground hover:bg-primary/90"
                 >
-                  Open class
+                  Open Hub
                 </Link>
               ) : null}
             </div>

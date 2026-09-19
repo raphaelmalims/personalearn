@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Menu, MoreHorizontal, School, WandSparkles } from "lucide-react";
+import { Menu, MoreHorizontal, WandSparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { BrandMark } from "@/components/layout/brand-mark";
@@ -12,15 +12,10 @@ import { DropdownMenu } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const navItems = [
-  { href: "/dashboard", label: "Home", icon: Home },
   { href: "/ai-hub", label: "AI Hub", icon: WandSparkles },
-  { href: "/classes", label: "Classes", icon: School },
 ];
 
 function isActivePath(pathname: string, href: string) {
-  if (href === "/dashboard") {
-    return pathname === "/dashboard" || pathname === "/";
-  }
   return pathname.startsWith(href);
 }
 
@@ -49,7 +44,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Desktop left rail — fixed width; only the center nav cube expands */}
       <aside className="sticky top-0 z-40 hidden h-screen w-[4.5rem] shrink-0 flex-col items-center py-3 md:flex print:hidden">
         <Link
-          href="/dashboard"
+          href="/ai-hub"
           title="PersonaLearn"
           className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary"
         >
@@ -140,7 +135,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {!hideMobileTopHeader ? (
           <header className="sticky top-0 z-30 flex items-center justify-between gap-2 bg-background/80 px-4 py-3 backdrop-blur-xl md:hidden print:hidden">
             <Link
-              href="/dashboard"
+              href="/ai-hub"
               className="inline-flex items-center gap-2 font-display text-sm font-semibold"
             >
               <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">

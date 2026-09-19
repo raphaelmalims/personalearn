@@ -99,7 +99,7 @@ export default async function HomePage() {
               href={ctas.secondaryHref}
               className={cn(buttonVariants({ variant: "hero", size: "lg" }))}
             >
-              Open dashboard
+              Open AI Hub
             </Link>
           </div>
 

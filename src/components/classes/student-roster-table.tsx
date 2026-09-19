@@ -12,7 +12,6 @@ import {
 } from "@/lib/hooks/use-evaluation";
 import { useEvalScriptRealtime } from "@/lib/hooks/use-eval-script-realtime";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -27,11 +26,14 @@ import {
 } from "@/components/classes/eval-progress-dot";
 import { StudentEvalProfileDialog } from "@/components/classes/student-eval-profile-dialog";
 import { StartEvaluationDialog } from "@/components/classes/start-evaluation-dialog";
+import { cn } from "@/lib/utils";
 
 type StudentRosterTableProps = {
   classId: string;
   students: Student[];
   emptyMessage?: string;
+  /** Narrow container (Hub class panel): conversation-row density, no card chrome. */
+  compact?: boolean;
 };
 
 type N1EvalTarget = {
@@ -64,6 +66,7 @@ export function StudentRosterTable({
   classId,
   students,
   emptyMessage = "No students yet. Use the buttons above to add one or import a CSV.",
+  compact = false,
 }: StudentRosterTableProps) {
   const router = useRouter();
   const deleteStudent = useDeleteStudent(classId);
@@ -157,7 +160,7 @@ export function StudentRosterTable({
 
   return (
     <>
-      <div className="hidden md:block">
+      <div className={compact ? "hidden" : "hidden md:block"}>
         <Table containerClassName="overflow-visible">
           <TableHeader>
             <TableRow>
@@ -214,39 +217,37 @@ export function StudentRosterTable({
         </Table>
       </div>
 
-      <div className="space-y-2 md:hidden">
+      <ul className={cn("space-y-1", !compact && "md:hidden")}>
         {students.map((student) => (
-          <Card key={student.id}>
-            <CardContent className="flex items-center justify-between p-4">
+          <li key={student.id}>
+            <div className="group relative rounded-xl transition-colors hover:bg-muted/80">
               <button
                 type="button"
-                className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                className="flex w-full min-w-0 items-center gap-1.5 px-2.5 py-1 text-left"
                 onClick={() => setSelectedStudent(student)}
               >
                 {renderDot(student)}
-                <span className="min-w-0">
-                  <p className="font-medium">{student.full_name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {student.admission_number ?? "No admission no."}
-                    {student.gender ? ` · ${student.gender}` : ""}
-                  </p>
-                </span>
+                <p className="min-w-0 flex-1 truncate text-sm font-medium">
+                  {student.admission_number
+                    ? `${student.full_name} · ${student.admission_number}`
+                    : student.full_name}
+                </p>
               </button>
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                className="absolute top-1/2 right-0.5 h-6 w-6 -translate-y-1/2 p-0 text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 focus-visible:opacity-100"
                 disabled={deleteStudent.isPending}
                 onClick={() => deleteStudent.mutate(student.id)}
                 aria-label={`Remove ${student.full_name}`}
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </li>
         ))}
-      </div>
+      </ul>
 
       <StudentEvalProfileDialog
         classId={classId}

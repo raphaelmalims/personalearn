@@ -67,8 +67,8 @@ export default function ScriptReviewPage({ params }: ReviewPageProps) {
         <p className="text-sm text-destructive">
           {error instanceof Error ? error.message : "Review not available"}
         </p>
-        <Link href={`/classes/${classId}`} className="text-sm underline">
-          Back to class
+        <Link href="/ai-hub" className="text-sm underline">
+          Back to Hub
         </Link>
       </div>
     );
@@ -83,8 +83,8 @@ export default function ScriptReviewPage({ params }: ReviewPageProps) {
     <div className="flex min-h-0 flex-col gap-3 p-4 lg:h-[calc(100dvh-1rem)] lg:overflow-hidden">
       <Breadcrumbs
         items={[
-          { label: "Classes", href: "/classes" },
-          { label: "Class", href: `/classes/${classId}` },
+          { label: "AI Hub", href: "/ai-hub" },
+          { label: "Class", href: "/ai-hub" },
           {
             label: assessmentTitle,
             href: `/classes/${classId}/evaluations/${data.batchId}`,

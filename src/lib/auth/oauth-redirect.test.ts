@@ -5,12 +5,18 @@ describe("buildOAuthCallbackUrl", () => {
   it("builds callback URL with encoded next path", () => {
     expect(
       buildOAuthCallbackUrl(
-        "/dashboard",
+        "/ai-hub",
         "https://personalearn-70oq4c09d-raphael-malims-projects.vercel.app"
       )
     ).toBe(
-      "https://personalearn-70oq4c09d-raphael-malims-projects.vercel.app/auth/callback?next=%2Fdashboard"
+      "https://personalearn-70oq4c09d-raphael-malims-projects.vercel.app/auth/callback?next=%2Fai-hub"
     );
+  });
+
+  it("falls back to the AI Hub when the redirect path is not absolute", () => {
+    expect(
+      buildOAuthCallbackUrl("https://evil.example.com", "http://localhost:3000")
+    ).toBe("http://localhost:3000/auth/callback?next=%2Fai-hub");
   });
 
   it("strips trailing slash from origin", () => {

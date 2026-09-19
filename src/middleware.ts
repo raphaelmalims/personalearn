@@ -29,7 +29,7 @@ function forwardOAuthCode(request: NextRequest) {
   const redirectUrl = request.nextUrl.clone();
   redirectUrl.pathname = "/auth/callback";
   if (!redirectUrl.searchParams.has("next")) {
-    redirectUrl.searchParams.set("next", "/dashboard");
+    redirectUrl.searchParams.set("next", getPostLoginPath(true));
   }
   return NextResponse.redirect(redirectUrl);
 }
@@ -115,13 +115,19 @@ export async function middleware(request: NextRequest) {
 
     if (pathname === onboardingPath && hasClasses) {
       const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = "/dashboard";
+      redirectUrl.pathname = getPostLoginPath(hasClasses);
       return NextResponse.redirect(redirectUrl);
     }
 
     if (isProtectedRoute(pathname) && !hasClasses) {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = onboardingPath;
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    if (hasClasses && matchesPrefix(pathname, "/dashboard")) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = getPostLoginPath(true);
       return NextResponse.redirect(redirectUrl);
     }
 
