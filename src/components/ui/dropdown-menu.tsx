@@ -129,7 +129,7 @@ export function DropdownMenuItem({
     <button
       type="button"
       className={cn(
-        "flex w-full items-center rounded-lg px-3 py-2 text-left text-sm hover:bg-muted",
+        "flex w-full min-w-0 items-center rounded-lg px-3 py-2 text-left text-sm hover:bg-muted",
         className
       )}
       onClick={() => {

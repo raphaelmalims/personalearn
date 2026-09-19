@@ -110,7 +110,7 @@ export function HubClassPanel({
     >
       <div className="flex shrink-0 items-start justify-between gap-2 px-3 py-3">
         <div className="flex min-w-0 flex-col items-start gap-1.5">
-          <ClassSelector />
+          <ClassSelector fill />
           {activeClass ? (
             <ClassMetaReveal
               cls={activeClass}
@@ -133,29 +133,59 @@ export function HubClassPanel({
       </div>
 
       <div
-        className="flex shrink-0 gap-1 px-3 pb-2"
+        className="relative mx-3 mb-2 flex shrink-0 rounded-xl bg-muted/60 p-0.5"
         role="tablist"
         aria-label="Class panel sections"
+        onKeyDown={(event) => {
+          if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+          event.preventDefault();
+          const current = HUB_CLASS_PANEL_TABS.findIndex(
+            (tab) => tab.id === activeTab
+          );
+          const delta = event.key === "ArrowRight" ? 1 : -1;
+          const next =
+            HUB_CLASS_PANEL_TABS[
+              (current + delta + HUB_CLASS_PANEL_TABS.length) %
+                HUB_CLASS_PANEL_TABS.length
+            ];
+          onTabChange(next.id);
+          document.getElementById(`hub-class-panel-tab-${next.id}`)?.focus();
+        }}
       >
-        {HUB_CLASS_PANEL_TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            role="tab"
-            id={`hub-class-panel-tab-${tab.id}`}
-            aria-selected={activeTab === tab.id}
-            aria-controls={`hub-class-panel-section-${tab.id}`}
-            onClick={() => onTabChange(tab.id)}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0.5"
+        >
+          <span
             className={cn(
-              "flex-1 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors",
-              activeTab === tab.id
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              "block h-full w-1/2 rounded-[10px] bg-primary/10 transition-transform duration-200 ease-out motion-reduce:transition-none",
+              activeTab === "students" && "translate-x-full"
             )}
-          >
-            {tab.label}
-          </button>
-        ))}
+          />
+        </span>
+        {HUB_CLASS_PANEL_TABS.map((tab) => {
+          const selected = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              id={`hub-class-panel-tab-${tab.id}`}
+              aria-selected={selected}
+              aria-controls={`hub-class-panel-section-${tab.id}`}
+              tabIndex={selected ? 0 : -1}
+              onClick={() => onTabChange(tab.id)}
+              className={cn(
+                "relative z-10 flex-1 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors",
+                selected
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
       <div className="shrink-0 px-3 pb-2">

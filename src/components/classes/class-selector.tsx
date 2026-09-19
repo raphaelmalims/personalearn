@@ -10,7 +10,15 @@ import { DropdownMenu, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { ClassCreateDialog } from "@/components/classes/class-create-dialog";
 import { cn } from "@/lib/utils";
 
-export function ClassSelector() {
+type ClassSelectorProps = {
+  /**
+   * Stretch trigger and menu to the parent width (Hub class panel header)
+   * so the list cannot grow into the chat.
+   */
+  fill?: boolean;
+};
+
+export function ClassSelector({ fill = false }: ClassSelectorProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { data: classes, isLoading } = useClasses();
@@ -56,15 +64,20 @@ export function ClassSelector() {
   return (
     <>
       <DropdownMenu
-        align="end"
+        align="start"
+        rootClassName={cn("min-w-0", fill && "w-full")}
+        contentClassName="w-full min-w-0 max-w-full"
         trigger={
           <button
             type="button"
             className={cn(
-              "flex max-w-[12rem] items-center gap-1 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted sm:max-w-[16rem]"
+              "flex items-center gap-1 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted",
+              fill
+                ? "w-full max-w-full"
+                : "max-w-[12rem] sm:max-w-[16rem]"
             )}
           >
-            <span className="truncate">{label}</span>
+            <span className="min-w-0 truncate">{label}</span>
             <ChevronDown className="h-3 w-3 shrink-0" />
           </button>
         }
@@ -73,9 +86,12 @@ export function ClassSelector() {
           <DropdownMenuItem
             key={cls.id}
             onClick={() => selectClass(cls)}
-            className={activeClass?.id === cls.id ? "bg-primary/10 text-primary" : undefined}
+            className={cn(
+              "min-w-0",
+              activeClass?.id === cls.id ? "bg-primary/10 text-primary" : undefined
+            )}
           >
-            <span className="truncate font-medium">{shortLabel(cls)}</span>
+            <span className="min-w-0 truncate font-medium">{shortLabel(cls)}</span>
           </DropdownMenuItem>
         ))}
         {!classes?.length && !isLoading ? (
