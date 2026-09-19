@@ -148,14 +148,28 @@ describe("middleware", () => {
     );
   });
 
-  it("allows authenticated users with classes to reach dashboard", async () => {
+  it("redirects authenticated users with classes from dashboard to the AI Hub", async () => {
     mockAuthenticatedUser();
     mockClassCount(1);
 
     const response = await middleware(createRequest("/dashboard"));
 
-    expect(response.status).toBe(200);
-    expect(response.headers.get("location")).toBeNull();
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "http://localhost:3000/ai-hub"
+    );
+  });
+
+  it("redirects nested dashboard paths to the AI Hub", async () => {
+    mockAuthenticatedUser();
+    mockClassCount(1);
+
+    const response = await middleware(createRequest("/dashboard/anything"));
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "http://localhost:3000/ai-hub"
+    );
   });
 
   it("allows authenticated users with classes to reach the AI Hub", async () => {

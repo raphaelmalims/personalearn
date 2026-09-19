@@ -22,7 +22,7 @@ export function getLandingCtas(
       headerHref: "/login",
       headerLabel: "Sign in",
       primaryHref: "/login",
-      secondaryHref: "/dashboard",
+      secondaryHref: "/ai-hub",
       footerHref: "/login",
     };
   }

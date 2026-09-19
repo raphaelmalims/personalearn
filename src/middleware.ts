@@ -125,6 +125,12 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
 
+    if (hasClasses && matchesPrefix(pathname, "/dashboard")) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = getPostLoginPath(true);
+      return NextResponse.redirect(redirectUrl);
+    }
+
     return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Middleware failed";

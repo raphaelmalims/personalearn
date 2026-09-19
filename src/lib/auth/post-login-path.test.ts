@@ -12,18 +12,18 @@ describe("getPostLoginPath", () => {
 });
 
 describe("getLandingCtas", () => {
-  it("keeps public login and dashboard links when signed out", () => {
+  it("keeps public login links and points the secondary CTA at the Hub when signed out", () => {
     expect(getLandingCtas(false, false)).toEqual({
       signedIn: false,
       headerHref: "/login",
       headerLabel: "Sign in",
       primaryHref: "/login",
-      secondaryHref: "/dashboard",
+      secondaryHref: "/ai-hub",
       footerHref: "/login",
     });
   });
 
-  it("sends signed-in teachers with no class to onboarding, including Open dashboard", () => {
+  it("sends signed-in teachers with no class to onboarding", () => {
     expect(getLandingCtas(true, false)).toEqual({
       signedIn: true,
       headerHref: "/onboarding",
