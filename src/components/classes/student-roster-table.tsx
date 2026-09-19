@@ -223,17 +223,15 @@ export function StudentRosterTable({
             <div className="group relative rounded-xl transition-colors hover:bg-muted/80">
               <button
                 type="button"
-                className="flex w-full min-w-0 items-center gap-2 py-2 pr-8 pl-2.5 text-left"
+                className="flex w-full min-w-0 items-center gap-2 px-2.5 py-1.5 pr-7 text-left"
                 onClick={() => setSelectedStudent(student)}
               >
                 {renderDot(student)}
-                <span className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{student.full_name}</p>
-                  <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                    {student.admission_number ?? "No admission no."}
-                    {student.gender ? ` · ${student.gender}` : ""}
-                  </p>
-                </span>
+                <p className="min-w-0 flex-1 truncate text-sm font-medium">
+                  {student.admission_number
+                    ? `${student.full_name} · ${student.admission_number}`
+                    : student.full_name}
+                </p>
               </button>
               <Button
                 type="button"
