@@ -5,8 +5,6 @@ import { useEffect, useMemo } from "react";
 import { ConversationList } from "@/components/ai-hub/conversation-sidebar";
 import { AddStudentDialog } from "@/components/classes/add-student-dialog";
 import { ClassResourcesSection } from "@/components/classes/class-resources-section";
-import { ClassMetaReveal } from "@/components/classes/class-meta-reveal";
-import { ClassSelector } from "@/components/classes/class-selector";
 import { CsvImportDialog } from "@/components/classes/csv-import-dialog";
 import { StudentRosterTable } from "@/components/classes/student-roster-table";
 import { Button } from "@/components/ui/button";
@@ -15,7 +13,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { ConversationRow } from "@/lib/ai-hub/conversations";
 import { filterStudentsByQuery } from "@/lib/classes/filter-class-lists";
 import { useStudents } from "@/lib/hooks/use-classes";
-import { useActiveClassStore } from "@/lib/store/active-class";
 import { cn } from "@/lib/utils";
 
 const CLASS_PANEL_COLLAPSED_KEY = "ai-hub-class-panel-collapsed";
@@ -53,8 +50,7 @@ type HubClassPanelProps = {
 };
 
 /**
- * IDE-style class panel for the Hub landing (PSL-114): class switching plus
- * the Resources / Students surfaces that used to live on the class page.
+ * Combined Hub side panel: chats, resources, and students.
  */
 export function HubClassPanel({
   classId,
@@ -74,7 +70,6 @@ export function HubClassPanel({
   className,
   sheetMode = false,
 }: HubClassPanelProps) {
-  const activeClass = useActiveClassStore((state) => state.activeClass);
   const { data: students, isLoading: studentsLoading } = useStudents(classId);
   const filteredStudents = useMemo(
     () => filterStudentsByQuery(students ?? [], searchQuery),
@@ -137,17 +132,7 @@ export function HubClassPanel({
       )}
       aria-label="Class panel"
     >
-      <div className="flex shrink-0 items-start justify-between gap-2 px-3 py-3">
-        <div className="flex min-w-0 flex-col items-start gap-1.5">
-          <ClassSelector fill />
-          {activeClass ? (
-            <ClassMetaReveal
-              cls={activeClass}
-              className="items-start gap-0.5"
-              nameClassName="text-sm"
-            />
-          ) : null}
-        </div>
+      <div className="flex shrink-0 justify-end px-2 pt-2">
         <Button
           type="button"
           variant="secondary"

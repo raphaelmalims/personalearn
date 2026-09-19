@@ -205,12 +205,12 @@ describe("HubClassPanel", () => {
     expect(onSearchQueryChange).toHaveBeenCalledWith("");
   });
 
-  it("carries the class switcher and hover metadata in its header", () => {
+  it("keeps the collapse control without a class switcher in the header", () => {
     renderPanel();
 
-    expect(screen.getByTestId("class-selector")).toBeInTheDocument();
+    expect(screen.queryByTestId("class-selector")).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Grade 5 Maths" })
-    ).toHaveAttribute("aria-expanded", "false");
+      screen.getByRole("button", { name: "Collapse class panel" })
+    ).toBeInTheDocument();
   });
 });
