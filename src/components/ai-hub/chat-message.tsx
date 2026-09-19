@@ -17,6 +17,7 @@ import {
 } from "@/lib/resources/format";
 import { useActiveClassStore } from "@/lib/store/active-class";
 import { useHubEvalSessionStore } from "@/lib/store/hub-eval-session";
+import { cn } from "@/lib/utils";
 
 type ChatMessageProps = {
   message: UIMessage;
