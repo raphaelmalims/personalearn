@@ -2,6 +2,7 @@
 
 import { ChevronLeft, ChevronRight, PanelRight, Search, X } from "lucide-react";
 import { useEffect, useMemo } from "react";
+import { ConversationList } from "@/components/ai-hub/conversation-sidebar";
 import { AddStudentDialog } from "@/components/classes/add-student-dialog";
 import { ClassResourcesSection } from "@/components/classes/class-resources-section";
 import { ClassMetaReveal } from "@/components/classes/class-meta-reveal";
@@ -11,6 +12,7 @@ import { StudentRosterTable } from "@/components/classes/student-roster-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { ConversationRow } from "@/lib/ai-hub/conversations";
 import { filterStudentsByQuery } from "@/lib/classes/filter-class-lists";
 import { useStudents } from "@/lib/hooks/use-classes";
 import { useActiveClassStore } from "@/lib/store/active-class";
@@ -19,6 +21,8 @@ import { cn } from "@/lib/utils";
 const CLASS_PANEL_COLLAPSED_KEY = "ai-hub-class-panel-collapsed";
 
 export const HUB_CLASS_PANEL_TABS = [
+  { id: "conversations", label: "Chats" },
+  // Visible label stays short so three tabs fit; accessible name is Conversations.
   { id: "resources", label: "Resources" },
   { id: "students", label: "Students" },
 ] as const;
@@ -33,6 +37,13 @@ type HubClassPanelProps = {
   onTabChange: (tab: HubClassPanelTab) => void;
   searchQuery: string;
   onSearchQueryChange: (query: string) => void;
+  conversations?: ConversationRow[];
+  selectedConversationId?: string | null;
+  conversationsLoading?: boolean;
+  deletingConversationId?: string | null;
+  onSelectConversation?: (conversationId: string) => void;
+  onNewConversation?: () => void;
+  onDeleteConversation?: (conversationId: string) => void;
   className?: string;
   /** Full-screen sheet (mobile): collapse control reads as back-to-chat. */
   sheetMode?: boolean;
@@ -50,6 +61,13 @@ export function HubClassPanel({
   onTabChange,
   searchQuery,
   onSearchQueryChange,
+  conversations = [],
+  selectedConversationId = null,
+  conversationsLoading = false,
+  deletingConversationId = null,
+  onSelectConversation,
+  onNewConversation,
+  onDeleteConversation,
   className,
   sheetMode = false,
 }: HubClassPanelProps) {
@@ -98,7 +116,15 @@ export function HubClassPanel({
 
   const hasQuery = searchQuery.trim().length > 0;
   const searchLabel =
-    activeTab === "resources" ? "Search resources…" : "Search students…";
+    activeTab === "conversations"
+      ? "Search conversations…"
+      : activeTab === "resources"
+        ? "Search resources…"
+        : "Search students…";
+  const activeTabIndex = Math.max(
+    0,
+    HUB_CLASS_PANEL_TABS.findIndex((tab) => tab.id === activeTab)
+  );
 
   return (
     <aside
@@ -135,7 +161,7 @@ export function HubClassPanel({
       <div
         className="relative mx-3 mb-2 flex shrink-0 rounded-xl bg-muted/60 p-0.5"
         role="tablist"
-        aria-label="Class panel sections"
+        aria-label="Hub panel sections"
         onKeyDown={(event) => {
           if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
           event.preventDefault();
@@ -157,10 +183,8 @@ export function HubClassPanel({
           className="pointer-events-none absolute inset-0.5"
         >
           <span
-            className={cn(
-              "block h-full w-1/2 rounded-[10px] bg-primary/10 transition-transform duration-200 ease-out motion-reduce:transition-none",
-              activeTab === "students" && "translate-x-full"
-            )}
+            className="block h-full w-1/3 rounded-[10px] bg-primary/10 transition-transform duration-200 ease-out motion-reduce:transition-none"
+            style={{ transform: `translateX(${activeTabIndex * 100}%)` }}
           />
         </span>
         {HUB_CLASS_PANEL_TABS.map((tab) => {
@@ -171,12 +195,13 @@ export function HubClassPanel({
               type="button"
               role="tab"
               id={`hub-class-panel-tab-${tab.id}`}
+              aria-label={tab.id === "conversations" ? "Conversations" : undefined}
               aria-selected={selected}
               aria-controls={`hub-class-panel-section-${tab.id}`}
               tabIndex={selected ? 0 : -1}
               onClick={() => onTabChange(tab.id)}
               className={cn(
-                "relative z-10 flex-1 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors",
+                "relative z-10 min-w-0 flex-1 rounded-xl px-1.5 py-1.5 text-[11px] font-medium transition-colors sm:text-xs",
                 selected
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
@@ -220,7 +245,21 @@ export function HubClassPanel({
         aria-labelledby={`hub-class-panel-tab-${activeTab}`}
         className="min-h-0 flex-1 overflow-y-auto px-3 pb-3"
       >
-        {activeTab === "resources" ? (
+        {activeTab === "conversations" ? (
+          <ConversationList
+            conversations={conversations}
+            selectedConversationId={selectedConversationId}
+            isLoading={conversationsLoading}
+            deletingConversationId={deletingConversationId}
+            searchQuery={searchQuery}
+            onSelect={(conversationId) => {
+              onSelectConversation?.(conversationId);
+              if (sheetMode) onCollapsedChange(true);
+            }}
+            onNewConversation={() => onNewConversation?.()}
+            onDelete={(conversationId) => onDeleteConversation?.(conversationId)}
+          />
+        ) : activeTab === "resources" ? (
           <ClassResourcesSection
             classId={classId}
             searchQuery={searchQuery}

@@ -119,6 +119,10 @@ describe("HubClassPanel", () => {
   it("marks the active tab and shows the resources surface", () => {
     renderPanel();
 
+    expect(screen.getByRole("tab", { name: "Conversations" })).toHaveAttribute(
+      "aria-selected",
+      "false"
+    );
     expect(screen.getByRole("tab", { name: "Resources" })).toHaveAttribute(
       "aria-selected",
       "true"
@@ -149,6 +153,27 @@ describe("HubClassPanel", () => {
     await user.keyboard("{ArrowRight}");
 
     expect(onTabChange).toHaveBeenCalledWith("students");
+  });
+
+  it("renders conversation threads on the chats tab", () => {
+    renderPanel({
+      activeTab: "conversations",
+      conversations: [
+        {
+          id: "c1",
+          title: "Fractions recap",
+          class_id: "class-1",
+          teacher_id: "teacher-1",
+          updated_at: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+        },
+      ],
+    });
+
+    expect(screen.getByRole("button", { name: "New conversation" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Fractions recap less/ })
+    ).toBeInTheDocument();
   });
 
   it("renders the roster and its import entry points on the students tab", () => {

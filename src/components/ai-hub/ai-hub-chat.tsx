@@ -6,7 +6,6 @@ import { DefaultChatTransport, type UIMessage } from "ai";
 import {
   ArrowUp,
   ChevronDown,
-  MessagesSquare,
   PanelRight,
   Paperclip,
   Plus,
@@ -18,11 +17,6 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ChatMessage } from "@/components/ai-hub/chat-message";
-import {
-  ConversationSidebar,
-  readSidebarCollapsedPreference,
-  writeSidebarCollapsedPreference,
-} from "@/components/ai-hub/conversation-sidebar";
 import {
   HubClassPanel,
   readClassPanelCollapsedPreference,
@@ -103,7 +97,6 @@ export function AiHubChat() {
   const [pendingAttachments, setPendingAttachments] = useState<
     PendingAttachment[]
   >([]);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [classPanelCollapsed, setClassPanelCollapsed] = useState(true);
   const [classPanelTab, setClassPanelTab] =
     useState<HubClassPanelTab>("resources");
@@ -121,26 +114,6 @@ export function AiHubChat() {
 
   setSelectedConversationIdRef.current = setSelectedConversationId;
   draftRef.current = draft;
-
-  useEffect(() => {
-    const stored = readSidebarCollapsedPreference();
-    if (stored === null) {
-      // No preference yet: collapsed on mobile, expanded on desktop.
-      setSidebarCollapsed(window.matchMedia("(max-width: 767px)").matches);
-      return;
-    }
-    setSidebarCollapsed(stored);
-  }, []);
-
-  function handleSidebarCollapsedChange(collapsed: boolean) {
-    setSidebarCollapsed(collapsed);
-    writeSidebarCollapsedPreference(collapsed);
-  }
-
-  function collapseSidebarOnMobile() {
-    if (!isMobile || sidebarCollapsed) return;
-    handleSidebarCollapsedChange(true);
-  }
 
   useEffect(() => {
     const stored = readClassPanelCollapsedPreference();
@@ -342,6 +315,7 @@ export function AiHubChat() {
     deepLinkHandledRef.current = true;
 
     void (async () => {
+      setClassPanelTab("conversations");
       await handleSelectConversation(pendingConversationId);
       if (typeof window === "undefined") return;
       const url = new URL(window.location.href);
@@ -463,7 +437,10 @@ export function AiHubChat() {
     clearError();
     setActionError(null);
     setEditingMessageId(null);
-    collapseSidebarOnMobile();
+    setClassPanelTab("conversations");
+    if (isMobile) {
+      handleClassPanelCollapsedChange(true);
+    }
   }
 
   function handleEditMessage(messageId: string, text: string) {
@@ -678,71 +655,38 @@ export function AiHubChat() {
             ? "flex flex-col"
             : cn(
                 "grid gap-3 sm:gap-4",
-                sidebarCollapsed
-                  ? classPanelCollapsed
-                    ? "grid-cols-[auto_minmax(0,1fr)_auto]"
-                    : "grid-cols-[auto_minmax(0,1fr)_minmax(14rem,20rem)]"
-                  : classPanelCollapsed
-                    ? "grid-cols-[minmax(11rem,17rem)_minmax(0,1fr)_auto]"
-                    : "grid-cols-[minmax(11rem,17rem)_minmax(0,1fr)_minmax(14rem,20rem)]"
+                classPanelCollapsed
+                  ? "grid-cols-[minmax(0,1fr)_auto]"
+                  : "grid-cols-[minmax(0,1fr)_minmax(14rem,20rem)]"
               )
         )}
       >
-        {!isMobile ? (
-          <ConversationSidebar
-            conversations={conversations}
-            selectedConversationId={selectedConversationId}
-            isLoading={conversationsLoading}
-            deletingConversationId={deletingConversationId}
-            collapsed={sidebarCollapsed}
-            onCollapsedChange={handleSidebarCollapsedChange}
-            onSelect={(conversationId) => {
-              void handleSelectConversation(conversationId);
-            }}
-            onNewConversation={handleNewConversation}
-            onDelete={setPendingDeleteId}
-          />
-        ) : null}
-
         <section className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background">
           {isMobile ? (
-            <>
+            <div className="absolute right-1 top-2 z-10 flex items-center gap-1">
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="absolute left-1 top-2 z-10 h-9 w-9 rounded-full bg-background/80 backdrop-blur-sm"
-                onClick={() => handleSidebarCollapsedChange(false)}
-                title="Conversations"
-                aria-label="Open conversations"
+                className="h-9 w-9 rounded-full bg-background/80 backdrop-blur-sm"
+                onClick={handleNewConversation}
+                title="New conversation"
+                aria-label="New conversation"
               >
-                <MessagesSquare className="h-5 w-5" />
+                <SquarePen className="h-5 w-5" />
               </Button>
-              <div className="absolute right-1 top-2 z-10 flex items-center gap-1">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 rounded-full bg-background/80 backdrop-blur-sm"
-                  onClick={handleNewConversation}
-                  title="New conversation"
-                  aria-label="New conversation"
-                >
-                  <SquarePen className="h-5 w-5" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 rounded-full bg-background/80 backdrop-blur-sm"
-                  onClick={() => handleClassPanelCollapsedChange(false)}
-                  title="Class panel"
-                  aria-label="Open class panel"
-                >
-                  <PanelRight className="h-5 w-5" />
-                </Button>
-              </div>
-            </>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 rounded-full bg-background/80 backdrop-blur-sm"
+                onClick={() => handleClassPanelCollapsedChange(false)}
+                title="Hub panel"
+                aria-label="Open hub panel"
+              >
+                <PanelRight className="h-5 w-5" />
+              </Button>
+            </div>
           ) : null}
 
           <div className="flex min-h-0 flex-1 flex-col">
@@ -976,6 +920,15 @@ export function AiHubChat() {
             onTabChange={setClassPanelTab}
             searchQuery={classPanelSearch}
             onSearchQueryChange={setClassPanelSearch}
+            conversations={conversations}
+            selectedConversationId={selectedConversationId}
+            conversationsLoading={conversationsLoading}
+            deletingConversationId={deletingConversationId}
+            onSelectConversation={(conversationId) => {
+              void handleSelectConversation(conversationId);
+            }}
+            onNewConversation={handleNewConversation}
+            onDeleteConversation={setPendingDeleteId}
           />
         ) : null}
 
@@ -984,7 +937,7 @@ export function AiHubChat() {
             className="absolute inset-0 z-30 flex flex-col bg-background"
             role="dialog"
             aria-modal="true"
-            aria-label="Class panel"
+            aria-label="Hub panel"
           >
             <HubClassPanel
               classId={activeClass.id}
@@ -994,32 +947,15 @@ export function AiHubChat() {
               onTabChange={setClassPanelTab}
               searchQuery={classPanelSearch}
               onSearchQueryChange={setClassPanelSearch}
-              className="h-full w-full rounded-none border-0 bg-background shadow-none backdrop-blur-none"
-              sheetMode
-            />
-          </div>
-        ) : null}
-
-        {isMobile && !sidebarCollapsed ? (
-          <div
-            className="absolute inset-0 z-30 flex flex-col bg-background"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Conversations"
-          >
-            <ConversationSidebar
               conversations={conversations}
               selectedConversationId={selectedConversationId}
-              isLoading={conversationsLoading}
+              conversationsLoading={conversationsLoading}
               deletingConversationId={deletingConversationId}
-              collapsed={false}
-              onCollapsedChange={handleSidebarCollapsedChange}
-              onSelect={(conversationId) => {
+              onSelectConversation={(conversationId) => {
                 void handleSelectConversation(conversationId);
-                collapseSidebarOnMobile();
               }}
               onNewConversation={handleNewConversation}
-              onDelete={setPendingDeleteId}
+              onDeleteConversation={setPendingDeleteId}
               className="h-full w-full rounded-none border-0 bg-background shadow-none backdrop-blur-none"
               sheetMode
             />
