@@ -20,6 +20,9 @@ import { cn } from "@/lib/utils";
 
 const CLASS_PANEL_COLLAPSED_KEY = "ai-hub-class-panel-collapsed";
 
+/** Desktop width of the combined Hub side panel (Chats / Resources / Students). */
+export const HUB_SIDE_PANEL_WIDTH = "18rem";
+
 export const HUB_CLASS_PANEL_TABS = [
   { id: "conversations", label: "Chats" },
   // Visible label stays short so three tabs fit; accessible name is Conversations.
@@ -130,7 +133,7 @@ export function HubClassPanel({
     <aside
       className={cn(
         "flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border/80 bg-card/50 shadow-xs backdrop-blur-sm",
-        className ?? "w-full lg:w-[20rem]"
+        className ?? "w-full lg:w-[18rem]"
       )}
       aria-label="Class panel"
     >
@@ -159,7 +162,7 @@ export function HubClassPanel({
       </div>
 
       <div
-        className="relative mx-3 mb-2 flex shrink-0 rounded-xl bg-muted/60 p-0.5"
+        className="relative mx-3 mb-2 flex shrink-0 gap-0.5 rounded-xl bg-muted/60 p-0.5"
         role="tablist"
         aria-label="Hub panel sections"
         onKeyDown={(event) => {
@@ -201,7 +204,7 @@ export function HubClassPanel({
               tabIndex={selected ? 0 : -1}
               onClick={() => onTabChange(tab.id)}
               className={cn(
-                "relative z-10 min-w-0 flex-1 rounded-xl px-1.5 py-1.5 text-[11px] font-medium transition-colors sm:text-xs",
+                "relative z-10 min-w-0 flex-1 rounded-xl px-2 py-1.5 text-[11px] font-medium transition-colors sm:text-xs",
                 selected
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"

@@ -223,7 +223,7 @@ export function StudentRosterTable({
             <div className="group relative rounded-xl transition-colors hover:bg-muted/80">
               <button
                 type="button"
-                className="flex w-full min-w-0 items-center gap-2 px-2.5 py-1.5 pr-7 text-left"
+                className="flex w-full min-w-0 items-center gap-1.5 px-2.5 py-1 text-left"
                 onClick={() => setSelectedStudent(student)}
               >
                 {renderDot(student)}
@@ -237,7 +237,7 @@ export function StudentRosterTable({
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="absolute top-1/2 right-0.5 h-7 w-7 -translate-y-1/2 p-0 text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 focus-visible:opacity-100"
+                className="absolute top-1/2 right-0.5 h-6 w-6 -translate-y-1/2 p-0 text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 focus-visible:opacity-100"
                 disabled={deleteStudent.isPending}
                 onClick={() => deleteStudent.mutate(student.id)}
                 aria-label={`Remove ${student.full_name}`}

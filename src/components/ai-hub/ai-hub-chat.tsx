@@ -657,7 +657,7 @@ export function AiHubChat() {
                 "grid gap-3 sm:gap-4",
                 classPanelCollapsed
                   ? "grid-cols-[minmax(0,1fr)_auto]"
-                  : "grid-cols-[minmax(0,1fr)_minmax(14rem,20rem)]"
+                  : "grid-cols-[minmax(0,1fr)_minmax(14rem,18rem)]"
               )
         )}
       >
