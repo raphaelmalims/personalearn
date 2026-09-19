@@ -86,7 +86,9 @@ export function ClassResourcesSection({
       emptyMessage={
         hasQuery
           ? "No matching resources."
-          : "No resources yet. Upload a scheme, notes, or assignment to get started."
+          : compact
+            ? "No resources yet."
+            : "No resources yet. Upload a scheme, notes, or assignment to get started."
       }
     />
   );
@@ -100,8 +102,7 @@ export function ClassResourcesSection({
 
   if (compact) {
     return (
-      <section className="space-y-3" aria-label="Class resources">
-        {actions}
+      <section aria-label="Class resources">
         {list}
       </section>
     );
