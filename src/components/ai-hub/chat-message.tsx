@@ -1,7 +1,7 @@
 "use client";
 
 import { isFileUIPart, type UIMessage } from "ai";
-import { FileText, Paperclip, Pencil } from "lucide-react";
+import { FileText, ClipboardCheck, Paperclip, Pencil } from "lucide-react";
 import { MarkdownContent } from "@/components/markdown/markdown-content";
 import {
   getAssistantDisplayBlocks,
@@ -15,7 +15,8 @@ import {
   formatResourceType,
   isResourceType,
 } from "@/lib/resources/format";
-import { cn } from "@/lib/utils";
+import { useActiveClassStore } from "@/lib/store/active-class";
+import { useHubEvalSessionStore } from "@/lib/store/hub-eval-session";
 
 type ChatMessageProps = {
   message: UIMessage;
@@ -37,8 +38,17 @@ export function ChatMessage({
   const drafts = getVisibleDrafts(message);
   const displayBlocks = isUser ? [] : getAssistantDisplayBlocks(message);
   const fileParts = message.parts.filter(isFileUIPart);
+  const evalBlocks = displayBlocks.filter((block) => block.type === "eval_session");
+  const classId = useActiveClassStore((s) => s.activeClass?.id);
+  const openBatch = useHubEvalSessionStore((s) => s.openBatch);
 
-  if (!text && fileParts.length === 0 && drafts.length === 0 && !reasoning) {
+  if (
+    !text &&
+    fileParts.length === 0 &&
+    drafts.length === 0 &&
+    evalBlocks.length === 0 &&
+    !reasoning
+  ) {
     return null;
   }
 
@@ -98,7 +108,9 @@ export function ChatMessage({
                 <ThoughtProcess
                   reasoning={reasoning}
                   isStreaming={isStreaming}
-                  hasResponseContent={Boolean(text) || drafts.length > 0}
+                  hasResponseContent={
+                    Boolean(text) || drafts.length > 0 || evalBlocks.length > 0
+                  }
                 />
               ) : null}
               {displayBlocks.map((block, index) => {
@@ -108,6 +120,41 @@ export function ChatMessage({
                       key={`text-${index}`}
                       content={block.text}
                     />
+                  );
+                }
+
+                if (block.type === "eval_session") {
+                  const title =
+                    block.session.assessmentTitle?.trim() || "Evaluation";
+                  return (
+                    <div
+                      key={`eval-${block.session.batchId}-${index}`}
+                      className="overflow-hidden rounded-xl border border-border/80 bg-muted/30"
+                    >
+                      <div className="flex items-center justify-between gap-2 px-3 py-2">
+                        <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                          <ClipboardCheck className="h-3.5 w-3.5 shrink-0" />
+                          <span className="truncate">
+                            Evaluation · {title}
+                            {block.session.reused ? " · resumed" : ""}
+                          </span>
+                        </div>
+                        {classId ? (
+                          <button
+                            type="button"
+                            className="shrink-0 text-xs font-medium text-foreground underline underline-offset-2"
+                            onClick={() =>
+                              openBatch({
+                                classId,
+                                batchId: block.session.batchId,
+                              })
+                            }
+                          >
+                            Open
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
                   );
                 }
 

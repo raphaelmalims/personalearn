@@ -17,7 +17,7 @@ type StudentEvalProfileDialogProps = {
   student: Student | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onEvaluateAssessment: (assessmentId: string) => void;
+  onEvaluateAssessment: (assessmentId: string, title: string) => void;
   /** Open existing review when status is in_review. */
   onContinueReview?: (input: {
     batchId: string;
@@ -191,7 +191,9 @@ export function StudentEvalProfileDialog({
                       <Button
                         type="button"
                         size="sm"
-                        onClick={() => onEvaluateAssessment(assessment.id)}
+                        onClick={() =>
+                          onEvaluateAssessment(assessment.id, assessment.title)
+                        }
                       >
                         Evaluate / Upload work
                       </Button>
