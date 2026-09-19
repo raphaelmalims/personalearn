@@ -120,6 +120,8 @@ export type EvaluationBatch = {
   marking_scheme_resource_id: string | null;
   /** When set, batch was started for a single student (PSL-48 N=1). */
   scoped_student_id: string | null;
+  /** Hub conversation that owns this session (PSL-121). */
+  conversation_id: string | null;
   mode: EvaluationBatchMode;
   status: EvaluationBatchStatus;
   created_at: string;
