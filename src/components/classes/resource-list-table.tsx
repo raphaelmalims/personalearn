@@ -7,7 +7,6 @@ import type { Resource } from "@/types/database";
 import { useDeleteResource } from "@/lib/hooks/use-resources";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -21,17 +20,21 @@ import {
   formatResourceType,
 } from "@/lib/resources/format";
 import { ResourceDeleteDialog } from "@/components/classes/resource-delete-dialog";
+import { cn } from "@/lib/utils";
 
 type ResourceListTableProps = {
   classId: string;
   resources: Resource[];
   emptyMessage?: string;
+  /** Narrow container (Hub class panel): conversation-row density, no card chrome. */
+  compact?: boolean;
 };
 
 export function ResourceListTable({
   classId,
   resources,
   emptyMessage = "No resources yet. Upload a scheme, notes, or assignment to get started.",
+  compact = false,
 }: ResourceListTableProps) {
   const deleteResource = useDeleteResource(classId);
   const [deleteTarget, setDeleteTarget] = useState<Resource | null>(null);
@@ -49,7 +52,7 @@ export function ResourceListTable({
 
   return (
     <>
-      <div className="hidden md:block">
+      <div className={compact ? "hidden" : "hidden md:block"}>
         <Table containerClassName="overflow-visible">
           <TableHeader>
             <TableRow>
@@ -103,43 +106,38 @@ export function ResourceListTable({
         </Table>
       </div>
 
-      <div className="space-y-2 md:hidden">
+      <ul className={cn("space-y-1", !compact && "md:hidden")}>
         {resources.map((resource) => (
-          <Card key={resource.id}>
-            <CardContent className="flex items-start justify-between gap-3 p-4">
+          <li key={resource.id}>
+            <div className="group relative rounded-xl transition-colors hover:bg-muted/80">
               <Link
                 href={`/classes/${classId}/resources/${resource.id}`}
-                className="min-w-0 flex-1 text-left"
+                className="block min-w-0 py-2 pr-8 pl-2.5 text-left"
               >
-                <p className="font-medium text-foreground underline-offset-4 hover:text-primary hover:underline">
+                <p className="truncate text-sm font-medium text-foreground">
                   {resource.title}
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-0.5 truncate text-xs text-muted-foreground">
                   {formatResourceType(resource.resource_type)} ·{" "}
-                  {formatResourceDate(resource.created_at)}
+                  {formatResourceDate(resource.created_at)} ·{" "}
+                  {resource.ai_generated ? "AI" : "Uploaded"}
                 </p>
-                <Badge
-                  variant={resource.ai_generated ? "accent" : "secondary"}
-                  className="mt-2"
-                >
-                  {resource.ai_generated ? "AI" : "Upload"}
-                </Badge>
               </Link>
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 shrink-0 p-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                className="absolute top-1/2 right-0.5 h-7 w-7 -translate-y-1/2 p-0 text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 focus-visible:opacity-100"
                 disabled={deleteResource.isPending}
                 onClick={() => setDeleteTarget(resource)}
                 aria-label={`Delete ${resource.title}`}
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-3.5 w-3.5" />
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </li>
         ))}
-      </div>
+      </ul>
 
       <ResourceDeleteDialog
         resource={deleteTarget}

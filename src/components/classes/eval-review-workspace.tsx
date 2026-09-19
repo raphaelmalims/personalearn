@@ -748,7 +748,7 @@ export function EvalReviewWorkspace({
   }
 
   const breadcrumbItems = [
-    { label: classLabel, href: `/classes/${classId}` },
+    { label: classLabel, href: "/ai-hub" },
     { label: assessmentMeta.title },
   ];
 
@@ -757,7 +757,7 @@ export function EvalReviewWorkspace({
       <div className="space-y-3">
         <Breadcrumbs
           items={[
-            { label: classLabel, href: `/classes/${classId}` },
+            { label: classLabel, href: "/ai-hub" },
             { label: "Evaluation" },
           ]}
         />
@@ -772,7 +772,7 @@ export function EvalReviewWorkspace({
       <div className="space-y-3">
         <Breadcrumbs
           items={[
-            { label: classLabel, href: `/classes/${classId}` },
+            { label: classLabel, href: "/ai-hub" },
             { label: "Evaluation" },
           ]}
         />
@@ -797,10 +797,10 @@ export function EvalReviewWorkspace({
           </p>
         </div>
         <Link
-          href={`/classes/${classId}`}
+          href="/ai-hub"
           className="text-xs text-muted-foreground underline underline-offset-2"
         >
-          Back to class
+          Back to Hub
         </Link>
       </div>
       <EvalQueueSummaryBar scripts={allScripts} />

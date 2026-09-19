@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Menu, MoreHorizontal, School, WandSparkles } from "lucide-react";
+import { Menu, MoreHorizontal, WandSparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { BrandMark } from "@/components/layout/brand-mark";
@@ -12,21 +12,15 @@ import { DropdownMenu } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const navItems = [
-  { href: "/dashboard", label: "Home", icon: Home },
   { href: "/ai-hub", label: "AI Hub", icon: WandSparkles },
-  { href: "/classes", label: "Classes", icon: School },
 ];
 
 function isActivePath(pathname: string, href: string) {
-  if (href === "/dashboard") {
-    return pathname === "/dashboard" || pathname === "/";
-  }
   return pathname.startsWith(href);
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const hideMobileTopHeader = pathname.startsWith("/ai-hub");
   const [railExpanded, setRailExpanded] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
@@ -49,7 +43,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Desktop left rail — fixed width; only the center nav cube expands */}
       <aside className="sticky top-0 z-40 hidden h-screen w-[4.5rem] shrink-0 flex-col items-center py-3 md:flex print:hidden">
         <Link
-          href="/dashboard"
+          href="/ai-hub"
           title="PersonaLearn"
           className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary"
         >
@@ -136,21 +130,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Main content */}
       <div className="flex min-h-screen min-w-0 flex-1 flex-col pb-20 md:pb-0 print:min-h-0 print:pb-0">
-        {/* Mobile top strip — hidden on AI Hub for full-height chat */}
-        {!hideMobileTopHeader ? (
-          <header className="sticky top-0 z-30 flex items-center justify-between gap-2 bg-background/80 px-4 py-3 backdrop-blur-xl md:hidden print:hidden">
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-2 font-display text-sm font-semibold"
-            >
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <BrandMark className="h-4 w-4" />
-              </span>
-              PersonaLearn
-            </Link>
-            <ClassSelector />
-          </header>
-        ) : null}
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-2 bg-background/80 px-4 py-3 backdrop-blur-xl md:hidden print:hidden">
+          <Link
+            href="/ai-hub"
+            className="inline-flex items-center gap-2 font-display text-sm font-semibold"
+          >
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <BrandMark className="h-4 w-4" />
+            </span>
+            PersonaLearn
+          </Link>
+          <ClassSelector />
+        </header>
 
         <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 md:px-6 md:py-8 print:max-w-none print:px-0 print:py-0">
           {children}

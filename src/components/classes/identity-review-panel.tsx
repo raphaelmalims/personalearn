@@ -509,8 +509,8 @@ export function IdentityReviewPanel({
       {scripts.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           No pages uploaded yet.{" "}
-          <Link href={`/classes/${classId}`} className="underline">
-            Back to class
+          <Link href="/ai-hub" className="underline">
+            Back to Hub
           </Link>
           .
         </p>
