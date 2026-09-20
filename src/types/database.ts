@@ -18,6 +18,8 @@ export type Student = {
   admission_number: string | null;
   full_name: string;
   gender: "Male" | "Female" | null;
+  /** Teacher-written interests/passions (short text or comma tags). */
+  interests: string | null;
   metadata: Record<string, unknown>;
   created_at: string;
 };
