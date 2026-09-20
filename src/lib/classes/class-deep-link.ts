@@ -4,7 +4,7 @@ type ClassDeepLinkInput = {
   classId: string;
   /** `?resource=` on /classes/[classId]. */
   resourceId: string | null;
-  /** `?assessment=` on /classes/[classId] (Home / competency cube links). */
+  /** `?assessment=` leftover deep-link on `/classes/[classId]`. */
   assessmentId: string | null;
   assessments: Pick<Assessment, "id" | "resource_id">[] | undefined;
   assessmentsLoading: boolean;
@@ -17,6 +17,10 @@ type ClassDeepLinkTarget =
   | { status: "stay" }
   /** Consume the params and navigate to the resource route. */
   | { status: "redirect"; href: string };
+
+export type ClassIdShimNavigation =
+  | { status: "waiting" }
+  | { status: "replace"; href: string };
 
 /**
  * `/classes/[classId]` is only a redirect shim (PSL-114). Resource and
@@ -54,4 +58,18 @@ export function resolveClassDeepLinkTarget({
     status: "redirect",
     href: `/classes/${classId}/resources/${assessment.resource_id}`,
   };
+}
+
+/** Always `replace` so `/classes/[id]` never sits in history. */
+export function resolveClassIdShimNavigation(
+  input: ClassDeepLinkInput
+): ClassIdShimNavigation {
+  const target = resolveClassDeepLinkTarget(input);
+  if (target.status === "waiting") {
+    return { status: "waiting" };
+  }
+  if (target.status === "redirect") {
+    return { status: "replace", href: target.href };
+  }
+  return { status: "replace", href: "/ai-hub" };
 }

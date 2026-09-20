@@ -18,7 +18,7 @@ vi.mock("@/lib/supabase/env", () => ({
   }),
 }));
 
-import { middleware } from "./middleware";
+import { proxy } from "./proxy";
 
 function createRequest(pathname: string) {
   return new NextRequest(new URL(`http://localhost:3000${pathname}`));
@@ -41,7 +41,7 @@ function mockClassCount(count: number) {
   from.mockReturnValue({ select });
 }
 
-describe("middleware", () => {
+describe("proxy", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -49,7 +49,7 @@ describe("middleware", () => {
   it("redirects unauthenticated users from dashboard to login", async () => {
     mockUnauthenticated();
 
-    const response = await middleware(createRequest("/dashboard"));
+    const response = await proxy(createRequest("/dashboard"));
 
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe(
@@ -60,7 +60,7 @@ describe("middleware", () => {
   it("redirects unauthenticated users from the AI Hub landing to login", async () => {
     mockUnauthenticated();
 
-    const response = await middleware(createRequest("/ai-hub"));
+    const response = await proxy(createRequest("/ai-hub"));
 
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe(
@@ -71,7 +71,7 @@ describe("middleware", () => {
   it("redirects unauthenticated users from onboarding to login", async () => {
     mockUnauthenticated();
 
-    const response = await middleware(createRequest("/onboarding"));
+    const response = await proxy(createRequest("/onboarding"));
 
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe(
@@ -82,7 +82,7 @@ describe("middleware", () => {
   it("allows unauthenticated users to visit the login page", async () => {
     mockUnauthenticated();
 
-    const response = await middleware(createRequest("/login"));
+    const response = await proxy(createRequest("/login"));
 
     expect(response.status).toBe(200);
     expect(response.headers.get("location")).toBeNull();
@@ -92,7 +92,7 @@ describe("middleware", () => {
     mockAuthenticatedUser();
     mockClassCount(0);
 
-    const response = await middleware(createRequest("/dashboard"));
+    const response = await proxy(createRequest("/dashboard"));
 
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe(
@@ -104,7 +104,7 @@ describe("middleware", () => {
     mockAuthenticatedUser();
     mockClassCount(0);
 
-    const response = await middleware(createRequest("/ai-hub"));
+    const response = await proxy(createRequest("/ai-hub"));
 
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe(
@@ -116,7 +116,7 @@ describe("middleware", () => {
     mockAuthenticatedUser();
     mockClassCount(2);
 
-    const response = await middleware(createRequest("/onboarding"));
+    const response = await proxy(createRequest("/onboarding"));
 
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe(
@@ -128,7 +128,7 @@ describe("middleware", () => {
     mockAuthenticatedUser();
     mockClassCount(0);
 
-    const response = await middleware(createRequest("/login"));
+    const response = await proxy(createRequest("/login"));
 
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe(
@@ -140,7 +140,7 @@ describe("middleware", () => {
     mockAuthenticatedUser();
     mockClassCount(1);
 
-    const response = await middleware(createRequest("/login"));
+    const response = await proxy(createRequest("/login"));
 
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe(
@@ -148,35 +148,33 @@ describe("middleware", () => {
     );
   });
 
-  it("redirects authenticated users with classes from dashboard to the AI Hub", async () => {
+  it("lets authenticated teachers through leftover dashboard URLs so the page can replace history", async () => {
     mockAuthenticatedUser();
     mockClassCount(1);
 
-    const response = await middleware(createRequest("/dashboard"));
+    const dashboard = await proxy(createRequest("/dashboard"));
+    expect(dashboard.status).toBe(200);
+    expect(dashboard.headers.get("location")).toBeNull();
 
-    expect(response.status).toBe(307);
-    expect(response.headers.get("location")).toBe(
-      "http://localhost:3000/ai-hub"
-    );
+    const nested = await proxy(createRequest("/dashboard/anything"));
+    expect(nested.status).toBe(200);
+    expect(nested.headers.get("location")).toBeNull();
   });
 
-  it("redirects nested dashboard paths to the AI Hub", async () => {
+  it("does not HTTP-redirect /classes (client replace owns Hub history)", async () => {
     mockAuthenticatedUser();
     mockClassCount(1);
 
-    const response = await middleware(createRequest("/dashboard/anything"));
-
-    expect(response.status).toBe(307);
-    expect(response.headers.get("location")).toBe(
-      "http://localhost:3000/ai-hub"
-    );
+    const response = await proxy(createRequest("/classes"));
+    expect(response.status).toBe(200);
+    expect(response.headers.get("location")).toBeNull();
   });
 
   it("allows authenticated users with classes to reach the AI Hub", async () => {
     mockAuthenticatedUser();
     mockClassCount(1);
 
-    const response = await middleware(createRequest("/ai-hub"));
+    const response = await proxy(createRequest("/ai-hub"));
 
     expect(response.status).toBe(200);
     expect(response.headers.get("location")).toBeNull();
@@ -185,14 +183,14 @@ describe("middleware", () => {
   it("skips class lookup on public routes for authenticated users", async () => {
     mockAuthenticatedUser();
 
-    const response = await middleware(createRequest("/"));
+    const response = await proxy(createRequest("/"));
 
     expect(response.status).toBe(200);
     expect(from).not.toHaveBeenCalled();
   });
 
   it("forwards OAuth code on public routes to auth callback", async () => {
-    const response = await middleware(
+    const response = await proxy(
       createRequest("/?code=oauth-code&next=%2Fonboarding")
     );
 
@@ -203,7 +201,7 @@ describe("middleware", () => {
   });
 
   it("forwards OAuth code on site root with default next path", async () => {
-    const response = await middleware(createRequest("/?code=oauth-code"));
+    const response = await proxy(createRequest("/?code=oauth-code"));
 
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe(
@@ -214,7 +212,7 @@ describe("middleware", () => {
   it("does not forward OAuth code on non-root routes", async () => {
     mockUnauthenticated();
 
-    const response = await middleware(createRequest("/login?code=oauth-code"));
+    const response = await proxy(createRequest("/login?code=oauth-code"));
 
     expect(response.status).toBe(200);
     expect(response.headers.get("location")).toBeNull();

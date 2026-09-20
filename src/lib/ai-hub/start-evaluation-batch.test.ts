@@ -51,7 +51,7 @@ function deps(fromImpl: (table: string) => unknown) {
       academic_year: "2026",
     },
     conversationId: "conv-1",
-  };
+  } as never;
 }
 
 describe("executeStartEvaluationBatch", () => {

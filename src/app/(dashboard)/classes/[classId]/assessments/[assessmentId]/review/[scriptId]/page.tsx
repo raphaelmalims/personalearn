@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { SplitPaneScriptReview } from "@/components/classes/eval-review-workspace";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useClasses } from "@/lib/hooks/use-classes";
 import type { ScriptReviewDto } from "@/lib/evaluation/identity";
 import type { Assessment } from "@/types/database";
 
@@ -47,6 +48,9 @@ async function fetchScriptReview(
 
 export default function ScriptReviewPage({ params }: ReviewPageProps) {
   const { classId, assessmentId, scriptId } = use(params);
+  const { data: classes } = useClasses();
+  const classLabel =
+    classes?.find((cls) => cls.id === classId)?.name ?? "Class";
   const { data, isLoading, error } = useQuery({
     queryKey: ["script-review", classId, assessmentId, scriptId],
     queryFn: () => fetchScriptReview(classId, assessmentId, scriptId),
@@ -84,7 +88,7 @@ export default function ScriptReviewPage({ params }: ReviewPageProps) {
       <Breadcrumbs
         items={[
           { label: "AI Hub", href: "/ai-hub" },
-          { label: "Class", href: "/ai-hub" },
+          { label: classLabel, href: "/ai-hub" },
           {
             label: assessmentTitle,
             href: `/classes/${classId}/evaluations/${data.batchId}`,

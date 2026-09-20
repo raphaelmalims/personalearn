@@ -1,6 +1,6 @@
-import { redirect } from "next/navigation";
+import { ReplaceToHub } from "@/components/layout/replace-to-hub";
 
-/** Home is no longer a signed-in destination — Hub is the only shell surface. */
+/** Dashboard URLs are leftover bookmarks — Hub is the only shell surface. */
 export default function DashboardPage() {
-  redirect("/ai-hub");
+  return <ReplaceToHub />;
 }

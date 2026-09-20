@@ -75,7 +75,8 @@ const mockCreateAgentTools = vi.fn(() => ({
 }));
 
 vi.mock("@/lib/ai-hub/agent-tools", () => ({
-  createAgentTools: (...args: unknown[]) => mockCreateAgentTools(...args),
+  createAgentTools: (...args: unknown[]) =>
+    (mockCreateAgentTools as (...inner: unknown[]) => unknown)(...args),
 }));
 
 vi.mock("ai", async () => {

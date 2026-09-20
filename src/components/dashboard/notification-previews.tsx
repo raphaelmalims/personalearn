@@ -5,7 +5,7 @@ import { X } from "lucide-react";
 import { useNotificationsStore } from "@/lib/store/notifications";
 
 /**
- * Pending async-eval (and similar) alerts on Home.
+ * Pending async-eval (and similar) alerts. Dead Home surface; keep if reused.
  * Persist until the teacher opens the deep link or dismisses with close.
  */
 export function NotificationPreviews() {

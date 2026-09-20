@@ -2,7 +2,7 @@
 
 import { Suspense, use, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { resolveClassDeepLinkTarget } from "@/lib/classes/class-deep-link";
+import { resolveClassIdShimNavigation } from "@/lib/classes/class-deep-link";
 import { useClasses } from "@/lib/hooks/use-classes";
 import { useAssessments } from "@/lib/hooks/use-evaluation";
 import { useActiveClassStore } from "@/lib/store/active-class";
@@ -49,7 +49,7 @@ function ClassDetailRedirect({
   }, [cls, setActiveClass]);
 
   useEffect(() => {
-    const target = resolveClassDeepLinkTarget({
+    const target = resolveClassIdShimNavigation({
       classId,
       resourceId,
       assessmentId,
@@ -58,11 +58,7 @@ function ClassDetailRedirect({
     });
 
     if (target.status === "waiting") return;
-    if (target.status === "redirect") {
-      router.replace(target.href);
-      return;
-    }
-    router.replace("/ai-hub");
+    router.replace(target.href);
   }, [
     assessmentId,
     assessments,
