@@ -171,6 +171,7 @@ describe("HubClassPanel", () => {
     });
 
     expect(screen.getByRole("button", { name: "New conversation" })).toBeInTheDocument();
+    expect(screen.queryByText("New conversation")).toBeNull();
     expect(
       screen.getByRole("button", { name: /Fractions recap less/ })
     ).toBeInTheDocument();
