@@ -10,14 +10,11 @@ import { ClassSelector } from "@/components/classes/class-selector";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { DropdownMenu } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { isHubNavActive } from "@/components/layout/is-hub-nav-active";
 
 const navItems = [
   { href: "/ai-hub", label: "AI Hub", icon: WandSparkles },
 ];
-
-function isActivePath(pathname: string, href: string) {
-  return pathname.startsWith(href);
-}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -72,12 +69,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
 
             {navItems.map(({ href, label, icon: Icon }) => {
-              const active = isActivePath(pathname, href);
+              const active = isHubNavActive(pathname);
               return (
                 <Link
                   key={href}
                   href={href}
                   title={label}
+                  aria-current={active ? "page" : undefined}
                   className={cn(
                     "flex h-11 items-center gap-3 rounded-2xl px-2.5 text-sm font-medium transition-colors",
                     active
@@ -154,11 +152,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <nav className="fixed inset-x-0 bottom-0 z-40 bg-background/90 px-2 pb-[env(safe-area-inset-bottom)] pt-1 shadow-[0_-8px_24px_rgb(0_0_0_/0.06)] backdrop-blur-xl md:hidden print:hidden">
         <div className="mx-auto flex max-w-lg items-stretch justify-around">
           {navItems.map(({ href, label, icon: Icon }) => {
-            const active = isActivePath(pathname, href);
+            const active = isHubNavActive(pathname);
             return (
               <Link
                 key={href}
                 href={href}
+                aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex min-w-[4.5rem] flex-col items-center gap-0.5 rounded-xl px-3 py-2 text-[11px] font-medium transition-colors",
                   active ? "text-primary" : "text-muted-foreground"
