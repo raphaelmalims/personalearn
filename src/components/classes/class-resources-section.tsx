@@ -16,7 +16,7 @@ type ClassResourcesSectionProps = {
   /** Constrain height and scroll the list (side-by-side class page layout). */
   scrollable?: boolean;
   searchQuery?: string;
-  /** Open a resource from Home / assessment cube deep-link (PSL-66 / PSL-67). */
+  /** Open a resource from a leftover assessment / Hub deep-link (PSL-66 / PSL-67). */
   openResourceId?: string | null;
   onOpenResourceConsumed?: () => void;
   /** Narrow container (Hub class panel): no card chrome, stacked list only. */
@@ -46,7 +46,7 @@ export function ClassResourcesSection({
 
   const navigatedDeepLinkId = useRef<string | null>(null);
 
-  // Home deep-link → resource page (dialog retired in PSL-71).
+  // Hub / leftover deep-link → resource page (dialog retired in PSL-71).
   useEffect(() => {
     if (!autoOpenResource) return;
     if (navigatedDeepLinkId.current === autoOpenResource.id) return;

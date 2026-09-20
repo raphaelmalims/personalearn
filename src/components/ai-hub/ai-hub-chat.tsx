@@ -319,7 +319,7 @@ export function AiHubChat() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only when active class changes
   }, [activeClass?.id]);
 
-  // Home deep-link: /ai-hub?conversation=… (PSL-67). Runs after class reset above.
+  // Hub deep-link: /ai-hub?conversation=… (PSL-67). Runs after class reset above.
   useEffect(() => {
     if (!pendingConversationId || !activeClass?.id) return;
     if (deepLinkHandledRef.current) return;

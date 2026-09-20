@@ -4,7 +4,7 @@ type ClassDeepLinkInput = {
   classId: string;
   /** `?resource=` on /classes/[classId]. */
   resourceId: string | null;
-  /** `?assessment=` on /classes/[classId] (Home / competency cube links). */
+  /** `?assessment=` leftover deep-link on `/classes/[classId]`. */
   assessmentId: string | null;
   assessments: Pick<Assessment, "id" | "resource_id">[] | undefined;
   assessmentsLoading: boolean;

@@ -781,6 +781,7 @@ export function EvalReviewWorkspace({
   }
 
   const breadcrumbItems = [
+    { label: "AI Hub", href: "/ai-hub" },
     { label: classLabel, href: "/ai-hub" },
     { label: assessmentMeta.title },
   ];
@@ -790,6 +791,7 @@ export function EvalReviewWorkspace({
       <div className="space-y-3">
         <Breadcrumbs
           items={[
+            { label: "AI Hub", href: "/ai-hub" },
             { label: classLabel, href: "/ai-hub" },
             { label: "Evaluation" },
           ]}
@@ -805,6 +807,7 @@ export function EvalReviewWorkspace({
       <div className="space-y-3">
         <Breadcrumbs
           items={[
+            { label: "AI Hub", href: "/ai-hub" },
             { label: classLabel, href: "/ai-hub" },
             { label: "Evaluation" },
           ]}
