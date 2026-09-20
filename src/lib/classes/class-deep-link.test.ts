@@ -94,7 +94,7 @@ describe("resolveClassIdShimNavigation", () => {
         assessmentsLoading: true,
       })
     ).toEqual({
-      method: "replace",
+      status: "replace",
       href: "/classes/class-1/resources/resource-9",
     });
   });
@@ -108,6 +108,6 @@ describe("resolveClassIdShimNavigation", () => {
         assessments: [],
         assessmentsLoading: false,
       })
-    ).toEqual({ method: "replace", href: "/ai-hub" });
+    ).toEqual({ status: "replace", href: "/ai-hub" });
   });
 });

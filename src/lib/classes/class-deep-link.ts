@@ -20,7 +20,7 @@ type ClassDeepLinkTarget =
 
 export type ClassIdShimNavigation =
   | { status: "waiting" }
-  | { method: "replace"; href: string };
+  | { status: "replace"; href: string };
 
 /**
  * `/classes/[classId]` is only a redirect shim (PSL-114). Resource and
@@ -69,7 +69,7 @@ export function resolveClassIdShimNavigation(
     return { status: "waiting" };
   }
   if (target.status === "redirect") {
-    return { method: "replace", href: target.href };
+    return { status: "replace", href: target.href };
   }
-  return { method: "replace", href: "/ai-hub" };
+  return { status: "replace", href: "/ai-hub" };
 }
