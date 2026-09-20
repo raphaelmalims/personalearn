@@ -1,6 +1,6 @@
-import { redirect } from "next/navigation";
+import { ReplaceToHub } from "@/components/layout/replace-to-hub";
 
-/** Class index is no longer a destination — Hub owns roster and resources. */
+/** Class index is not a destination — Hub owns roster and resources. */
 export default function ClassesPage() {
-  redirect("/ai-hub");
+  return <ReplaceToHub />;
 }

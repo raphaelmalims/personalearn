@@ -18,6 +18,10 @@ type ClassDeepLinkTarget =
   /** Consume the params and navigate to the resource route. */
   | { status: "redirect"; href: string };
 
+export type ClassIdShimNavigation =
+  | { status: "waiting" }
+  | { method: "replace"; href: string };
+
 /**
  * `/classes/[classId]` is only a redirect shim (PSL-114). Resource and
  * assessment query params resolve to the resource route; otherwise the
@@ -54,4 +58,18 @@ export function resolveClassDeepLinkTarget({
     status: "redirect",
     href: `/classes/${classId}/resources/${assessment.resource_id}`,
   };
+}
+
+/** Always `replace` so `/classes/[id]` never sits in history. */
+export function resolveClassIdShimNavigation(
+  input: ClassDeepLinkInput
+): ClassIdShimNavigation {
+  const target = resolveClassDeepLinkTarget(input);
+  if (target.status === "waiting") {
+    return { status: "waiting" };
+  }
+  if (target.status === "redirect") {
+    return { method: "replace", href: target.href };
+  }
+  return { method: "replace", href: "/ai-hub" };
 }

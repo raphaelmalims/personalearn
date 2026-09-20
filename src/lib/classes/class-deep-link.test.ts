@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveClassDeepLinkTarget } from "./class-deep-link";
+import { resolveClassDeepLinkTarget, resolveClassIdShimNavigation } from "./class-deep-link";
 
 const classId = "class-1";
 
@@ -80,5 +80,34 @@ describe("resolveClassDeepLinkTarget", () => {
         assessmentsLoading: false,
       })
     ).toEqual({ status: "stay" });
+  });
+});
+
+describe("resolveClassIdShimNavigation", () => {
+  it("replaces to the resource route for ?resource=", () => {
+    expect(
+      resolveClassIdShimNavigation({
+        classId,
+        resourceId: "resource-9",
+        assessmentId: null,
+        assessments: undefined,
+        assessmentsLoading: true,
+      })
+    ).toEqual({
+      method: "replace",
+      href: "/classes/class-1/resources/resource-9",
+    });
+  });
+
+  it("replaces to Hub when there is no deep link", () => {
+    expect(
+      resolveClassIdShimNavigation({
+        classId,
+        resourceId: null,
+        assessmentId: null,
+        assessments: [],
+        assessmentsLoading: false,
+      })
+    ).toEqual({ method: "replace", href: "/ai-hub" });
   });
 });

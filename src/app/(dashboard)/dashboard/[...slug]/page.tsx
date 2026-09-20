@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { ReplaceToHub } from "@/components/layout/replace-to-hub";
 
 export default function DashboardCatchAllPage() {
-  redirect("/ai-hub");
+  return <ReplaceToHub />;
 }

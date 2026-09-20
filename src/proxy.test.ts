@@ -148,28 +148,26 @@ describe("proxy", () => {
     );
   });
 
-  it("redirects authenticated users with classes from dashboard to the AI Hub", async () => {
+  it("lets authenticated teachers through leftover dashboard URLs so the page can replace history", async () => {
     mockAuthenticatedUser();
     mockClassCount(1);
 
-    const response = await proxy(createRequest("/dashboard"));
+    const dashboard = await proxy(createRequest("/dashboard"));
+    expect(dashboard.status).toBe(200);
+    expect(dashboard.headers.get("location")).toBeNull();
 
-    expect(response.status).toBe(307);
-    expect(response.headers.get("location")).toBe(
-      "http://localhost:3000/ai-hub"
-    );
+    const nested = await proxy(createRequest("/dashboard/anything"));
+    expect(nested.status).toBe(200);
+    expect(nested.headers.get("location")).toBeNull();
   });
 
-  it("redirects nested dashboard paths to the AI Hub", async () => {
+  it("does not HTTP-redirect /classes (client replace owns Hub history)", async () => {
     mockAuthenticatedUser();
     mockClassCount(1);
 
-    const response = await proxy(createRequest("/dashboard/anything"));
-
-    expect(response.status).toBe(307);
-    expect(response.headers.get("location")).toBe(
-      "http://localhost:3000/ai-hub"
-    );
+    const response = await proxy(createRequest("/classes"));
+    expect(response.status).toBe(200);
+    expect(response.headers.get("location")).toBeNull();
   });
 
   it("allows authenticated users with classes to reach the AI Hub", async () => {

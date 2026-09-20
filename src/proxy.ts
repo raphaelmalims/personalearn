@@ -125,12 +125,8 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
 
-    if (hasClasses && matchesPrefix(pathname, "/dashboard")) {
-      const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = getPostLoginPath(true);
-      return NextResponse.redirect(redirectUrl);
-    }
-
+    // Authenticated `/dashboard*` is allowed through so the page can
+    // `router.replace("/ai-hub")` and not leave a Back bounce.
     return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Middleware failed";
