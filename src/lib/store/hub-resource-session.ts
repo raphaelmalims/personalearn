@@ -42,3 +42,8 @@ export const useHubResourceSessionStore = create<HubResourceSessionState>(
     },
   })
 );
+
+/** Chat owns the main column — never stack a thread under the reader. */
+export function closeResourceReaderForChat() {
+  useHubResourceSessionStore.getState().close();
+}

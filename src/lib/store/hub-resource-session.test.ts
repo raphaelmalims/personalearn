@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { useHubEvalSessionStore } from "./hub-eval-session";
-import { useHubResourceSessionStore } from "./hub-resource-session";
+import {
+  closeResourceReaderForChat,
+  useHubResourceSessionStore,
+} from "./hub-resource-session";
 
 function resetStores() {
   useHubResourceSessionStore.setState({
@@ -64,6 +67,21 @@ describe("useHubResourceSessionStore", () => {
     expect(useHubResourceSessionStore.getState().fullscreen).toBe(true);
     useHubResourceSessionStore.getState().close();
     expect(useHubResourceSessionStore.getState().openResourceId).toBeNull();
+    expect(useHubResourceSessionStore.getState().fullscreen).toBe(false);
+  });
+
+  it("closes a fullscreen reader so a selected chat can occupy the main column", () => {
+    resetStores();
+    useHubResourceSessionStore.getState().openResource({
+      classId: "class-1",
+      resourceId: "res-1",
+    });
+    useHubResourceSessionStore.getState().setFullscreen(true);
+
+    closeResourceReaderForChat();
+
+    expect(useHubResourceSessionStore.getState().openResourceId).toBeNull();
+    expect(useHubResourceSessionStore.getState().classId).toBeNull();
     expect(useHubResourceSessionStore.getState().fullscreen).toBe(false);
   });
 });

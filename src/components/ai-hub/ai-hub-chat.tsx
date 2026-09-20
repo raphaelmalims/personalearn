@@ -60,6 +60,7 @@ import { resourcesQueryKey, useResources } from "@/lib/hooks/use-resources";
 import { assessmentsQueryKey } from "@/lib/hooks/use-evaluation";
 import { useActiveClassStore } from "@/lib/store/active-class";
 import { useHubEvalSessionStore } from "@/lib/store/hub-eval-session";
+import { closeResourceReaderForChat } from "@/lib/store/hub-resource-session";
 import { useEvalUploadQueue } from "@/lib/hooks/use-eval-upload-queue";
 import { cn } from "@/lib/utils";
 
@@ -391,6 +392,7 @@ export function AiHubChat() {
   async function handleSelectConversation(conversationId: string) {
     if (!activeClass) return;
 
+    closeResourceReaderForChat();
     clearError();
     setActionError(null);
     setEditingMessageId(null);
@@ -447,6 +449,7 @@ export function AiHubChat() {
   }
 
   function handleNewConversation() {
+    closeResourceReaderForChat();
     setSelectedConversationId(null);
     conversationIdRef.current = null;
     setMessages([]);
