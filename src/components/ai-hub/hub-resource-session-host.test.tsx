@@ -63,4 +63,18 @@ describe("HubResourceSessionHost", () => {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
     expect(useHubResourceSessionStore.getState().openResourceId).toBeNull();
   });
+
+  it("uses icon-only full-screen and close chrome", () => {
+    useHubResourceSessionStore.setState({
+      openResourceId: "res-1",
+      classId: "class-1",
+      fullscreen: false,
+    });
+
+    render(<HubResourceSessionHost />);
+    expect(screen.getByRole("button", { name: "Full-screen" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Close resource" })).toBeVisible();
+    expect(screen.queryByText("Full-screen")).toBeNull();
+    expect(screen.queryByText("Close")).toBeNull();
+  });
 });

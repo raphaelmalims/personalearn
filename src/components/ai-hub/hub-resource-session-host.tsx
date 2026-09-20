@@ -126,33 +126,36 @@ function HubResourcePane({
             </p>
           )}
         </div>
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex shrink-0 items-center">
           {!isMobile ? (
             <Button
               type="button"
-              size="sm"
-              variant="secondary"
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8"
               onClick={onToggleFullscreen}
               aria-pressed={fullscreen}
+              aria-label={fullscreen ? "Exit full-screen" : "Full-screen"}
+              title={fullscreen ? "Exit full-screen" : "Full-screen"}
             >
               {fullscreen ? (
-                <Minimize2 className="h-3.5 w-3.5" />
+                <Minimize2 className="h-4 w-4" />
               ) : (
-                <Maximize2 className="h-3.5 w-3.5" />
+                <Maximize2 className="h-4 w-4" />
               )}
-              {fullscreen ? "Exit full-screen" : "Full-screen"}
             </Button>
           ) : null}
           {!isMobile ? (
             <Button
               type="button"
-              size="sm"
-              variant="secondary"
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8"
               onClick={onClose}
               aria-label="Close resource"
+              title="Close"
             >
-              <X className="h-3.5 w-3.5" />
-              Close
+              <X className="h-4 w-4" />
             </Button>
           ) : null}
         </div>
