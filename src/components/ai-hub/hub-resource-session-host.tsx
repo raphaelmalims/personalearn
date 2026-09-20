@@ -145,7 +145,7 @@ function HubResourcePane({
               )}
             </Button>
           ) : null}
-          {!isMobile ? (
+          {!isMobile && fullscreen ? (
             <Button
               type="button"
               size="icon"

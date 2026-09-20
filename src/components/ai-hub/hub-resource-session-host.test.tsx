@@ -64,17 +64,23 @@ describe("HubResourceSessionHost", () => {
     expect(useHubResourceSessionStore.getState().openResourceId).toBeNull();
   });
 
-  it("uses icon-only full-screen and close chrome", () => {
+  it("uses icon-only full-screen chrome and hides close until fullscreen", () => {
     useHubResourceSessionStore.setState({
       openResourceId: "res-1",
       classId: "class-1",
       fullscreen: false,
     });
 
-    render(<HubResourceSessionHost />);
+    const { rerender } = render(<HubResourceSessionHost />);
     expect(screen.getByRole("button", { name: "Full-screen" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Close resource" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Close resource" })).toBeNull();
     expect(screen.queryByText("Full-screen")).toBeNull();
+
+    useHubResourceSessionStore.setState({ fullscreen: true });
+    rerender(<HubResourceSessionHost />);
+    expect(
+      screen.getByRole("button", { name: "Close resource" })
+    ).toBeVisible();
     expect(screen.queryByText("Close")).toBeNull();
   });
 });
