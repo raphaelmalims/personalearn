@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { useHubResourceSessionStore } from "@/lib/store/hub-resource-session";
 
 export type HubEvalView = "batch" | "script";
 
@@ -30,7 +31,8 @@ export const useHubEvalSessionStore = create<HubEvalSessionState>((set) => ({
   scriptId: null,
   view: "batch",
   composerHint: null,
-  openBatch: ({ classId, batchId, assessmentId, scriptId }) =>
+  openBatch: ({ classId, batchId, assessmentId, scriptId }) => {
+    useHubResourceSessionStore.getState().close();
     set({
       expanded: true,
       classId,
@@ -38,14 +40,17 @@ export const useHubEvalSessionStore = create<HubEvalSessionState>((set) => ({
       assessmentId: assessmentId ?? null,
       scriptId: scriptId ?? null,
       view: scriptId ? "script" : "batch",
-    }),
-  openScript: (scriptId, assessmentId) =>
+    });
+  },
+  openScript: (scriptId, assessmentId) => {
+    useHubResourceSessionStore.getState().close();
     set((state) => ({
       expanded: true,
       scriptId,
       assessmentId: assessmentId ?? state.assessmentId,
       view: "script",
-    })),
+    }));
+  },
   backToQueue: () => set({ view: "batch", scriptId: null }),
   collapse: () => set({ expanded: false, view: "batch", scriptId: null }),
   setComposerHint: (hint) => set({ composerHint: hint }),

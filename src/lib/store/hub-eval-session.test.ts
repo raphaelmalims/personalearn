@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { useHubEvalSessionStore } from "./hub-eval-session";
+import { useHubResourceSessionStore } from "./hub-resource-session";
 
 describe("useHubEvalSessionStore", () => {
   it("opens a batch session then a script without leaving Hub", () => {
+    useHubResourceSessionStore.setState({
+      openResourceId: "res-1",
+      classId: "class-1",
+      fullscreen: false,
+    });
     useHubEvalSessionStore.setState({
       expanded: false,
       classId: null,
@@ -23,6 +29,7 @@ describe("useHubEvalSessionStore", () => {
       view: "batch",
       batchId: "batch-1",
     });
+    expect(useHubResourceSessionStore.getState().openResourceId).toBeNull();
 
     useHubEvalSessionStore.getState().openScript("script-1");
     expect(useHubEvalSessionStore.getState().view).toBe("script");
