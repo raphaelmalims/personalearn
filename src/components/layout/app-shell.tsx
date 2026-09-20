@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, MoreHorizontal, WandSparkles } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, ViewTransition } from "react";
 import { cn } from "@/lib/utils";
 import { BrandMark } from "@/components/layout/brand-mark";
 import { ClassSelector } from "@/components/classes/class-selector";
@@ -144,7 +144,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </header>
 
         <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 md:px-6 md:py-8 print:max-w-none print:px-0 print:py-0">
-          {children}
+          <ViewTransition>
+            {children}
+          </ViewTransition>
         </main>
       </div>
 

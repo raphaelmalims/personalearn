@@ -54,7 +54,7 @@ function configurationErrorResponse(message: string) {
   });
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const oauthForward = forwardOAuthCode(request);
   if (oauthForward) {
     return oauthForward;

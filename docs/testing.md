@@ -117,7 +117,7 @@ E2E is intentionally not in the default CI job yet — add when dev Supabase E2E
 | `src/lib/validations/class.test.ts` | Class/student Zod rules |
 | `src/lib/csv/parse-student-rows.test.ts` | CSV row parsing |
 | `src/lib/auth/ensure-user-profile.test.ts` | Profile provisioning |
-| `src/middleware.test.ts` | Auth gate + onboarding redirects |
+| `src/proxy.test.ts` | Auth gate + onboarding redirects |
 | `e2e/auth-gate.spec.ts` | Unauthenticated dashboard redirect |
 | `e2e/onboarding.spec.ts` | Sign-in + class creation (needs credentials) |
 
