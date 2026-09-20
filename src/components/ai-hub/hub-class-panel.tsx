@@ -3,9 +3,7 @@
 import { PanelRight, Plus, Search, X } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { ConversationList } from "@/components/ai-hub/conversation-sidebar";
-import { AddStudentDialog } from "@/components/classes/add-student-dialog";
 import { ClassResourcesSection } from "@/components/classes/class-resources-section";
-import { CsvImportDialog } from "@/components/classes/csv-import-dialog";
 import { StudentRosterTable } from "@/components/classes/student-roster-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -274,10 +272,6 @@ export function HubClassPanel({
           />
         ) : (
           <section className="space-y-3" aria-label="Student roster">
-            <div className="flex flex-wrap items-center gap-2">
-              <AddStudentDialog classId={classId} />
-              <CsvImportDialog classId={classId} />
-            </div>
             {studentsLoading ? (
               <div
                 className="space-y-2"
@@ -294,9 +288,7 @@ export function HubClassPanel({
                 students={filteredStudents}
                 compact
                 emptyMessage={
-                  hasQuery
-                    ? "No matching students."
-                    : "No students yet. Use the buttons above to add one or import a CSV."
+                  hasQuery ? "No matching students." : "No students yet."
                 }
               />
             )}
