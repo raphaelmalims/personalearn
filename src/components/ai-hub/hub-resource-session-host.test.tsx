@@ -64,7 +64,7 @@ describe("HubResourceSessionHost", () => {
     expect(useHubResourceSessionStore.getState().openResourceId).toBeNull();
   });
 
-  it("uses icon-only full-screen chrome and hides close until fullscreen", () => {
+  it("uses icon-only full-screen and close chrome in split and fullscreen", () => {
     useHubResourceSessionStore.setState({
       openResourceId: "res-1",
       classId: "class-1",
@@ -73,14 +73,17 @@ describe("HubResourceSessionHost", () => {
 
     const { rerender } = render(<HubResourceSessionHost />);
     expect(screen.getByRole("button", { name: "Full-screen" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Close resource" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Close resource" })).toBeVisible();
     expect(screen.queryByText("Full-screen")).toBeNull();
+    expect(screen.queryByText("Close")).toBeNull();
 
     useHubResourceSessionStore.setState({ fullscreen: true });
     rerender(<HubResourceSessionHost />);
     expect(
       screen.getByRole("button", { name: "Close resource" })
     ).toBeVisible();
-    expect(screen.queryByText("Close")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Exit full-screen" })
+    ).toBeVisible();
   });
 });
