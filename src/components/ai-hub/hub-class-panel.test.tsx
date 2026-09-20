@@ -116,6 +116,18 @@ describe("HubClassPanel", () => {
     expect(onCollapsedChange).toHaveBeenCalledWith(true);
   });
 
+  it("uses a flush-left ghost X that rotates when the panel collapses", () => {
+    const { rerender, props } = renderPanel();
+    const collapse = screen.getByRole("button", { name: "Collapse class panel" });
+    expect(collapse).toHaveAttribute("aria-pressed", "false");
+    expect(collapse.querySelector("svg")).not.toHaveClass("rotate-45");
+
+    rerender(<HubClassPanel {...props} collapsed />);
+    const expand = screen.getByRole("button", { name: "Expand class panel" });
+    expect(expand).toHaveAttribute("aria-pressed", "true");
+    expect(expand.querySelector("svg")).toHaveClass("rotate-45");
+  });
+
   it("marks the active tab and shows the resources surface", () => {
     renderPanel();
 

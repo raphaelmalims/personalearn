@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, PanelRight, Plus, Search, X } from "lucide-react";
+import { PanelRight, Plus, Search, X } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { ConversationList } from "@/components/ai-hub/conversation-sidebar";
 import { AddStudentDialog } from "@/components/classes/add-student-dialog";
@@ -95,14 +95,15 @@ export function HubClassPanel({
         />
         <Button
           type="button"
-          variant="secondary"
+          variant="ghost"
           size="icon"
-          className="relative z-10 h-8 w-8 rounded-full bg-background shadow-none"
+          className="relative z-10 h-8 w-8"
           onClick={() => onCollapsedChange(false)}
           title="Expand class panel"
           aria-label="Expand class panel"
+          aria-pressed
         >
-          <ChevronLeft className="h-4 w-4" />
+          <X className="h-4 w-4 rotate-45 transition-transform duration-200 ease-out motion-reduce:transition-none" />
         </Button>
         <PanelRight
           className="relative z-10 h-4 w-4 text-muted-foreground"
@@ -132,17 +133,18 @@ export function HubClassPanel({
       )}
       aria-label="Class panel"
     >
-      <div className="flex shrink-0 justify-end">
+      <div className="flex shrink-0 justify-start">
         <Button
           type="button"
-          variant="secondary"
+          variant="ghost"
           size="icon"
-          className="h-8 w-8 shrink-0 rounded-full"
+          className="h-8 w-8 shrink-0"
           onClick={() => onCollapsedChange(true)}
           title={sheetMode ? "Back to chat" : "Collapse class panel"}
           aria-label={sheetMode ? "Back to chat" : "Collapse class panel"}
+          aria-pressed={false}
         >
-          <ChevronRight className="h-4 w-4" />
+          <X className="h-4 w-4 rotate-0 transition-transform duration-200 ease-out motion-reduce:transition-none" />
         </Button>
       </div>
 
