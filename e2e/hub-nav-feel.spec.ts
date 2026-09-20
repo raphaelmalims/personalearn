@@ -33,23 +33,26 @@ test.describe("hub route / nav feel", () => {
       await expect(panel).toBeVisible();
       await panel.getByRole("tab", { name: "Resources" }).click();
 
-      const resourceLink = panel.locator('a[href*="/resources/"]').first();
-      const hasResource = await resourceLink.count();
+      const resourceList = panel.getByRole("region", { name: "Class resources" });
+      const resourceRow = resourceList
+        .getByRole("button", { name: /^Open / })
+        .first();
+      const hasResource = await resourceRow.count();
       test.skip(
         hasResource === 0,
         "Test class has no resources to open a nested workspace"
       );
 
-      await resourceLink.click();
-      await expect(page).toHaveURL(/\/classes\/.+\/resources\//);
+      await resourceRow.click();
+      await expect(page).toHaveURL(/\/ai-hub/);
+      await expect(
+        page.getByRole("region", { name: "Resource reader" })
+      ).toBeVisible();
       await expect(
         page.locator('a[href="/ai-hub"][aria-current="page"]').first()
       ).toBeVisible();
-      await expect(
-        page.getByRole("navigation", { name: "Breadcrumb" })
-      ).toContainText("AI Hub");
 
-      await page.goBack();
+      await page.keyboard.press("Escape");
       await expect(page).toHaveURL(/\/ai-hub/);
       await expect(page).not.toHaveURL(/\/login/);
       await expect(
