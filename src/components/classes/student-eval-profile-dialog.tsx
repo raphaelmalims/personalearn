@@ -11,6 +11,7 @@ import {
   type EvalDotState,
 } from "@/components/classes/eval-progress-dot";
 import { StudentInterestsEditor } from "@/components/classes/student-interests-editor";
+import { cn } from "@/lib/utils";
 
 type StudentEvalProfileDialogProps = {
   classId: string;
