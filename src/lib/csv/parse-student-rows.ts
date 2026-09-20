@@ -21,6 +21,7 @@ export function parseStudentRows(rows: Record<string, string>[]): ParseStudentRo
       full_name: row.full_name?.trim() ?? "",
       admission_number: row.admission_number?.trim() || undefined,
       gender: normalizeGender(row.gender),
+      interests: row.interests?.trim() || undefined,
     };
 
     const result = studentSchema.safeParse(candidate);

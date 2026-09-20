@@ -19,7 +19,7 @@ describe("buildClassAssistantSystemPrompt", () => {
     expect(prompt).toContain("Never ask which class");
     expect(prompt).toContain("search_class_resources");
     expect(prompt).toContain("generate_teaching_image");
-    expect(prompt).toContain("create_student");
+    expect(prompt).toContain("list_students");
     expect(prompt).toContain("query_class_performance");
     expect(prompt).toContain("draftId");
     expect(prompt).toContain("save_resource");
@@ -31,5 +31,7 @@ describe("buildClassAssistantSystemPrompt", () => {
     expect(prompt).toContain("$...$");
     expect(prompt).toContain("$$...$$");
     expect(prompt).toContain("Never show database ids");
+    expect(prompt).toContain("interests/passions");
+    expect(prompt).toContain("never show UUIDs");
   });
 });

@@ -39,6 +39,7 @@ export function filterStudentsByQuery(
       student.full_name,
       student.admission_number,
       student.gender,
+      student.interests,
     ]
       .map(normalize)
       .join(" ");

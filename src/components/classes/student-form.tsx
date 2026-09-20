@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { studentSchema, type StudentFormValues } from "@/lib/validations/class";
 import { useCreateStudent } from "@/lib/hooks/use-classes";
+import { STUDENT_INTERESTS_MAX_LENGTH } from "@/lib/students/interests";
+import { cn } from "@/lib/utils";
 
 type StudentFormProps = {
   classId: string;
@@ -29,7 +31,12 @@ export function StudentForm({
     formState: { errors },
   } = useForm<StudentFormValues>({
     resolver: zodResolver(studentSchema),
-    defaultValues: { full_name: "", admission_number: "", gender: undefined },
+    defaultValues: {
+      full_name: "",
+      admission_number: "",
+      gender: undefined,
+      interests: "",
+    },
   });
 
   async function onSubmit(values: StudentFormValues) {
@@ -60,6 +67,26 @@ export function StudentForm({
             <option value="Female">Female</option>
           </Select>
         </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="interests">Interests / passions (optional)</Label>
+        <textarea
+          id="interests"
+          {...register("interests")}
+          maxLength={STUDENT_INTERESTS_MAX_LENGTH}
+          rows={2}
+          placeholder="e.g. football, choir, drawing"
+          className={cn(
+            "flex min-h-[4.5rem] w-full rounded-xl border border-input bg-card px-3 py-2 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50"
+          )}
+        />
+        <p className="text-xs text-muted-foreground">
+          Short notes or comma-separated tags. Used to personalize evening
+          feedback.
+        </p>
+        {errors.interests ? (
+          <p className="text-xs text-destructive">{errors.interests.message}</p>
+        ) : null}
       </div>
       {createStudent.error ? (
         <p className="text-sm text-destructive">{createStudent.error.message}</p>

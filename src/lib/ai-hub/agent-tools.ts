@@ -23,6 +23,7 @@ import {
   shouldPublishAssessment,
 } from "@/lib/evaluation/create-assessment-from-resource";
 import type { GradableResourceType } from "@/lib/evaluation/gradable";
+import { STUDENT_INTERESTS_MAX_LENGTH, normalizeStudentInterests } from "@/lib/students/interests";
 
 export const RESOURCE_TYPES = [
   "scheme_of_work",
@@ -62,6 +63,28 @@ const RESOURCE_TYPE_LABELS: Record<ResourceType, string> = {
 };
 
 const genderSchema = z.enum(["Male", "Female"]);
+const interestsSchema = z
+  .string()
+  .max(STUDENT_INTERESTS_MAX_LENGTH)
+  .describe(
+    "Optional interests/passions as short teacher text or comma-separated tags"
+  );
+
+function mapStudentToolRow(student: {
+  id: string;
+  full_name: string;
+  admission_number: string | null;
+  gender: string | null;
+  interests?: string | null;
+}) {
+  return {
+    studentId: student.id,
+    fullName: student.full_name,
+    admissionNumber: student.admission_number ?? null,
+    gender: student.gender ?? null,
+    interests: student.interests ?? null,
+  };
+}
 
 export type AgentToolDeps = {
   supabase: SupabaseClient;
@@ -491,7 +514,7 @@ export async function executeListStudents(deps: AgentToolDeps) {
   try {
     const { data, error } = await deps.supabase
       .from("students")
-      .select("id, full_name, admission_number, gender")
+      .select("id, full_name, admission_number, gender, interests")
       .eq("class_id", deps.classId)
       .order("full_name", { ascending: true });
 
@@ -500,12 +523,9 @@ export async function executeListStudents(deps: AgentToolDeps) {
     }
 
     return {
-      students: (data ?? []).map((student) => ({
-        studentId: student.id as string,
-        fullName: student.full_name as string,
-        admissionNumber: (student.admission_number as string | null) ?? null,
-        gender: (student.gender as string | null) ?? null,
-      })),
+      students: (data ?? []).map((student) =>
+        mapStudentToolRow(student as Parameters<typeof mapStudentToolRow>[0])
+      ),
     };
   } catch {
     return userSafeError("Could not load the class roster. Please try again.");
@@ -692,6 +712,7 @@ export async function executeCreateStudent(
     fullName: string;
     admissionNumber?: string;
     gender?: "Male" | "Female";
+    interests?: string;
     teacherConfirmed: true;
   }
 ) {
@@ -727,8 +748,9 @@ export async function executeCreateStudent(
         full_name: fullName,
         admission_number: admissionNumber,
         gender: input.gender ?? null,
+        interests: normalizeStudentInterests(input.interests),
       })
-      .select("id, full_name, admission_number, gender")
+      .select("id, full_name, admission_number, gender, interests")
       .single();
 
     if (error || !data) {
@@ -742,10 +764,7 @@ export async function executeCreateStudent(
 
     return {
       created: true,
-      studentId: data.id as string,
-      fullName: data.full_name as string,
-      admissionNumber: (data.admission_number as string | null) ?? null,
-      gender: (data.gender as string | null) ?? null,
+      ...mapStudentToolRow(data as Parameters<typeof mapStudentToolRow>[0]),
     };
   } catch {
     return userSafeError("Could not create the student. Please try again.");
@@ -759,6 +778,7 @@ export async function executeUpdateStudent(
     fullName?: string;
     admissionNumber?: string | null;
     gender?: "Male" | "Female" | null;
+    interests?: string | null;
     teacherConfirmed: true;
   }
 ) {
@@ -769,7 +789,8 @@ export async function executeUpdateStudent(
   if (
     input.fullName === undefined &&
     input.admissionNumber === undefined &&
-    input.gender === undefined
+    input.gender === undefined &&
+    input.interests === undefined
   ) {
     return userSafeError("Provide at least one field to update.");
   }
@@ -777,7 +798,7 @@ export async function executeUpdateStudent(
   try {
     const { data: existing, error: lookupError } = await deps.supabase
       .from("students")
-      .select("id, full_name, admission_number, gender")
+      .select("id, full_name, admission_number, gender, interests")
       .eq("id", input.studentId)
       .eq("class_id", deps.classId)
       .maybeSingle();
@@ -820,12 +841,16 @@ export async function executeUpdateStudent(
       patch.gender = input.gender;
     }
 
+    if (input.interests !== undefined) {
+      patch.interests = normalizeStudentInterests(input.interests);
+    }
+
     const { data, error } = await deps.supabase
       .from("students")
       .update(patch)
       .eq("id", input.studentId)
       .eq("class_id", deps.classId)
-      .select("id, full_name, admission_number, gender")
+      .select("id, full_name, admission_number, gender, interests")
       .single();
 
     if (error || !data) {
@@ -839,10 +864,7 @@ export async function executeUpdateStudent(
 
     return {
       updated: true,
-      studentId: data.id as string,
-      fullName: data.full_name as string,
-      admissionNumber: (data.admission_number as string | null) ?? null,
-      gender: (data.gender as string | null) ?? null,
+      ...mapStudentToolRow(data as Parameters<typeof mapStudentToolRow>[0]),
     };
   } catch {
     return userSafeError("Could not update the student. Please try again.");
@@ -1062,7 +1084,7 @@ export function createAgentTools(deps: AgentToolDeps) {
     }),
     list_students: tool({
       description:
-        "List students in the active class roster with ids, names, and admission numbers. Use when the teacher asks about their students or class size.",
+        "List students in the active class roster with names, admission numbers, and interests/passions. Use interests to personalize assessments and feedback. studentId is only for other tools — never show UUIDs to the teacher.",
       inputSchema: z.object({}),
       execute: async () => executeListStudents(deps),
     }),
@@ -1076,6 +1098,7 @@ export function createAgentTools(deps: AgentToolDeps) {
           .optional()
           .describe("Optional admission number (unique within the class)"),
         gender: genderSchema.optional().describe("Optional gender"),
+        interests: interestsSchema.optional(),
         teacherConfirmed: z
           .literal(true)
           .describe(
@@ -1086,7 +1109,7 @@ export function createAgentTools(deps: AgentToolDeps) {
     }),
     update_student: tool({
       description:
-        "Update a student in the active class roster. Only call after the teacher explicitly confirms the change. Never delete students from chat.",
+        "Update a student in the active class roster (name, admission, gender, or interests). Only call after the teacher explicitly confirms the change. Never delete students from chat. Never show student UUIDs to the teacher.",
       inputSchema: z.object({
         studentId: z.string().uuid().describe("Student id from list_students"),
         fullName: z.string().min(2).optional().describe("Updated full name"),
@@ -1099,6 +1122,10 @@ export function createAgentTools(deps: AgentToolDeps) {
           .nullable()
           .optional()
           .describe("Updated gender (null clears it)"),
+        interests: interestsSchema
+          .nullable()
+          .optional()
+          .describe("Updated interests/passions (null or empty clears it)"),
         teacherConfirmed: z
           .literal(true)
           .describe(

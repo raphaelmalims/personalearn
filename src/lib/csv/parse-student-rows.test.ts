@@ -54,6 +54,29 @@ describe("parseStudentRows", () => {
     });
   });
 
+  it("parses an optional interests column", () => {
+    const result = parseStudentRows([
+      {
+        full_name: "Jane Doe",
+        admission_number: "ADM001",
+        gender: "Female",
+        interests: "  football, choir  ",
+      },
+    ]);
+
+    expect(result).toEqual({
+      ok: true,
+      students: [
+        {
+          full_name: "Jane Doe",
+          admission_number: "ADM001",
+          gender: "Female",
+          interests: "football, choir",
+        },
+      ],
+    });
+  });
+
   it("returns row-specific errors for invalid names", () => {
     const result = parseStudentRows([
       {

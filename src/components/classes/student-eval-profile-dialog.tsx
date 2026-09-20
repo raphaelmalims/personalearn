@@ -10,6 +10,7 @@ import {
   EvalProgressDot,
   type EvalDotState,
 } from "@/components/classes/eval-progress-dot";
+import { StudentInterestsEditor } from "@/components/classes/student-interests-editor";
 import { cn } from "@/lib/utils";
 
 type StudentEvalProfileDialogProps = {
@@ -107,6 +108,10 @@ export function StudentEvalProfileDialog({
               <dd className="font-medium">{profileStudent.gender ?? "—"}</dd>
             </div>
           </dl>
+        ) : null}
+
+        {profileStudent ? (
+          <StudentInterestsEditor classId={classId} student={profileStudent} />
         ) : null}
 
         {isLoading ? (
