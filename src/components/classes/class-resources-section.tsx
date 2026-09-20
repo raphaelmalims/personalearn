@@ -1,14 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { useResources } from "@/lib/hooks/use-resources";
+import {
+  usePrefetchResource,
+  useResources,
+} from "@/lib/hooks/use-resources";
 import { filterResourcesByQuery } from "@/lib/classes/filter-class-lists";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ResourceListTable } from "@/components/classes/resource-list-table";
 import { ResourceUploadDialog } from "@/components/classes/resource-upload-dialog";
 import { StartEvaluationDialog } from "@/components/classes/start-evaluation-dialog";
+import { useHubResourceSessionStore } from "@/lib/store/hub-resource-session";
 import { cn } from "@/lib/utils";
 
 type ClassResourcesSectionProps = {
@@ -21,6 +24,8 @@ type ClassResourcesSectionProps = {
   onOpenResourceConsumed?: () => void;
   /** Narrow container (Hub class panel): no card chrome, stacked list only. */
   compact?: boolean;
+  /** After opening on mobile, hide the list sheet so the reader is full viewport. */
+  onOpenedOnMobile?: () => void;
 };
 
 export function ClassResourcesSection({
@@ -30,9 +35,12 @@ export function ClassResourcesSection({
   openResourceId = null,
   onOpenResourceConsumed,
   compact = false,
+  onOpenedOnMobile,
 }: ClassResourcesSectionProps) {
-  const router = useRouter();
   const { data: resources, isLoading, error } = useResources(classId);
+  const prefetchResource = usePrefetchResource();
+  const selectedResourceId = useHubResourceSessionStore((s) => s.openResourceId);
+  const openResource = useHubResourceSessionStore((s) => s.openResource);
   const filteredResources = useMemo(
     () => filterResourcesByQuery(resources ?? [], searchQuery),
     [resources, searchQuery]
@@ -44,16 +52,23 @@ export function ClassResourcesSection({
     return resources.find((resource) => resource.id === openResourceId) ?? null;
   }, [openResourceId, resources]);
 
-  const navigatedDeepLinkId = useRef<string | null>(null);
+  const openedDeepLinkId = useRef<string | null>(null);
 
-  // Hub / leftover deep-link → resource page (dialog retired in PSL-71).
+  function handleOpen(resourceId: string) {
+    prefetchResource(resourceId);
+    openResource({ classId, resourceId });
+    onOpenedOnMobile?.();
+  }
+
+  // Leftover deep-link → Hub reader (stay on Hub; list stays mounted).
   useEffect(() => {
     if (!autoOpenResource) return;
-    if (navigatedDeepLinkId.current === autoOpenResource.id) return;
-    navigatedDeepLinkId.current = autoOpenResource.id;
+    if (openedDeepLinkId.current === autoOpenResource.id) return;
+    openedDeepLinkId.current = autoOpenResource.id;
     onOpenResourceConsumed?.();
-    router.push(`/classes/${classId}/resources/${autoOpenResource.id}`);
-  }, [autoOpenResource, classId, onOpenResourceConsumed, router]);
+    handleOpen(autoOpenResource.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- consume once per id
+  }, [autoOpenResource, classId]);
 
   // Linked resource missing (deleted) — consume so the query param is cleared.
   useEffect(() => {
@@ -83,6 +98,9 @@ export function ClassResourcesSection({
       classId={classId}
       resources={filteredResources}
       compact={compact}
+      selectedResourceId={selectedResourceId}
+      onOpenResource={handleOpen}
+      onPrefetchResource={prefetchResource}
       emptyMessage={
         hasQuery
           ? "No matching resources."

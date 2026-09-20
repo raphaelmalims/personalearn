@@ -18,6 +18,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ChatMessage } from "@/components/ai-hub/chat-message";
 import { HubEvalSessionHost } from "@/components/ai-hub/hub-eval-session-host";
+import { HubResourceSessionHost } from "@/components/ai-hub/hub-resource-session-host";
 import {
   HubClassPanel,
   readClassPanelCollapsedPreference,
@@ -55,10 +56,11 @@ import {
   useConversations,
 } from "@/lib/hooks/use-conversations";
 import { useIsMobile } from "@/lib/hooks/use-is-mobile";
-import { resourcesQueryKey } from "@/lib/hooks/use-resources";
+import { resourcesQueryKey, useResources } from "@/lib/hooks/use-resources";
 import { assessmentsQueryKey } from "@/lib/hooks/use-evaluation";
 import { useActiveClassStore } from "@/lib/store/active-class";
 import { useHubEvalSessionStore } from "@/lib/store/hub-eval-session";
+import { closeResourceReaderForChat } from "@/lib/store/hub-resource-session";
 import { useEvalUploadQueue } from "@/lib/hooks/use-eval-upload-queue";
 import { cn } from "@/lib/utils";
 
@@ -147,6 +149,12 @@ export function AiHubChat() {
     data: conversations = [],
     isLoading: conversationsLoading,
   } = useConversations(activeClass?.id);
+  useResources(activeClass?.id);
+
+  function handleMobileBackToResourceList() {
+    setClassPanelTab("resources");
+    handleClassPanelCollapsedChange(false);
+  }
 
   const chatInstanceId = activeClass?.id ?? "none";
 
@@ -384,6 +392,7 @@ export function AiHubChat() {
   async function handleSelectConversation(conversationId: string) {
     if (!activeClass) return;
 
+    closeResourceReaderForChat();
     clearError();
     setActionError(null);
     setEditingMessageId(null);
@@ -440,6 +449,7 @@ export function AiHubChat() {
   }
 
   function handleNewConversation() {
+    closeResourceReaderForChat();
     setSelectedConversationId(null);
     conversationIdRef.current = null;
     setMessages([]);
@@ -713,6 +723,9 @@ export function AiHubChat() {
       >
         <section className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background">
           <HubEvalSessionHost />
+          <HubResourceSessionHost
+            onMobileBackToList={handleMobileBackToResourceList}
+          />
           {isMobile ? (
             <div className="absolute right-1 top-2 z-10 flex items-center gap-1">
               <Button

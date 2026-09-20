@@ -18,15 +18,9 @@ vi.mock("@/components/classes/class-resources-section", () => ({
 }));
 
 vi.mock("@/components/classes/student-roster-table", () => ({
-  StudentRosterTable: () => <div data-testid="roster-table" />,
-}));
-
-vi.mock("@/components/classes/add-student-dialog", () => ({
-  AddStudentDialog: () => <button type="button">Add student</button>,
-}));
-
-vi.mock("@/components/classes/csv-import-dialog", () => ({
-  CsvImportDialog: () => <button type="button">Import CSV</button>,
+  StudentRosterTable: ({ emptyMessage }: { emptyMessage?: string }) => (
+    <div data-testid="roster-table">{emptyMessage}</div>
+  ),
 }));
 
 vi.mock("@/lib/hooks/use-classes", () => ({
@@ -116,6 +110,18 @@ describe("HubClassPanel", () => {
     expect(onCollapsedChange).toHaveBeenCalledWith(true);
   });
 
+  it("uses a flush-left ghost X that rotates when the panel collapses", () => {
+    const { rerender, props } = renderPanel();
+    const collapse = screen.getByRole("button", { name: "Collapse class panel" });
+    expect(collapse).toHaveAttribute("aria-pressed", "false");
+    expect(collapse.querySelector("svg")).not.toHaveClass("rotate-45");
+
+    rerender(<HubClassPanel {...props} collapsed />);
+    const expand = screen.getByRole("button", { name: "Expand class panel" });
+    expect(expand).toHaveAttribute("aria-pressed", "true");
+    expect(expand.querySelector("svg")).toHaveClass("rotate-45");
+  });
+
   it("marks the active tab and shows the resources surface", () => {
     renderPanel();
 
@@ -171,17 +177,25 @@ describe("HubClassPanel", () => {
     });
 
     expect(screen.getByRole("button", { name: "New conversation" })).toBeInTheDocument();
+    expect(screen.queryByText("New conversation")).toBeNull();
     expect(
       screen.getByRole("button", { name: /Fractions recap less/ })
     ).toBeInTheDocument();
   });
 
-  it("renders the roster and its import entry points on the students tab", () => {
+  it("renders the roster without add or import chrome on the students tab", () => {
     renderPanel({ activeTab: "students" });
 
-    expect(screen.getByTestId("roster-table")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Add student" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Import CSV" })).toBeInTheDocument();
+    const roster = screen.getByTestId("roster-table");
+    expect(roster).toBeInTheDocument();
+    expect(roster).toHaveTextContent("No students yet.");
+    expect(roster).not.toHaveTextContent("buttons above");
+    expect(
+      screen.queryByRole("button", { name: "Add student" })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Import CSV" })
+    ).not.toBeInTheDocument();
   });
 
   it("passes the header search down to the resources surface", () => {

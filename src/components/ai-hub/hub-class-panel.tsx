@@ -1,11 +1,9 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, PanelRight, Search, X } from "lucide-react";
+import { PanelRight, Plus, Search, X } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { ConversationList } from "@/components/ai-hub/conversation-sidebar";
-import { AddStudentDialog } from "@/components/classes/add-student-dialog";
 import { ClassResourcesSection } from "@/components/classes/class-resources-section";
-import { CsvImportDialog } from "@/components/classes/csv-import-dialog";
 import { StudentRosterTable } from "@/components/classes/student-roster-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -95,14 +93,15 @@ export function HubClassPanel({
         />
         <Button
           type="button"
-          variant="secondary"
+          variant="ghost"
           size="icon"
-          className="relative z-10 h-8 w-8 rounded-full bg-background shadow-none"
+          className="relative z-10 h-8 w-8"
           onClick={() => onCollapsedChange(false)}
           title="Expand class panel"
           aria-label="Expand class panel"
+          aria-pressed
         >
-          <ChevronLeft className="h-4 w-4" />
+          <X className="h-4 w-4 rotate-45 transition-transform duration-200 ease-out motion-reduce:transition-none" />
         </Button>
         <PanelRight
           className="relative z-10 h-4 w-4 text-muted-foreground"
@@ -132,17 +131,18 @@ export function HubClassPanel({
       )}
       aria-label="Class panel"
     >
-      <div className="flex shrink-0 justify-end px-2 pt-2">
+      <div className="flex shrink-0 justify-start">
         <Button
           type="button"
-          variant="secondary"
+          variant="ghost"
           size="icon"
-          className="h-8 w-8 shrink-0 rounded-full"
+          className="h-8 w-8 shrink-0"
           onClick={() => onCollapsedChange(true)}
           title={sheetMode ? "Back to chat" : "Collapse class panel"}
           aria-label={sheetMode ? "Back to chat" : "Collapse class panel"}
+          aria-pressed={false}
         >
-          <ChevronRight className="h-4 w-4" />
+          <X className="h-4 w-4 rotate-0 transition-transform duration-200 ease-out motion-reduce:transition-none" />
         </Button>
       </div>
 
@@ -202,26 +202,41 @@ export function HubClassPanel({
       </div>
 
       <div className="shrink-0 px-3 pb-2">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="search"
-            value={searchQuery}
-            onChange={(event) => onSearchQueryChange(event.target.value)}
-            placeholder={searchLabel}
-            className="h-9 rounded-xl pl-8 pr-8 text-sm"
-            aria-label={searchLabel}
-          />
-          {hasQuery ? (
+        <div className="flex items-center">
+          <div className="relative min-w-0 flex-1">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => onSearchQueryChange(event.target.value)}
+              placeholder={searchLabel}
+              className="h-9 rounded-xl pl-8 pr-8 text-sm"
+              aria-label={searchLabel}
+            />
+            {hasQuery ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-0.5 top-1/2 h-7 w-7 -translate-y-1/2 p-0 text-muted-foreground"
+                onClick={() => onSearchQueryChange("")}
+                aria-label="Clear search"
+              >
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            ) : null}
+          </div>
+          {activeTab === "conversations" ? (
             <Button
               type="button"
               variant="ghost"
-              size="sm"
-              className="absolute right-0.5 top-1/2 h-7 w-7 -translate-y-1/2 p-0 text-muted-foreground"
-              onClick={() => onSearchQueryChange("")}
-              aria-label="Clear search"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={() => onNewConversation?.()}
+              aria-label="New conversation"
+              title="New conversation"
             >
-              <X className="h-3.5 w-3.5" />
+              <Plus className="h-4 w-4" />
             </Button>
           ) : null}
         </div>
@@ -244,7 +259,6 @@ export function HubClassPanel({
               onSelectConversation?.(conversationId);
               if (sheetMode) onCollapsedChange(true);
             }}
-            onNewConversation={() => onNewConversation?.()}
             onDelete={(conversationId) => onDeleteConversation?.(conversationId)}
           />
         ) : activeTab === "resources" ? (
@@ -252,13 +266,12 @@ export function HubClassPanel({
             classId={classId}
             searchQuery={searchQuery}
             compact
+            onOpenedOnMobile={
+              sheetMode ? () => onCollapsedChange(true) : undefined
+            }
           />
         ) : (
           <section className="space-y-3" aria-label="Student roster">
-            <div className="flex flex-wrap items-center gap-2">
-              <AddStudentDialog classId={classId} />
-              <CsvImportDialog classId={classId} />
-            </div>
             {studentsLoading ? (
               <div
                 className="space-y-2"
@@ -275,9 +288,7 @@ export function HubClassPanel({
                 students={filteredStudents}
                 compact
                 emptyMessage={
-                  hasQuery
-                    ? "No matching students."
-                    : "No students yet. Use the buttons above to add one or import a CSV."
+                  hasQuery ? "No matching students." : "No students yet."
                 }
               />
             )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
 import type { Resource, ResourceType } from "@/types/database";
 
 export const resourcesQueryKey = (classId: string) =>
@@ -8,6 +9,9 @@ export const resourcesQueryKey = (classId: string) =>
 
 export const resourceQueryKey = (resourceId: string) =>
   ["resource", resourceId] as const;
+
+/** Keep a resource detail in cache long enough that a second open is instant. */
+export const RESOURCE_DETAIL_STALE_TIME = 5 * 60 * 1000;
 
 export type ResourceDetailResponse = {
   resource: Resource;
@@ -42,6 +46,25 @@ async function fetchResource(resourceId: string) {
   return payload as ResourceDetailResponse;
 }
 
+export function prefetchResourceDetail(
+  queryClient: QueryClient,
+  resourceId: string
+) {
+  return queryClient.prefetchQuery({
+    queryKey: resourceQueryKey(resourceId),
+    queryFn: () => fetchResource(resourceId),
+    staleTime: RESOURCE_DETAIL_STALE_TIME,
+  });
+}
+
+export function usePrefetchResource() {
+  const queryClient = useQueryClient();
+
+  return (resourceId: string) => {
+    void prefetchResourceDetail(queryClient, resourceId);
+  };
+}
+
 export function useResources(classId: string | undefined) {
   return useQuery({
     queryKey: resourcesQueryKey(classId ?? ""),
@@ -55,6 +78,7 @@ export function useResource(resourceId: string | undefined) {
     queryKey: resourceQueryKey(resourceId ?? ""),
     enabled: Boolean(resourceId),
     queryFn: () => fetchResource(resourceId!),
+    staleTime: RESOURCE_DETAIL_STALE_TIME,
   });
 }
 
