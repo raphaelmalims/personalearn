@@ -252,6 +252,9 @@ export function HubClassPanel({
             classId={classId}
             searchQuery={searchQuery}
             compact
+            onOpenedOnMobile={
+              sheetMode ? () => onCollapsedChange(true) : undefined
+            }
           />
         ) : (
           <section className="space-y-3" aria-label="Student roster">
