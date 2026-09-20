@@ -146,6 +146,7 @@ describe("POST /api/ai-hub/chat", () => {
     expect(mockCreateAgentTools).toHaveBeenCalledWith(
       expect.objectContaining({
         classId,
+        conversationId,
       })
     );
     expect(mockAppendConversationMessages).toHaveBeenCalledWith(

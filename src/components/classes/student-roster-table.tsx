@@ -1,8 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { scriptReviewPath } from "@/lib/evaluation/review-routes";
 import { Trash2 } from "lucide-react";
 import type { EvaluatedScriptStatus, Student } from "@/types/database";
 import { useDeleteStudent } from "@/lib/hooks/use-classes";
@@ -25,8 +23,8 @@ import {
   evalDotStateFromScriptStatus,
 } from "@/components/classes/eval-progress-dot";
 import { StudentEvalProfileDialog } from "@/components/classes/student-eval-profile-dialog";
-import { StartEvaluationDialog } from "@/components/classes/start-evaluation-dialog";
 import { cn } from "@/lib/utils";
+import { useHubEvalSessionStore } from "@/lib/store/hub-eval-session";
 
 type StudentRosterTableProps = {
   classId: string;
@@ -34,11 +32,6 @@ type StudentRosterTableProps = {
   emptyMessage?: string;
   /** Narrow container (Hub class panel): conversation-row density, no card chrome. */
   compact?: boolean;
-};
-
-type N1EvalTarget = {
-  student: Student;
-  assessmentId: string;
 };
 
 const STATUS_PRIORITY: EvaluatedScriptStatus[] = [
@@ -68,10 +61,10 @@ export function StudentRosterTable({
   emptyMessage = "No students yet. Use the buttons above to add one or import a CSV.",
   compact = false,
 }: StudentRosterTableProps) {
-  const router = useRouter();
   const deleteStudent = useDeleteStudent(classId);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [n1Eval, setN1Eval] = useState<N1EvalTarget | null>(null);
+  const openEvalBatch = useHubEvalSessionStore((s) => s.openBatch);
+  const setComposerHint = useHubEvalSessionStore((s) => s.setComposerHint);
 
   const { data: batches } = useEvaluationBatches(classId);
   const activeBatch = useMemo(() => {
@@ -143,9 +136,12 @@ export function StudentRosterTable({
           }
           onClick={(event) => {
             event.stopPropagation();
-            router.push(
-              scriptReviewPath(classId, assessmentId, reviewScriptId)
-            );
+            openEvalBatch({
+              classId,
+              batchId: activeBatch!.id,
+              assessmentId,
+              scriptId: reviewScriptId,
+            });
           }}
         >
           <EvalProgressDot state={state} />
@@ -252,38 +248,27 @@ export function StudentRosterTable({
       <StudentEvalProfileDialog
         classId={classId}
         student={selectedStudent}
-        open={Boolean(selectedStudent) && !n1Eval}
+        open={Boolean(selectedStudent)}
         onOpenChange={(next) => {
           if (!next) setSelectedStudent(null);
         }}
-        onEvaluateAssessment={(assessmentId) => {
+        onEvaluateAssessment={(_assessmentId, title) => {
           if (!selectedStudent) return;
-          setN1Eval({ student: selectedStudent, assessmentId });
+          setComposerHint(
+            `Evaluate ${selectedStudent.full_name} on ${title}. I'll attach the script photos.`
+          );
           setSelectedStudent(null);
         }}
         onContinueReview={({ batchId, assessmentId, scriptId }) => {
           setSelectedStudent(null);
-          if (scriptId) {
-            router.push(scriptReviewPath(classId, assessmentId, scriptId));
-            return;
-          }
-          router.push(`/classes/${classId}/evaluations/${batchId}`);
+          openEvalBatch({
+            classId,
+            batchId,
+            assessmentId,
+            scriptId: scriptId ?? null,
+          });
         }}
       />
-
-      {n1Eval ? (
-        <StartEvaluationDialog
-          classId={classId}
-          studentId={n1Eval.student.id}
-          studentName={n1Eval.student.full_name}
-          preselectedAssessmentId={n1Eval.assessmentId}
-          hideTrigger
-          open
-          onOpenChange={(next) => {
-            if (!next) setN1Eval(null);
-          }}
-        />
-      ) : null}
     </>
   );
 }

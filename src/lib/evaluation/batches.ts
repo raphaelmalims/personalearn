@@ -59,6 +59,8 @@ export type CreateEvaluationBatchInput = {
   markingSchemeResourceId?: string | null;
   /** Explicit proceed without a marking scheme. */
   proceedWithoutScheme?: boolean;
+  /** Hub conversation that owns this session (PSL-121). */
+  conversationId?: string | null;
   /** Optional N=1 scope — student must belong to classId (PSL-48). */
   studentId?: string | null;
 };
@@ -112,6 +114,23 @@ export async function createEvaluationBatch(
     throw new Error("assessmentId or a gradable resourceId is required");
   }
 
+  const conversationId: string | null = input.conversationId ?? null;
+  if (conversationId) {
+    const { data: conversation, error: conversationError } = await supabase
+      .from("conversations")
+      .select("id, class_id")
+      .eq("id", conversationId)
+      .maybeSingle();
+
+    if (
+      conversationError ||
+      !conversation ||
+      conversation.class_id !== input.classId
+    ) {
+      throw new Error("Conversation not found");
+    }
+  }
+
   const scopedStudentId: string | null = input.studentId ?? null;
   if (scopedStudentId) {
     const { data: student, error: studentError } = await supabase
@@ -150,6 +169,17 @@ export async function createEvaluationBatch(
         "This assessment already has an open evaluation. Finish or open that review before starting another."
       );
     }
+    if (conversationId && !existingOpen.conversation_id) {
+      const { data: linked, error: linkError } = await supabase
+        .from("evaluation_batches")
+        .update({ conversation_id: conversationId })
+        .eq("id", existingOpen.id)
+        .select("*")
+        .maybeSingle();
+      if (!linkError && linked) {
+        return { batch: linked as EvaluationBatch, reused: true };
+      }
+    }
     return { batch: existingOpen, reused: true };
   }
 
@@ -181,6 +211,7 @@ export async function createEvaluationBatch(
       assessment_id: assessmentId,
       marking_scheme_resource_id: markingSchemeResourceId,
       scoped_student_id: scopedStudentId,
+      conversation_id: conversationId,
       mode: scopedStudentId ? "live" : "batch",
       status: "draft",
     })

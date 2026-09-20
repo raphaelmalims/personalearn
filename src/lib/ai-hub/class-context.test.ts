@@ -23,6 +23,9 @@ describe("buildClassAssistantSystemPrompt", () => {
     expect(prompt).toContain("query_class_performance");
     expect(prompt).toContain("draftId");
     expect(prompt).toContain("save_resource");
+    expect(prompt).toContain("start_evaluation_batch");
+    expect(prompt).toContain("saved assignment");
+    expect(prompt).toContain("never ask them to pick");
     expect(prompt).toContain("revise further");
     expect(prompt).toContain("explicitly confirms");
     expect(prompt).toContain("$...$");

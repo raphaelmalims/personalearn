@@ -17,6 +17,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ChatMessage } from "@/components/ai-hub/chat-message";
+import { HubEvalSessionHost } from "@/components/ai-hub/hub-eval-session-host";
 import {
   HubClassPanel,
   readClassPanelCollapsedPreference,
@@ -47,6 +48,7 @@ import {
 import {
   getMessageText,
   getVisibleDrafts,
+  getVisibleEvalSessions,
 } from "@/lib/ai-hub/message-content";
 import {
   conversationsQueryKey,
@@ -56,6 +58,8 @@ import { useIsMobile } from "@/lib/hooks/use-is-mobile";
 import { resourcesQueryKey } from "@/lib/hooks/use-resources";
 import { assessmentsQueryKey } from "@/lib/hooks/use-evaluation";
 import { useActiveClassStore } from "@/lib/store/active-class";
+import { useHubEvalSessionStore } from "@/lib/store/hub-eval-session";
+import { useEvalUploadQueue } from "@/lib/hooks/use-eval-upload-queue";
 import { cn } from "@/lib/utils";
 
 const SUGGESTED_PROMPTS = [
@@ -102,6 +106,12 @@ export function AiHubChat() {
     useState<HubClassPanelTab>("resources");
   const [classPanelSearch, setClassPanelSearch] = useState("");
   const isMobile = useIsMobile();
+  const { enqueueUpload } = useEvalUploadQueue();
+  const openEvalBatch = useHubEvalSessionStore((s) => s.openBatch);
+  const composerHint = useHubEvalSessionStore((s) => s.composerHint);
+  const setComposerHint = useHubEvalSessionStore((s) => s.setComposerHint);
+  const evalScanFilesRef = useRef<File[]>([]);
+  const openedEvalBatchesRef = useRef(new Set<string>());
   const conversationIdRef = useRef<string | null>(null);
   const setSelectedConversationIdRef = useRef(setSelectedConversationId);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -260,7 +270,8 @@ export function AiHubChat() {
       if (
         last?.role === "assistant" &&
         !getMessageText(last).trim() &&
-        getVisibleDrafts(last).length === 0
+        getVisibleDrafts(last).length === 0 &&
+        getVisibleEvalSessions(last).length === 0
       ) {
         setActionError(
           "The assistant returned an empty reply. Confirm DEEPSEEK_API_KEY (or CHAT_PROVIDER + matching key) is set in Vercel Production, then redeploy."
@@ -505,8 +516,12 @@ export function AiHubChat() {
 
   async function submitMessage(text: string) {
     const trimmed = text.trim();
-    const files = pendingAttachments.map((attachment) => attachment.file);
-    const hasFiles = files.length > 0;
+      const files = pendingAttachments.map((attachment) => attachment.file);
+      const imageFiles = files.filter((file) =>
+        (file.type || "").startsWith("image/")
+      );
+      evalScanFilesRef.current = imageFiles;
+      const hasFiles = files.length > 0;
 
     if (
       (!trimmed && !hasFiles) ||
@@ -577,6 +592,41 @@ export function AiHubChat() {
     event.preventDefault();
     await submitMessage(draft);
   }
+
+  useEffect(() => {
+    if (!composerHint) return;
+    setDraft((current) =>
+      current.includes(composerHint) ? current : current
+        ? `${current}\n${composerHint}`
+        : composerHint
+    );
+    setComposerHint(null);
+    requestAnimationFrame(() => textareaRef.current?.focus());
+  }, [composerHint, setComposerHint]);
+
+  useEffect(() => {
+    if (!activeClass?.id) return;
+    for (const message of messages) {
+      if (message.role !== "assistant") continue;
+      for (const session of getVisibleEvalSessions(message)) {
+        if (openedEvalBatchesRef.current.has(session.batchId)) continue;
+        openedEvalBatchesRef.current.add(session.batchId);
+        const scans = evalScanFilesRef.current;
+        evalScanFilesRef.current = [];
+        if (scans.length > 0) {
+          enqueueUpload({
+            classId: activeClass.id,
+            batchId: session.batchId,
+            files: scans,
+          });
+        }
+        openEvalBatch({
+          classId: activeClass.id,
+          batchId: session.batchId,
+        });
+      }
+    }
+  }, [activeClass?.id, enqueueUpload, messages, openEvalBatch]);
 
   async function handleDeleteConversation(conversationId: string) {
     setDeletingConversationId(conversationId);
@@ -662,6 +712,7 @@ export function AiHubChat() {
         )}
       >
         <section className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background">
+          <HubEvalSessionHost />
           {isMobile ? (
             <div className="absolute right-1 top-2 z-10 flex items-center gap-1">
               <Button

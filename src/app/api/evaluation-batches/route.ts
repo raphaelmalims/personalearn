@@ -40,6 +40,7 @@ export async function POST(request: Request) {
       markingSchemeResourceId?: string | null;
       proceedWithoutScheme?: boolean;
       studentId?: string | null;
+      conversationId?: string | null;
     };
 
     if (!body.classId) {
@@ -55,6 +56,7 @@ export async function POST(request: Request) {
       markingSchemeResourceId: body.markingSchemeResourceId,
       proceedWithoutScheme: body.proceedWithoutScheme === true,
       studentId: body.studentId,
+      conversationId: body.conversationId,
     });
 
     return NextResponse.json({ batch, reused }, { status: reused ? 200 : 201 });

@@ -119,6 +119,7 @@ describe("createEvaluationBatch", () => {
       assessment_id: "assess-1",
       marking_scheme_resource_id: null,
       scoped_student_id: null,
+      conversation_id: null,
       status: "draft",
       mode: "batch",
     });
@@ -284,6 +285,7 @@ describe("createEvaluationBatch", () => {
       assessment_id: "assess-1",
       marking_scheme_resource_id: null,
       scoped_student_id: "stu-1",
+      conversation_id: null,
       status: "draft",
       mode: "live",
     });

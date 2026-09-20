@@ -1,5 +1,9 @@
 import { isReasoningUIPart, isTextUIPart, type UIMessage } from "ai";
 import { stripResourceTypeTitlePrefix } from "@/lib/resources/format";
+import {
+  isEvalSessionArtifact,
+  type EvalSessionArtifact,
+} from "@/lib/ai-hub/eval-session";
 
 export type ConversationMessageRole = "user" | "assistant" | "tool";
 
@@ -38,7 +42,8 @@ export function getVisibleDrafts(
 
 export type AssistantDisplayBlock =
   | { type: "text"; text: string }
-  | { type: "draft"; draft: VisibleDraft };
+  | { type: "draft"; draft: VisibleDraft }
+  | { type: "eval_session"; session: EvalSessionArtifact };
 
 export function getAssistantDisplayBlocks(
   message: Pick<UIMessage, "parts">
@@ -57,6 +62,12 @@ export function getAssistantDisplayBlocks(
     const draft = draftFromPart(part);
     if (draft) {
       blocks.push({ type: "draft", draft });
+      continue;
+    }
+
+    const session = evalSessionFromPart(part);
+    if (session) {
+      blocks.push({ type: "eval_session", session });
     }
   }
 
@@ -104,12 +115,59 @@ export function getAssistantPersistContent(
   if (blocks.length === 0) return "";
 
   return blocks
-    .map((block) =>
-      block.type === "text"
-        ? block.text
-        : `## ${block.draft.title}\n\n${block.draft.content}`
-    )
+    .map((block) => {
+      if (block.type === "text") return block.text;
+      if (block.type === "draft") {
+        return `## ${block.draft.title}\n\n${block.draft.content}`;
+      }
+      return evalSessionPersistLine(block.session);
+    })
     .join("\n\n");
+}
+
+function evalSessionPersistLine(session: EvalSessionArtifact): string {
+  const title = session.assessmentTitle?.trim() || "Evaluation";
+  return `Evaluation session · ${title}`;
+}
+
+function evalSessionFromPart(
+  part: UIMessage["parts"][number]
+): EvalSessionArtifact | null {
+  const record = part as Record<string, unknown>;
+  if (record._evalSession && isEvalSessionArtifact(record._evalSession)) {
+    return record._evalSession;
+  }
+  if (part.type !== "tool-start_evaluation_batch") return null;
+  if (record.state !== "output-available") return null;
+  if (!record.output || typeof record.output !== "object") return null;
+  const output = record.output as Record<string, unknown>;
+  if (output.started !== true || typeof output.batchId !== "string") {
+    return null;
+  }
+  return {
+    batchId: output.batchId,
+    conversationId:
+      typeof output.conversationId === "string" ? output.conversationId : null,
+    status: typeof output.status === "string" ? output.status : "draft",
+    assessmentTitle:
+      typeof output.assessmentTitle === "string"
+        ? output.assessmentTitle
+        : null,
+    reused: output.reused === true,
+  };
+}
+
+export function getVisibleEvalSessions(
+  message: Pick<UIMessage, "parts">
+): EvalSessionArtifact[] {
+  return getAssistantDisplayBlocks(message)
+    .filter(
+      (
+        block
+      ): block is Extract<AssistantDisplayBlock, { type: "eval_session" }> =>
+        block.type === "eval_session"
+    )
+    .map((block) => block.session);
 }
 
 const UUID_PATTERN =
@@ -149,11 +207,16 @@ export function toUIMessageFromRow(row: {
   const role = row.role === "user" ? "user" : "assistant";
 
   const savedDrafts = extractSavedDrafts(row.tool_calls);
-  if (role === "assistant" && savedDrafts.length > 0) {
+  const savedSessions = extractSavedEvalSessions(row.tool_calls);
+  if (role === "assistant" && (savedDrafts.length > 0 || savedSessions.length > 0)) {
+    const parts = rebuiltPartsWithDrafts(row.content, savedDrafts);
+    for (const session of savedSessions) {
+      parts.push(createEvalSessionPart(session));
+    }
     return {
       id: row.id,
       role,
-      parts: rebuiltPartsWithDrafts(row.content, savedDrafts),
+      parts,
     };
   }
 
@@ -220,6 +283,32 @@ function rebuiltPartsWithDrafts(
   }
 
   return parts;
+}
+
+function extractSavedEvalSessions(toolCalls: unknown): EvalSessionArtifact[] {
+  if (!toolCalls || typeof toolCalls !== "object") return [];
+  const record = toolCalls as Record<string, unknown>;
+  if (!Array.isArray(record.evalSessions)) return [];
+  return record.evalSessions.filter(isEvalSessionArtifact);
+}
+
+function createEvalSessionPart(
+  session: EvalSessionArtifact
+): UIMessage["parts"][number] {
+  return {
+    type: "tool-start_evaluation_batch",
+    toolCallId: `call-eval-${session.batchId.slice(0, 8)}`,
+    state: "output-available",
+    input: {},
+    output: {
+      started: true,
+      batchId: session.batchId,
+      conversationId: session.conversationId,
+      status: session.status,
+      assessmentTitle: session.assessmentTitle,
+      reused: session.reused === true,
+    },
+  } as unknown as UIMessage["parts"][number];
 }
 
 function createDraftToolPart(

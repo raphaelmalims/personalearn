@@ -15,7 +15,8 @@ import {
   uploadDraftImageBytes,
   type AgentDraft,
 } from "@/lib/ai-hub/drafts";
-import { createEvaluationBatch } from "@/lib/evaluation/batches";
+import { createEvaluationBatch, listClassAssessments } from "@/lib/evaluation/batches";
+import { resolveNamedTarget } from "@/lib/evaluation/resolve-eval-target";
 import { stripResourceTypeTitlePrefix } from "@/lib/resources/format";
 import {
   ensureAssessmentForGradableResource,
@@ -67,6 +68,7 @@ export type AgentToolDeps = {
   classId: string;
   teacherId: string;
   classContext: ClassContext;
+  conversationId?: string | null;
 };
 
 function userSafeError(message: string) {
@@ -511,41 +513,147 @@ export async function executeListStudents(deps: AgentToolDeps) {
 }
 
 /**
- * F2: Create/start an evaluation batch and return immediately.
- * Does NOT run vision grading in the chat transcript (ADR-004).
+ * Create/reuse an evaluation batch for Hub chat. Resolves a saved assignment
+ * (and marking scheme when one exists). Does not grade in the transcript.
  */
 export async function executeStartEvaluationBatch(
   deps: AgentToolDeps,
   input: {
     assessmentId?: string | null;
     resourceId?: string | null;
+    assignmentQuery?: string | null;
     markingSchemeResourceId?: string | null;
+    schemeQuery?: string | null;
     proceedWithoutScheme?: boolean;
     studentId?: string | null;
+    studentQuery?: string | null;
   }
 ) {
   try {
+    const assessments = await listClassAssessments(deps.supabase, deps.classId);
+    const namedAssessments = assessments.map((row) => ({
+      id: row.id,
+      title: row.title,
+      resourceId: row.resource_id,
+    }));
+
+    let assessmentId = input.assessmentId ?? null;
+    const resourceId = input.resourceId ?? null;
+
+    if (!assessmentId && !resourceId) {
+      const resolved = resolveNamedTarget(
+        namedAssessments,
+        input.assignmentQuery
+      );
+      if (!resolved.ok && resolved.reason === "none") {
+        return userSafeError(
+          "There is no saved assignment, quiz, or exam in this class yet. Save one from Hub first, then attach the script photos and ask again."
+        );
+      }
+      if (!resolved.ok) {
+        const titles = resolved.candidates.map((item) => item.title).join("; ");
+        return {
+          started: false,
+          needsClarification: true,
+          message: `Which saved assignment should I grade? Options: ${titles}. Reply with the title, then I’ll use the attached scans.`,
+        };
+      }
+      assessmentId = resolved.item.id;
+    }
+
+    const { data: schemeRows, error: schemeError } = await deps.supabase
+      .from("resources")
+      .select("id, title, resource_type")
+      .eq("class_id", deps.classId)
+      .eq("resource_type", "marking_scheme");
+
+    if (schemeError) {
+      throw new Error(schemeError.message);
+    }
+
+    const schemes = (schemeRows ?? []).map((row) => ({
+      id: row.id as string,
+      title: (row.title as string) || "Marking scheme",
+    }));
+
+    let markingSchemeResourceId = input.markingSchemeResourceId ?? null;
+    let proceedWithoutScheme = input.proceedWithoutScheme ?? false;
+
+    if (!markingSchemeResourceId && !proceedWithoutScheme) {
+      const resolvedScheme = resolveNamedTarget(schemes, input.schemeQuery);
+      if (resolvedScheme.ok) {
+        markingSchemeResourceId = resolvedScheme.item.id;
+      } else if (schemes.length === 0) {
+        proceedWithoutScheme = true;
+      } else if (resolvedScheme.reason === "ambiguous") {
+        const titles = resolvedScheme.candidates
+          .map((item) => item.title)
+          .join("; ");
+        return {
+          started: false,
+          needsClarification: true,
+          message: `I found more than one marking scheme. Which should I use? Options: ${titles}. Or say to continue without a scheme.`,
+        };
+      } else {
+        proceedWithoutScheme = true;
+      }
+    }
+
+    let studentId = input.studentId ?? null;
+    if (!studentId && input.studentQuery?.trim()) {
+      const { data: students, error: studentError } = await deps.supabase
+        .from("students")
+        .select("id, full_name")
+        .eq("class_id", deps.classId);
+      if (studentError) {
+        throw new Error(studentError.message);
+      }
+      const named = (students ?? []).map((row) => ({
+        id: row.id as string,
+        title: row.full_name as string,
+      }));
+      const resolvedStudent = resolveNamedTarget(named, input.studentQuery);
+      if (resolvedStudent.ok) {
+        studentId = resolvedStudent.item.id;
+      } else if (resolvedStudent.reason === "ambiguous") {
+        const names = resolvedStudent.candidates
+          .map((item) => item.title)
+          .join("; ");
+        return {
+          started: false,
+          needsClarification: true,
+          message: `Which student? Options: ${names}.`,
+        };
+      }
+    }
+
     const { batch, reused } = await createEvaluationBatch(deps.supabase, {
       classId: deps.classId,
-      assessmentId: input.assessmentId ?? null,
-      resourceId: input.resourceId ?? null,
-      markingSchemeResourceId: input.markingSchemeResourceId ?? null,
-      proceedWithoutScheme: input.proceedWithoutScheme ?? false,
-      studentId: input.studentId ?? null,
+      assessmentId,
+      resourceId,
+      markingSchemeResourceId,
+      proceedWithoutScheme,
+      studentId,
+      conversationId: deps.conversationId ?? null,
     });
 
-    const reviewHref = `/classes/${deps.classId}/evaluations/${batch.id}`;
+    const assessmentTitle =
+      namedAssessments.find((row) => row.id === batch.assessment_id)?.title ??
+      null;
+
     return {
       started: true,
       reused,
       batchId: batch.id,
       status: batch.status,
       assessmentId: batch.assessment_id,
-      reviewHref,
-      deepLink: reviewHref,
+      assessmentTitle,
+      conversationId: batch.conversation_id ?? deps.conversationId ?? null,
+      usedMarkingScheme: Boolean(batch.marking_scheme_resource_id),
+      acceptAttachedScans: true,
       message: reused
-        ? "Reused the open evaluation batch for this assessment. Upload scanned pages from the class page; share the reviewHref deep-link when drafts are ready."
-        : "Evaluation batch created. Upload scanned pages from the class page; grading runs in the background. Share the reviewHref deep-link so the teacher can open review when drafts are ready.",
+        ? "Reopened the open evaluation for that assignment. Attached scans will upload into this session — confirm grouping and identity in the workspace."
+        : "Evaluation session started. Attached scans will upload now. Confirm grouping and identity in the workspace; I will not mark scripts inside the chat bubbles.",
     };
   } catch (error) {
     const message =
@@ -1034,44 +1142,55 @@ export function createAgentTools(deps: AgentToolDeps) {
     }),
     start_evaluation_batch: tool({
       description:
-        "Create an evaluation batch for the active class (and optionally one student). Returns immediately with a deep-link — does not grade scripts in chat. Use when the teacher asks to start grading/evaluating an assessment. Tell them to upload scans on the class page; include the reviewHref deep-link in your reply.",
+        "Start or reopen an evaluation session for the active class from Hub chat. Resolve the saved assignment (and a saved marking scheme when one exists) from the teacher’s words and the class library — never ask them to pick from a dialog or upload on a class page. Use when they attach script photos and ask to grade/evaluate. Do not mark scripts in the transcript. If several assignments match, return needsClarification titles (no ids) instead of guessing.",
       inputSchema: z.object({
+        assignmentQuery: z
+          .string()
+          .optional()
+          .describe(
+            "Words from the teacher that identify the saved assignment, quiz, or exam title"
+          ),
+        schemeQuery: z
+          .string()
+          .optional()
+          .describe("Words that identify a saved marking scheme title"),
         assessmentId: z
           .string()
           .uuid()
           .optional()
-          .describe("Existing assessment id when known"),
+          .describe("Existing assessment id only when already known from tools"),
         resourceId: z
           .string()
           .uuid()
           .optional()
-          .describe(
-            "Gradable resource id to promote when assessmentId is omitted"
-          ),
+          .describe("Gradable resource id to promote when assessmentId is omitted"),
         markingSchemeResourceId: z
           .string()
           .uuid()
           .optional()
-          .describe("Marking scheme resource id to attach"),
+          .describe("Marking scheme resource id when already known"),
         proceedWithoutScheme: z
           .boolean()
           .optional()
           .describe(
-            "Set true only when the teacher accepts AI estimates without a scheme"
+            "True when the teacher accepts grading without a saved marking scheme"
           ),
-        studentId: z
+        studentId: z.string().uuid().optional().describe("Optional N=1 student id"),
+        studentQuery: z
           .string()
-          .uuid()
           .optional()
-          .describe("Optional single-student (N=1) scope"),
+          .describe("Student name when grading one student’s scans"),
       }),
       execute: async (input) =>
         executeStartEvaluationBatch(deps, {
           assessmentId: input.assessmentId ?? null,
           resourceId: input.resourceId ?? null,
+          assignmentQuery: input.assignmentQuery ?? null,
           markingSchemeResourceId: input.markingSchemeResourceId ?? null,
+          schemeQuery: input.schemeQuery ?? null,
           proceedWithoutScheme: input.proceedWithoutScheme ?? false,
           studentId: input.studentId ?? null,
+          studentQuery: input.studentQuery ?? null,
         }),
     }),
   };

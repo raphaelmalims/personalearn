@@ -48,6 +48,12 @@ type EvalReviewWorkspaceProps = {
   /** Display name for breadcrumb root segment. */
   classLabel?: string;
   classSubject?: string;
+  /** Hub sheet: open scripts in-host instead of routing away. */
+  onOpenScript?: (input: {
+    scriptId: string;
+    assessmentId: string | null;
+  }) => void;
+  compact?: boolean;
 };
 
 type UpdateMutation = UseMutationResult<
@@ -452,6 +458,8 @@ export function SplitPaneScriptReview({
   strand,
   subStrand,
   siblings = [],
+  onNavigateSibling,
+  onBack,
 }: {
   script: ScriptReviewDto;
   classId: string;
@@ -465,6 +473,8 @@ export function SplitPaneScriptReview({
     read_admission_number: string | null;
     status: string;
   }[];
+  onNavigateSibling?: (scriptId: string) => void;
+  onBack?: () => void;
 }) {
   const router = useRouter();
   const [questionIndex, setQuestionIndex] = useState(0);
@@ -495,6 +505,10 @@ export function SplitPaneScriptReview({
       : undefined;
 
   function goToSibling(siblingId: string) {
+    if (onNavigateSibling) {
+      onNavigateSibling(siblingId);
+      return;
+    }
     if (!assessmentId) return;
     router.push(scriptReviewPath(classId, assessmentId, siblingId));
   }
@@ -553,7 +567,18 @@ export function SplitPaneScriptReview({
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-1.5">
-          {siblings.length > 1 && assessmentId ? (
+          {onBack ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              className="h-7 px-2"
+              onClick={onBack}
+            >
+              Queue
+            </Button>
+          ) : null}
+          {siblings.length > 1 && (assessmentId || onNavigateSibling) ? (
             <>
               <Button
                 type="button"
@@ -679,6 +704,8 @@ export function EvalReviewWorkspace({
   batchId,
   classLabel = "Class",
   classSubject = "General",
+  onOpenScript,
+  compact = false,
 }: EvalReviewWorkspaceProps) {
   const router = useRouter();
   const { data, isLoading, error, refetch } = useEvaluationScripts(batchId);
@@ -737,11 +764,17 @@ export function EvalReviewWorkspace({
   );
 
   function openScriptReview(script: ScriptReviewDto) {
+    if (onOpenScript) {
+      onOpenScript({
+        scriptId: script.id,
+        assessmentId: assessmentMeta.id,
+      });
+      return;
+    }
     if (assessmentMeta.id) {
       router.push(scriptReviewPath(classId, assessmentMeta.id, script.id));
       return;
     }
-    // Batches without an assessment stay on the session page (inline fallback).
     router.push(
       `/classes/${classId}/evaluations/${batchId}?script=${script.id}`
     );
@@ -785,7 +818,7 @@ export function EvalReviewWorkspace({
 
   return (
     <div className="space-y-3">
-      <Breadcrumbs items={breadcrumbItems} />
+      {compact ? null : <Breadcrumbs items={breadcrumbItems} />}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-lg font-semibold tracking-tight">
@@ -796,12 +829,14 @@ export function EvalReviewWorkspace({
             needed, then review scripts as they turn ready.
           </p>
         </div>
-        <Link
-          href="/ai-hub"
-          className="text-xs text-muted-foreground underline underline-offset-2"
-        >
-          Back to Hub
-        </Link>
+        {compact ? null : (
+          <Link
+            href="/ai-hub"
+            className="text-xs text-muted-foreground underline underline-offset-2"
+          >
+            Back to Hub
+          </Link>
+        )}
       </div>
       <EvalQueueSummaryBar scripts={allScripts} />
       <EvalUploadGradingBanner batchId={batchId} />
