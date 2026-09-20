@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   STUDENT_INTERESTS_MAX_LENGTH,
   normalizeStudentInterests,
+  studentInterestsDisplay,
 } from "./interests";
 
 describe("normalizeStudentInterests", () => {
@@ -23,5 +24,16 @@ describe("normalizeStudentInterests", () => {
     expect(normalizeStudentInterests(long)?.length).toBe(
       STUDENT_INTERESTS_MAX_LENGTH
     );
+  });
+});
+
+describe("studentInterestsDisplay", () => {
+  it("uses an empty state when interests are missing", () => {
+    expect(studentInterestsDisplay(null)).toBe("No interests yet");
+    expect(studentInterestsDisplay("  ")).toBe("No interests yet");
+  });
+
+  it("returns trimmed teacher text", () => {
+    expect(studentInterestsDisplay(" football ")).toBe("football");
   });
 });

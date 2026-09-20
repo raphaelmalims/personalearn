@@ -25,6 +25,7 @@ import {
 import { StudentEvalProfileDialog } from "@/components/classes/student-eval-profile-dialog";
 import { cn } from "@/lib/utils";
 import { useHubEvalSessionStore } from "@/lib/store/hub-eval-session";
+import { studentInterestsDisplay } from "@/lib/students/interests";
 
 type StudentRosterTableProps = {
   classId: string;
@@ -164,6 +165,7 @@ export function StudentRosterTable({
               <TableHead sticky>Name</TableHead>
               <TableHead sticky>Admission</TableHead>
               <TableHead sticky>Gender</TableHead>
+              <TableHead sticky>Interests</TableHead>
               <TableHead sticky className="w-12" />
             </TableRow>
           </TableHeader>
@@ -189,6 +191,9 @@ export function StudentRosterTable({
                 </TableCell>
                 <TableCell>{student.admission_number ?? "—"}</TableCell>
                 <TableCell>{student.gender ?? "—"}</TableCell>
+                <TableCell className="max-w-[12rem] truncate text-muted-foreground">
+                  {studentInterestsDisplay(student.interests)}
+                </TableCell>
                 <TableCell>
                   <div className="flex justify-end">
                     <Button
@@ -223,11 +228,16 @@ export function StudentRosterTable({
                 onClick={() => setSelectedStudent(student)}
               >
                 {renderDot(student)}
-                <p className="min-w-0 flex-1 truncate text-sm font-medium">
-                  {student.admission_number
-                    ? `${student.full_name} · ${student.admission_number}`
-                    : student.full_name}
-                </p>
+                <span className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">
+                    {student.admission_number
+                      ? `${student.full_name} · ${student.admission_number}`
+                      : student.full_name}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {studentInterestsDisplay(student.interests)}
+                  </p>
+                </span>
               </button>
               <Button
                 type="button"

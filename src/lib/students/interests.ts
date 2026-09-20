@@ -9,3 +9,10 @@ export function normalizeStudentInterests(
   if (!trimmed) return null;
   return trimmed.slice(0, STUDENT_INTERESTS_MAX_LENGTH);
 }
+
+/** Roster/profile empty state — never surface raw metadata. */
+export function studentInterestsDisplay(
+  interests: string | null | undefined
+): string {
+  return interests?.trim() || "No interests yet";
+}

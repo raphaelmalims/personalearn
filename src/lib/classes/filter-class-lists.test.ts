@@ -58,4 +58,13 @@ describe("filterStudentsByQuery", () => {
     expect(filterStudentsByQuery(students, "adm002")).toHaveLength(1);
     expect(filterStudentsByQuery(students, "female")).toHaveLength(1);
   });
+
+  it("filters by interests without using metadata", () => {
+    const withInterests = [
+      { ...students[0], interests: "football, choir" },
+      { ...students[1], interests: "drawing" },
+    ] as Student[];
+    expect(filterStudentsByQuery(withInterests, "choir")).toHaveLength(1);
+    expect(filterStudentsByQuery(withInterests, "drawing")).toHaveLength(1);
+  });
 });

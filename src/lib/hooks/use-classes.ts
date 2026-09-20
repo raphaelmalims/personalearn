@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Class, Student } from "@/types/database";
 import type { ClassFormValues, StudentFormValues } from "@/lib/validations/class";
 import { normalizeStudentInterests } from "@/lib/students/interests";
+import { studentEvalProfileQueryKey } from "@/lib/hooks/use-evaluation";
 import { useActiveClassStore } from "@/lib/store/active-class";
 
 export const classesQueryKey = ["classes"] as const;
@@ -243,8 +244,11 @@ export function useUpdateStudent(classId: string) {
       if (error) throw error;
       return data as Student;
     },
-    onSuccess: () => {
+    onSuccess: (student) => {
       queryClient.invalidateQueries({ queryKey: studentsQueryKey(classId) });
+      queryClient.invalidateQueries({
+        queryKey: studentEvalProfileQueryKey(classId, student.id),
+      });
     },
   });
 }
