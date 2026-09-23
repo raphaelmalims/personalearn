@@ -44,18 +44,18 @@ async function fetchBatchScripts(batchId: string) {
 function stageBadgeClass(label: string) {
   switch (label) {
     case "Review":
-      return "bg-indigo-500/15 text-indigo-950 dark:text-indigo-100";
+      return "bg-info/15 text-info";
     case "Grading":
       return "bg-muted text-muted-foreground animate-pulse";
     case "Identity":
-      return "bg-amber-500/15 text-amber-950 dark:text-amber-100";
+      return "bg-warning/15 text-warning";
     case "Duplicates":
     case "Duplicate":
-      return "bg-orange-500/15 text-orange-950 dark:text-orange-100";
+      return "bg-warning/15 text-warning";
     case "Ready":
-      return "bg-emerald-500/15 text-emerald-950 dark:text-emerald-100";
+      return "bg-success/15 text-success";
     case "Upload":
-      return "bg-sky-500/15 text-sky-950 dark:text-sky-100";
+      return "bg-info/15 text-info";
     case "Done":
       return "bg-muted text-muted-foreground";
     default:

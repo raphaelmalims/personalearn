@@ -27,15 +27,15 @@ export function ReviewMarkerBadge({
         "inline-flex h-9 min-w-9 items-center justify-center rounded-full border px-2 text-base font-semibold shadow-sm",
         kind === "correct" &&
           !estimate &&
-          "border-emerald-600/40 bg-emerald-50 text-emerald-800",
+          "border-success/40 bg-success/15 text-success",
         kind === "incorrect" &&
           !estimate &&
-          "border-red-600/40 bg-red-50 text-red-800",
+          "border-destructive/40 bg-destructive/15 text-destructive",
         kind === "partial" &&
           !estimate &&
-          "border-amber-600/40 bg-amber-50 text-amber-900",
+          "border-warning/40 bg-warning/15 text-warning",
         (kind === "unknown" || estimate) &&
-          "border-amber-700/50 bg-amber-100 text-amber-950",
+          "border-warning/50 bg-warning/20 text-warning",
         className
       )}
       title={
