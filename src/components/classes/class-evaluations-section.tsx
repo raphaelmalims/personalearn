@@ -14,7 +14,7 @@ import {
   useEvaluationBatches,
 } from "@/lib/hooks/use-evaluation";
 import type { Assessment, EvaluationBatch } from "@/types/database";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";

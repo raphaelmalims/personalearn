@@ -2,7 +2,7 @@ import Link from "next/link";
 import { BookOpen, Bot, GraduationCap, Users } from "lucide-react";
 import { HeroBackdrop } from "@/components/layout/hero-backdrop";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { getLandingCtas } from "@/lib/auth/post-login-path";
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/auth/sign-out-button";
