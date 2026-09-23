@@ -96,16 +96,31 @@ export default function DesignSystemPage() {
 
       <section className="space-y-3">
         <h2 className="text-lg font-medium">Motion presets</h2>
-        <ul className="space-y-2">
+        <ul className="space-y-2 overflow-hidden">
           {["press", "page", "sheet", "drawer", "list"].map((name, index) => {
-            const item = reduce ? presets.crossfade : presets.listItem(index);
+            const item = reduce
+              ? presets.crossfade
+              : name === "page"
+                ? presets.pageEnter
+                : name === "sheet"
+                  ? presets.sheet
+                  : name === "drawer"
+                    ? presets.drawer
+                    : name === "press"
+                      ? {
+                          initial: { scale: 1 },
+                          animate: { scale: 1 },
+                          transition: presets.press.transition,
+                        }
+                      : presets.listItem(index);
             return (
               <motion.li
                 key={name}
                 className="surface-1 rounded-lg px-3 py-2 text-sm"
                 initial={item.initial}
                 animate={item.animate}
-                transition={"transition" in item ? item.transition : undefined}
+                whileTap={name === "press" && !reduce ? presets.press.whileTap : undefined}
+                transition={item.transition}
               >
                 {name}
                 {reduce ? " · crossfade" : ""}
