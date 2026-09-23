@@ -15,6 +15,7 @@ const mono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
   title: "PersonaLearn",
   description:
     "AI-powered co-pilot for Kenyan CBC educators — lesson planning, resources, and student feedback.",
