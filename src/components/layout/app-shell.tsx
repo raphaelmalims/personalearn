@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { Menu, WandSparkles } from "lucide-react";
 import { useEffect, useRef, useState, ViewTransition } from "react";
 import { cn } from "@/lib/utils";
-import { BrandMark } from "@/components/layout/brand-mark";
+import { LogoMark, LogoWordmark } from "@/components/brand/logo";
 import { ClassSelector } from "@/components/classes/class-selector";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -44,7 +44,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           title="PersonaLearn"
           className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary"
         >
-          <BrandMark className="h-4 w-4" />
+          <LogoMark className="h-4 w-4" />
         </Link>
 
         {/* Vertically centered nav cube — expands right over content on hover */}
@@ -135,9 +135,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             className="inline-flex items-center gap-2 font-display text-sm font-semibold"
           >
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <BrandMark className="h-4 w-4" />
+              <LogoMark className="h-4 w-4" />
             </span>
-            PersonaLearn
+            <LogoWordmark className="text-sm" />
           </Link>
           <div className="flex items-center gap-2">
             <ClassSelector />
