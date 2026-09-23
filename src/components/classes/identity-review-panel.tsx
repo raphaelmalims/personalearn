@@ -127,12 +127,12 @@ function ScriptRow({
         <span
           className={
             isAmber
-              ? "text-sm font-medium text-amber-800 dark:text-amber-200"
+              ? "text-sm font-medium text-warning"
               : isPending
                 ? "text-sm text-muted-foreground"
                 : isDrafted
-                  ? "text-sm font-medium text-sky-800 dark:text-sky-200"
-                  : "text-sm font-medium text-emerald-800 dark:text-emerald-200"
+                  ? "text-sm font-medium text-info"
+                  : "text-sm font-medium text-success"
           }
         >
           {scriptStatusLabel(script.status)}
@@ -141,7 +141,7 @@ function ScriptRow({
 
       {script.alreadyEvaluated ? (
         <div className="flex flex-wrap items-center gap-2">
-          <p className="text-sm font-medium text-amber-950 dark:text-amber-100">
+          <p className="text-sm font-medium text-warning">
             Already evaluated — this student already has an evaluation for this
             assessment. Remove this duplicate upload to continue.
           </p>
@@ -423,7 +423,7 @@ export function IdentityReviewPanel({
   }
 
   return (
-    <section className="space-y-3 rounded-xl border border-amber-500/30 bg-amber-50/40 p-3 dark:bg-amber-950/20">
+    <section className="space-y-3 rounded-lg border border-warning/30 bg-warning/10 p-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <h2 className="text-sm font-semibold tracking-tight">

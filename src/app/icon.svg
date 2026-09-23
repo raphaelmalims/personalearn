@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <title>PersonaLearn</title>
+  <style>
+    @media (prefers-color-scheme: dark) {
+      svg { stroke: #fff; }
+    }
+  </style>
+  <path d="M12 3.25V20.75"/>
+  <path d="M4.75 4.25C4.75 9.5 12 8.75 12 13.25"/>
+  <path d="M19.25 4.25C19.25 9.5 12 8.75 12 13.25"/>
+</svg>

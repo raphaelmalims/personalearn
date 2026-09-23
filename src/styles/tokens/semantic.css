@@ -1,0 +1,125 @@
+/*
+ * Dark is the default. `.light` overrides for the second theme.
+ * `.dark` repeats the default so next-themes' class and `dark:` utilities agree.
+ * Shadcn names stay as aliases of the semantic tokens.
+ */
+:root,
+.dark {
+  --canvas: var(--gray-950);
+  --surface-1: var(--gray-900);
+  --surface-2: var(--gray-850);
+  --surface-3: var(--gray-800);
+  --text-primary: var(--gray-50);
+  --text-secondary: var(--gray-400);
+  --text-tertiary: var(--gray-500);
+  --border-subtle: var(--alpha-white-08);
+  --border-strong: var(--alpha-white-14);
+  --focus: var(--alpha-white-70);
+
+  --background: var(--canvas);
+  --foreground: var(--text-primary);
+  --card: var(--surface-1);
+  --card-foreground: var(--text-primary);
+  --popover: var(--surface-2);
+  --popover-foreground: var(--text-primary);
+
+  --primary: var(--gray-50);
+  --primary-foreground: var(--gray-950);
+  --secondary: var(--surface-3);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--text-secondary);
+  --accent: var(--surface-3);
+  --accent-foreground: var(--text-primary);
+
+  --destructive: #d47878;
+  --destructive-foreground: var(--gray-950);
+  --success: #7dbe96;
+  --success-foreground: var(--gray-950);
+  --warning: #c4a15a;
+  --warning-foreground: var(--gray-950);
+  --info: #8aa0b8;
+  --info-foreground: var(--gray-950);
+
+  --border: var(--border-subtle);
+  --input: var(--border-strong);
+  --ring: var(--focus);
+
+  --shadow-xs-value: 0 1px 2px rgb(0 0 0 / 0.35), 0 0 0 1px var(--border-subtle);
+  --shadow-sm-value: 0 2px 8px rgb(0 0 0 / 0.4), 0 0 0 1px var(--border-subtle);
+  --shadow-md-value: 0 8px 24px rgb(0 0 0 / 0.45), 0 0 0 1px var(--border-subtle);
+  --shadow-lg-value: 0 16px 40px rgb(0 0 0 / 0.5), 0 0 0 1px var(--border-strong);
+  --shadow-card-value: 0 4px 16px rgb(0 0 0 / 0.4), 0 0 0 1px var(--border-subtle);
+
+  --hero-overlay-from: rgb(0 0 0 / 0.94);
+  --hero-overlay-via: rgb(0 0 0 / 0.86);
+  --hero-overlay-to: rgb(0 0 0 / 0.55);
+  --hero-overlay-bottom: rgb(0 0 0 / 0.75);
+  --hero-accent: var(--gray-300);
+  --hero-muted: var(--text-secondary);
+  --hero-surface: var(--surface-1);
+  --hero-surface-border: var(--border-subtle);
+
+  --print-ink: var(--gray-850);
+  --print-rule: var(--gray-300);
+  --print-wash: var(--gray-100);
+
+  --radius: 1rem;
+}
+
+.light {
+  --canvas: var(--gray-50);
+  --surface-1: var(--gray-0);
+  --surface-2: var(--gray-150);
+  --surface-3: var(--gray-200);
+  --text-primary: var(--gray-950);
+  --text-secondary: var(--gray-600);
+  --text-tertiary: var(--gray-500);
+  --border-subtle: var(--alpha-black-08);
+  --border-strong: var(--alpha-black-12);
+  --focus: var(--gray-950);
+
+  --background: var(--canvas);
+  --foreground: var(--text-primary);
+  --card: var(--surface-1);
+  --card-foreground: var(--text-primary);
+  --popover: var(--surface-1);
+  --popover-foreground: var(--text-primary);
+
+  --primary: var(--gray-950);
+  --primary-foreground: var(--gray-50);
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--text-secondary);
+  --accent: var(--surface-3);
+  --accent-foreground: var(--text-primary);
+
+  --destructive: #a35a5a;
+  --destructive-foreground: var(--gray-50);
+  --success: #3d7a56;
+  --success-foreground: var(--gray-50);
+  --warning: #8a6424;
+  --warning-foreground: var(--gray-50);
+  --info: #4d6278;
+  --info-foreground: var(--gray-50);
+
+  --border: var(--border-subtle);
+  --input: var(--border-strong);
+  --ring: var(--focus);
+
+  --shadow-xs-value: 0 1px 2px rgb(0 0 0 / 0.04), 0 0 0 1px var(--border-subtle);
+  --shadow-sm-value: 0 2px 8px rgb(0 0 0 / 0.06), 0 0 0 1px var(--border-subtle);
+  --shadow-md-value: 0 8px 24px rgb(0 0 0 / 0.08), 0 0 0 1px var(--border-subtle);
+  --shadow-lg-value: 0 16px 40px rgb(0 0 0 / 0.1), 0 0 0 1px var(--border-subtle);
+  --shadow-card-value: 0 4px 16px rgb(0 0 0 / 0.06), 0 0 0 1px var(--border-subtle);
+
+  --hero-overlay-from: rgb(0 0 0 / 0.92);
+  --hero-overlay-via: rgb(0 0 0 / 0.78);
+  --hero-overlay-to: rgb(0 0 0 / 0.45);
+  --hero-overlay-bottom: rgb(0 0 0 / 0.65);
+  --hero-accent: var(--gray-700);
+  --hero-muted: var(--gray-300);
+  --hero-surface: rgb(255 255 255 / 0.92);
+  --hero-surface-border: var(--border-subtle);
+}

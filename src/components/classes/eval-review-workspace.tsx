@@ -242,13 +242,13 @@ function QuestionAnalysisPanel({
               className={cn(
                 "ml-2 text-xs font-normal",
                 question.status === "ai_estimate"
-                  ? "text-amber-700"
+                  ? "text-warning"
                   : "text-muted-foreground"
               )}
             >
               {statusLabel(question.status)}
               {question.attention_status === "ATTENTION_NEEDED" ? (
-                <span className="ml-1 text-amber-700">· needs review</span>
+                <span className="ml-1 text-warning">· needs review</span>
               ) : null}
               {" · "}
               {questionIndex + 1}/{questionCount}
@@ -340,7 +340,7 @@ function QuestionAnalysisPanel({
           </div>
         </div>
       ) : (
-        <p className="text-xs text-amber-800 dark:text-amber-200">
+        <p className="text-xs text-warning">
           No structured analysis yet.
           {!readOnly ? " Re-evaluate to refresh." : null}
         </p>
@@ -550,7 +550,7 @@ export function SplitPaneScriptReview({
               {script.student_name ?? "Unassigned student"}
             </h3>
             {attentionNeeded ? (
-              <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
+              <span className="rounded-full bg-warning/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-warning">
                 Attention needed
               </span>
             ) : null}
