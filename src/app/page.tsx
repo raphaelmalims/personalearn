@@ -1,17 +1,23 @@
 import Link from "next/link";
 import {
   Sparkles,
-  Heart,
-  Brain,
-  Layers,
   ArrowRight,
   ShieldCheck,
   CheckCircle2,
   Compass,
+  Cpu,
+  Layers,
+  BookOpen,
+  Terminal,
+  Zap,
 } from "lucide-react";
+import { Icon } from "@/components/ui/icon";
 import { LogoLockup } from "@/components/brand/logo";
 import { HeroBackdrop } from "@/components/layout/hero-backdrop";
-import { DynamicHubPreview } from "@/components/layout/dynamic-hub-preview";
+import { PersonalizationSynthesizer } from "@/components/landing/personalization-synthesizer";
+import { CognitiveResonanceVisualizer } from "@/components/landing/cognitive-resonance-visualizer";
+import { CompetencyRadar } from "@/components/landing/competency-radar";
+import { StudentArchetypeCarousel } from "@/components/landing/student-archetype-carousel";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { getLandingCtas } from "@/lib/auth/post-login-path";
@@ -40,82 +46,34 @@ async function getHomeLandingCtas() {
   return getLandingCtas(true, (count ?? 0) > 0);
 }
 
-const CAPABILITIES = [
-  {
-    icon: Heart,
-    title: "Interest-Driven Learning",
-    description:
-      "Weave individual student passions — from agriculture and robotics to visual art and athletics — directly into daily CBC lessons and homework.",
-  },
-  {
-    icon: Compass,
-    title: "CBC Competency Tracking",
-    description:
-      "Track formative mastery across strands, sub-strands, and all 7 core CBC competencies with zero guesswork.",
-  },
-  {
-    icon: Brain,
-    title: "Class-Scoped Intelligence",
-    description:
-      "The Hub remembers your active class, schemes of work, and individual learner needs. No generic chatbot replies.",
-  },
-  {
-    icon: Layers,
-    title: "One Unified Hub",
-    description:
-      "Lesson co-planning, student interest profiles, curriculum schemes, and formative assessments live seamlessly on one screen.",
-  },
-];
-
-const STEPS = [
-  {
-    step: "01",
-    title: "Map Student Interests & Talents",
-    description:
-      "Capture each student's unique passions, hobbies, and learning styles alongside your class roster in seconds.",
-  },
-  {
-    step: "02",
-    title: "Co-Plan With The Hub",
-    description:
-      "Ask the Hub to generate differentiated activities, tiered assignments, and adaptive explanations grounded in your KICD scheme.",
-  },
-  {
-    step: "03",
-    title: "Inspire Every Learner",
-    description:
-      "Watch classroom engagement surge as every child connects curriculum concepts to things they genuinely care about.",
-  },
-];
-
 const BENTO_FEATURES = [
   {
-    title: "Evening Personalization Engine",
-    subtitle: "Tailor learning beyond the bell",
+    title: "Continuous Learner Interest Matrix",
+    badge: "1:1 Personalization",
+    icon: Sparkles,
     description:
-      "Generate personalized evening homework and remedial tasks that connect tough academic concepts to a student's home environment and passions.",
-    badge: "PSL Personalization",
+      "Tag hobbies, sports, and natural talents across your class roster. The Hub retains persistent memory of what excites each child across terms.",
   },
   {
-    title: "KICD Curriculum Alignment",
-    subtitle: "Strictly Kenyan CBC syllabus",
+    title: "100% KICD Syllabi Engine",
+    badge: "Kenyan CBC Native",
+    icon: BookOpen,
     description:
-      "Every generated lesson plan, strand recap, and activity is anchored directly in the approved Competency-Based Curriculum for Grades 1–9.",
-    badge: "100% CBC Aligned",
+      "Every generated lesson plan, strand recap, and activity is anchored directly in the approved Competency-Based Curriculum for Grades 1–9. Zero foreign hallucinations.",
   },
   {
-    title: "Dynamic Student Grouping",
-    subtitle: "Collaborative learning that works",
+    title: "Evening Passion-Anchored Practice",
+    badge: "Home Engagement",
+    icon: Zap,
     description:
-      "Intelligently pair students by complementary interests and competency growth levels for hands-on, high-impact group projects.",
-    badge: "Classroom Orchestration",
+      "Generate personalized evening homework that connects tough academic concepts to a student’s home environment, family garden, or favorite games.",
   },
   {
-    title: "Mobile-First Teacher Drawer",
-    subtitle: "Full power in the palm of your hand",
+    title: "Frictionless Staffroom Copilot",
+    badge: "Mobile-First Design",
+    icon: Cpu,
     description:
-      "Engineered for teachers on the move. Manage rosters, review student profiles, and chat with the Hub right from your smartphone.",
-    badge: "Responsive Hub",
+      "Engineered for teachers on the move. Manage rosters, review student interest dossiers, and chat with the Hub directly from your smartphone.",
   },
 ];
 
@@ -123,22 +81,22 @@ const FAQS = [
   {
     question: "How does PersonaLearn personalize education for large classrooms?",
     answer:
-      "PersonaLearn lets you tag learner interests (e.g. agriculture, coding, art, football) in your class roster. When you ask the Hub for a lesson plan or assessment, it automatically suggests differentiated learning pathways, matching groups of students to tasks that leverage their passions.",
+      "PersonaLearn lets teachers tag learner interests (e.g., smart agriculture, robotics, art, track athletics) in the class roster. When you ask the Hub to plan a lesson or create formative evaluations, it automatically groups students by complementary passions and suggests tailored, tiered activities.",
   },
   {
-    question: "Is PersonaLearn aligned with the official KICD CBC guidelines?",
+    question: "Is PersonaLearn aligned with official KICD CBC guidelines?",
     answer:
       "Yes. PersonaLearn is built specifically for the Kenyan Competency-Based Curriculum (CBC) across Primary and Junior Secondary School (Grades 1–9). It structures all outputs around official strands, sub-strands, specific learning outcomes, and the 7 core competencies.",
   },
   {
-    question: "Can I use PersonaLearn entirely from my phone?",
+    question: "Why focus on student passions instead of just lesson paperwork?",
     answer:
-      "Yes. The entire PersonaLearn Hub is designed mobile-first. The responsive navigation drawer gives you one-tap access to your active class roster, student interests, curriculum resources, and AI co-pilot without needing a laptop.",
+      "The true promise of CBC is nurturing each learner's unique potential. Paperwork automation is just a byproduct; the real breakthrough happens when a child who dislikes abstract math suddenly discovers how fractions explain their favorite sport or agricultural project.",
   },
   {
-    question: "How are student privacy and class data protected?",
+    question: "How is student data and privacy safeguarded?",
     answer:
-      "Your class roster, student notes, and curriculum schemes are strictly class-scoped and private to your verified educator account. Student data is never shared publicly or used to train external models.",
+      "Your class roster, student notes, and curriculum schemes are strictly class-scoped and private to your verified educator account. Student data is never sold or used to train public foundation models.",
   },
 ];
 
@@ -147,7 +105,7 @@ export default async function HomePage() {
 
   return (
     <div className="relative min-h-screen bg-background text-foreground overflow-x-hidden selection:bg-foreground selection:text-background">
-      {/* Dynamic Background Scene */}
+      {/* Dynamic Background Scene with Convergent Parallax */}
       <HeroBackdrop />
 
       {/* Sticky Top Navigation */}
@@ -190,16 +148,16 @@ export default async function HomePage() {
 
           {/* Monumental Headline */}
           <h1 className="mx-auto max-w-4xl text-balance text-4xl font-bold tracking-tight sm:text-6xl lg:text-7xl leading-[1.08]">
-            Every learner is unique.
+            Every mind learns differently.
             <span className="block text-muted-foreground font-normal">
-              Every lesson should be too.
+              Give every child their own wavelength.
             </span>
           </h1>
 
           {/* Subhead */}
           <p className="mx-auto max-w-2xl text-balance text-base sm:text-lg leading-relaxed text-muted-foreground">
-            The AI co-pilot built for Kenyan educators. PersonaLearn grounds lesson planning,
-            formative assessment, and classroom activities in each student’s unique passions and CBC competencies.
+            Kenya’s Competency-Based Curriculum was conceived to nurture individual learner potential.
+            PersonaLearn bridges what each student loves outside school with what they must master inside school.
           </p>
 
           {/* Call to Actions */}
@@ -209,118 +167,71 @@ export default async function HomePage() {
               className={cn(buttonVariants({ variant: "primary", size: "lg" }), "w-full sm:w-auto font-semibold shadow-md")}
             >
               <span>{ctas.signedIn ? "Open AI Hub" : "Start Personalizing Free"}</span>
-              <ArrowRight className="h-4 w-4 ml-1" />
+              <Icon icon={ArrowRight} size="sm" className="ml-1" />
             </Link>
-            <Link
-              href={ctas.secondaryHref}
+            <a
+              href="#synthesizer"
               className={cn(buttonVariants({ variant: "secondary", size: "lg" }), "w-full sm:w-auto")}
             >
-              Explore Hub Demo
-            </Link>
+              Test Personalization Studio ↓
+            </a>
           </div>
 
           {/* Key Value Props Strip */}
           <div className="mx-auto grid max-w-3xl grid-cols-3 gap-4 pt-8 border-t border-border/60 text-left sm:text-center">
             <div>
               <p className="text-sm font-semibold text-foreground sm:text-base">100% CBC Aligned</p>
-              <p className="text-xs text-muted-foreground">Strands & competencies</p>
+              <p className="text-xs text-muted-foreground">Official KICD Strands 1–9</p>
             </div>
             <div>
-              <p className="text-sm font-semibold text-foreground sm:text-base">Interest-Driven</p>
+              <p className="text-sm font-semibold text-foreground sm:text-base">1:1 Passion Vectors</p>
               <p className="text-xs text-muted-foreground">Tailored per learner</p>
             </div>
             <div>
-              <p className="text-sm font-semibold text-foreground sm:text-base">One Unified Hub</p>
-              <p className="text-xs text-muted-foreground">Zero scattered tabs</p>
+              <p className="text-sm font-semibold text-foreground sm:text-base">Autonomous Synthesis</p>
+              <p className="text-xs text-muted-foreground">Zero manual drafting load</p>
             </div>
           </div>
         </div>
 
-        {/* Dynamic Hub Simulator (Directly in Hero) */}
-        <div className="mx-auto max-w-6xl pt-14 sm:pt-20">
+        {/* Crown Interactive Studio: Personalization Synthesizer */}
+        <div id="synthesizer" className="mx-auto max-w-6xl pt-14 sm:pt-20">
           <div className="mb-4 text-center">
             <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-              Interactive Product Preview · The PersonaLearn Hub
+              Interactive Sandbox · Personalization Synthesizer v2.4
             </p>
           </div>
-          <DynamicHubPreview />
+          <PersonalizationSynthesizer />
         </div>
       </section>
 
-      {/* Capability Strip */}
+      {/* The Physics of Learner Attention (Cognitive Resonance Visualizer) */}
       <section className="relative z-10 border-t border-border/80 bg-surface-1/40 py-20 px-4 sm:px-6">
         <div className="mx-auto max-w-6xl">
-          <div className="mx-auto max-w-2xl text-center space-y-3 mb-14">
-            <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-              The 4 Pillars of Personalized Education
-            </p>
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-foreground">
-              Education tailored to how children thrive
-            </h2>
-            <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-              When students see their personal passions connected to classroom topics, learning moves from passive listening to active discovery.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {CAPABILITIES.map((cap) => {
-              const Icon = cap.icon;
-              return (
-                <div
-                  key={cap.title}
-                  className="rounded-2xl border border-border/80 bg-card p-6 space-y-3 transition-all duration-200 hover:-translate-y-1 hover:border-border hover:shadow-md"
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-surface-2 text-foreground">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <h3 className="text-base font-semibold text-foreground">{cap.title}</h3>
-                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                    {cap.description}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
+          <CognitiveResonanceVisualizer />
         </div>
       </section>
 
-      {/* How Personalization Works Pipeline */}
-      <section className="relative z-10 py-20 px-4 sm:px-6">
+      {/* The 7 CBC Competencies Mastery Radar */}
+      <section className="relative z-10 border-t border-border/80 py-20 px-4 sm:px-6">
         <div className="mx-auto max-w-6xl">
-          <div className="mx-auto max-w-2xl text-center space-y-3 mb-14">
-            <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-              Simple 3-Step Process
-            </p>
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-foreground">
-              From student passion to classroom breakthrough
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {STEPS.map((step) => (
-              <div
-                key={step.step}
-                className="relative rounded-2xl border border-border/80 bg-card p-6 space-y-3"
-              >
-                <span className="font-mono text-xs font-bold text-muted-foreground">
-                  {"// "}{step.step}
-                </span>
-                <h3 className="text-base font-semibold text-foreground">{step.title}</h3>
-                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                  {step.description}
-                </p>
-              </div>
-            ))}
-          </div>
+          <CompetencyRadar />
         </div>
       </section>
 
-      {/* Feature Bento Grid */}
+      {/* Authentic Classroom Learner Stories */}
       <section className="relative z-10 border-t border-border/80 bg-surface-1/40 py-20 px-4 sm:px-6">
         <div className="mx-auto max-w-6xl">
+          <StudentArchetypeCarousel />
+        </div>
+      </section>
+
+      {/* Feature Bento Grid (Precision at Scale) */}
+      <section className="relative z-10 border-t border-border/80 py-20 px-4 sm:px-6">
+        <div className="mx-auto max-w-6xl">
           <div className="mx-auto max-w-2xl text-center space-y-3 mb-14">
             <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-              Built for Real Classrooms
+              Engineered for Kenyan Classrooms
             </p>
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-foreground">
               Personalization at scale
@@ -331,54 +242,58 @@ export default async function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {BENTO_FEATURES.map((bento) => (
-              <div
-                key={bento.title}
-                className="rounded-2xl border border-border/80 bg-card p-8 space-y-3 transition-colors hover:border-border"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="rounded-full border border-border/80 bg-surface-2 px-2.5 py-0.5 text-[11px] font-mono text-muted-foreground">
-                    {bento.badge}
-                  </span>
-                  <Sparkles className="h-4 w-4 text-muted-foreground" />
+            {BENTO_FEATURES.map((bento) => {
+              const FeatureIcon = bento.icon;
+              return (
+                <div
+                  key={bento.title}
+                  className="rounded-2xl border border-border/80 bg-card p-8 space-y-3 transition-colors hover:border-border"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="rounded-full border border-border/80 bg-surface-2 px-2.5 py-0.5 text-[11px] font-mono text-muted-foreground">
+                      {bento.badge}
+                    </span>
+                    <Icon icon={FeatureIcon} size="md" className="text-muted-foreground" />
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground">{bento.title}</h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed pt-1">
+                    {bento.description}
+                  </p>
                 </div>
-                <h3 className="text-xl font-bold text-foreground">{bento.title}</h3>
-                <p className="text-sm font-medium text-foreground/85">{bento.subtitle}</p>
-                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed pt-1">
-                  {bento.description}
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
 
       {/* Kenya & CBC Trust Strip */}
-      <section className="relative z-10 py-16 px-4 sm:px-6 border-b border-border/80">
+      <section className="relative z-10 py-16 px-4 sm:px-6 border-t border-border/80 bg-surface-1/20">
         <div className="mx-auto max-w-4xl text-center space-y-4">
-          <ShieldCheck className="mx-auto h-8 w-8 text-foreground" />
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-surface-2 text-foreground">
+            <Icon icon={ShieldCheck} size="xl" />
+          </div>
           <h2 className="text-2xl font-bold text-foreground">
             Built for Kenyan Junior & Primary Secondary Educators
           </h2>
           <p className="text-sm text-muted-foreground max-w-xl mx-auto leading-relaxed">
-            Aligned with the Kenya Institute of Curriculum Development (KICD) standards. Empowering educators to bring the spirit of Competency-Based Education to life.
+            Aligned with the Kenya Institute of Curriculum Development (KICD) standards. Empowering educators to bring the true spirit of Competency-Based Education to life.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-6 pt-4 text-xs font-mono text-muted-foreground">
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="h-4 w-4 text-foreground" /> Grades 1 through 9
+              <Icon icon={CheckCircle2} size="sm" className="text-foreground" /> Grades 1 through 9
             </span>
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="h-4 w-4 text-foreground" /> 7 Core Competencies
+              <Icon icon={CheckCircle2} size="sm" className="text-foreground" /> 7 Core Competencies
             </span>
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="h-4 w-4 text-foreground" /> Private Class Data
+              <Icon icon={CheckCircle2} size="sm" className="text-foreground" /> Private Class Data
             </span>
           </div>
         </div>
       </section>
 
       {/* Frequently Asked Questions */}
-      <section className="relative z-10 py-20 px-4 sm:px-6">
+      <section className="relative z-10 py-20 px-4 sm:px-6 border-t border-border/80">
         <div className="mx-auto max-w-3xl space-y-10">
           <div className="text-center space-y-2">
             <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
@@ -393,8 +308,8 @@ export default async function HomePage() {
                 key={i}
                 className="rounded-2xl border border-border/80 bg-card p-6 space-y-2 transition-colors hover:border-border"
               >
-                <h3 className="text-base font-semibold text-foreground flex items-center justify-between">
-                  <span>{faq.question}</span>
+                <h3 className="text-base font-semibold text-foreground">
+                  {faq.question}
                 </h3>
                 <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed pt-1">
                   {faq.answer}
@@ -408,6 +323,10 @@ export default async function HomePage() {
       {/* Final Call to Action */}
       <section className="relative z-10 border-t border-border/80 bg-surface-1 py-16 px-4 sm:px-6">
         <div className="mx-auto max-w-4xl text-center space-y-6">
+          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface-2 px-3 py-1 font-mono text-xs text-muted-foreground">
+            <Icon icon={Terminal} size="sm" className="text-foreground" />
+            <span>INSTANT SETUP · NO CREDIT CARD REQUIRED</span>
+          </div>
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-foreground">
             Ready to personalize education for your learners?
           </h2>
