@@ -14,6 +14,7 @@ import {
   SquarePen,
   X,
 } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ChatMessage } from "@/components/ai-hub/chat-message";
@@ -32,6 +33,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Dialog } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { presets } from "@/lib/motion";
 import type { ConversationRow } from "@/lib/ai-hub/conversations";
 import { generateConversationTitle } from "@/lib/ai-hub/conversation-title";
 import {
@@ -110,6 +112,7 @@ export function AiHubChat() {
     useState<HubClassPanelTab>("resources");
   const [classPanelSearch, setClassPanelSearch] = useState("");
   const isMobile = useIsMobile();
+  const reduceMotion = useReducedMotion();
   const { enqueueUpload } = useEvalUploadQueue();
   const openEvalBatch = useHubEvalSessionStore((s) => s.openBatch);
   const composerHint = useHubEvalSessionStore((s) => s.composerHint);
@@ -865,7 +868,7 @@ export function AiHubChat() {
                           type="button"
                           disabled={isBusy}
                           onClick={() => void submitMessage(prompt)}
-                          className="rounded-full border border-border bg-background px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-foreground disabled:opacity-50"
+                          className="min-h-11 rounded-full border border-border bg-background px-4 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-foreground disabled:opacity-50"
                         >
                           {prompt}
                         </button>
@@ -1060,19 +1063,30 @@ export function AiHubChat() {
           />
         ) : null}
 
+        <AnimatePresence>
         {isMobile && !classPanelCollapsed ? (
-          <div className="fixed inset-0 z-50" role="presentation">
-            <button
+          <div key="hub-drawer" className="fixed inset-0 z-50" role="presentation">
+            <motion.button
               type="button"
               className="absolute inset-0 bg-black/60"
               aria-label="Close hub panel"
               onClick={() => handleClassPanelCollapsedChange(true)}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={presets.crossfade.transition}
             />
-            <div
+            <motion.div
               className="absolute inset-y-0 left-0 flex w-[88%] max-w-sm flex-col bg-background shadow-lg"
               role="dialog"
               aria-modal="true"
               aria-label="Hub panel"
+              initial={reduceMotion ? presets.crossfade.initial : presets.drawer.initial}
+              animate={reduceMotion ? presets.crossfade.animate : presets.drawer.animate}
+              exit={reduceMotion ? presets.crossfade.exit : presets.drawer.exit}
+              transition={
+                reduceMotion ? presets.crossfade.transition : presets.drawer.transition
+              }
             >
               <HubClassPanel
                 classId={activeClass.id}
@@ -1102,9 +1116,10 @@ export function AiHubChat() {
                 <ThemeToggle label="Appearance" />
                 <SignOutButton />
               </div>
-            </div>
+            </motion.div>
           </div>
         ) : null}
+        </AnimatePresence>
       </div>
 
       <Dialog

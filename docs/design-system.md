@@ -26,7 +26,7 @@ Signed-in home is the AI Hub. This document is the contract for tokens and primi
 
 ### Type
 
-Geist Sans (`--font-body`, also display) and Geist Mono (`--font-mono`) via `next/font`. Display size uses `clamp` (`text-display`).
+Geist Sans (`--font-body`, also display) and Geist Mono (`--font-mono`) via `next/font`. Utilities: `text-display` (clamp, tight tracking), `text-h1` through `text-h4`, `text-body`, `text-small`, `text-caption`.
 
 ### Radius
 
