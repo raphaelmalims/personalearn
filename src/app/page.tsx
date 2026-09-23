@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { BookOpen, Bot, GraduationCap, Users } from "lucide-react";
+import { Bot, GraduationCap, Users } from "lucide-react";
+import { LogoLockup } from "@/components/brand/logo";
 import { HeroBackdrop } from "@/components/layout/hero-backdrop";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { getLandingCtas } from "@/lib/auth/post-login-path";
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/auth/sign-out-button";
@@ -60,9 +61,8 @@ export default async function HomePage() {
         <HeroBackdrop />
 
         <header className="relative z-20 mx-auto flex max-w-6xl items-center justify-between px-4 py-6">
-          <Link href="/" className="flex items-center gap-2 font-display font-semibold text-white">
-            <BookOpen className="h-6 w-6 text-hero-accent" />
-            <span>PersonaLearn</span>
+          <Link href="/" className="text-white">
+            <LogoLockup />
           </Link>
           <div className="flex items-center gap-2">
             <ThemeToggle variant="hero" />
