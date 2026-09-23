@@ -22,7 +22,7 @@ export default function LoginPage() {
       </header>
 
       <main className="relative z-10 flex flex-1 items-center justify-center px-4 pb-12 pt-4">
-        <div className="hero-glass w-full max-w-md rounded-2xl p-6 sm:p-8">
+        <div className="surface-1 w-full max-w-md rounded-lg p-6 sm:p-8">
           <Suspense
             fallback={
               <p className="text-center text-sm text-muted-foreground">Loading…</p>
