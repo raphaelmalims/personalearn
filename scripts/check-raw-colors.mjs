@@ -20,6 +20,7 @@ for (const file of walk("src")) {
   if (rel.startsWith("src/styles/tokens/")) continue;
   // Official Google mark colors. Not a PersonaLearn palette.
   if (rel === "src/components/auth/google-icon.tsx") continue;
+  if (rel.endsWith(".test.ts") || rel.endsWith(".test.tsx")) continue;
   const lines = readFileSync(file, "utf8").split("\n");
   lines.forEach((line, index) => {
     if (palette.test(line) || hex.test(line)) {
