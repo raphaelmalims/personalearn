@@ -6,16 +6,14 @@ import { DefaultChatTransport, type UIMessage } from "ai";
 import {
   ArrowUp,
   ChevronDown,
-  PanelLeft,
   Paperclip,
   Plus,
   RotateCcw,
   Square,
-  SquarePen,
   X,
 } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type FocusEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import { ChatMessage } from "@/components/ai-hub/chat-message";
 import { HubEvalSessionHost } from "@/components/ai-hub/hub-eval-session-host";
@@ -26,6 +24,10 @@ import {
   writeClassPanelCollapsedPreference,
   type HubClassPanelTab,
 } from "@/components/ai-hub/hub-class-panel";
+import {
+  MobileHubToolbar,
+  mobileHubToolbarOffsetClass,
+} from "@/components/ai-hub/mobile-hub-toolbar";
 import { ThinkingBubble } from "@/components/ai-hub/thinking-bubble";
 import { ClassSelector } from "@/components/classes/class-selector";
 import { SignOutButton } from "@/components/auth/sign-out-button";
@@ -45,6 +47,11 @@ import {
   validateChatAttachments,
   type PendingAttachment,
 } from "@/lib/ai-hub/chat-attachments";
+import {
+  isKeyboardOpen,
+  mobileComposerMotionClass,
+  nextMobileComposerHidden,
+} from "@/lib/ai-hub/mobile-composer-visibility";
 import {
   CONVERSATION_MESSAGES_STALE_TIME,
   conversationMessagesQueryKey,
@@ -124,6 +131,14 @@ export function AiHubChat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  const [composerHidden, setComposerHidden] = useState(false);
+  const [composerFocused, setComposerFocused] = useState(false);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  const composerHiddenRef = useRef(false);
+  const composerFocusedRef = useRef(false);
+  const keyboardOpenRef = useRef(false);
+  const lastScrollTopRef = useRef(0);
+  const accumulatedScrollRef = useRef(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const draftRef = useRef(draft);
@@ -131,6 +146,9 @@ export function AiHubChat() {
 
   setSelectedConversationIdRef.current = setSelectedConversationId;
   draftRef.current = draft;
+  composerHiddenRef.current = composerHidden;
+  composerFocusedRef.current = composerFocused;
+  keyboardOpenRef.current = keyboardOpen;
 
   useEffect(() => {
     const stored = readClassPanelCollapsedPreference();
@@ -161,6 +179,14 @@ export function AiHubChat() {
         "--keyboard-inset",
         `${inset}px`
       );
+      const open = isKeyboardOpen(inset);
+      keyboardOpenRef.current = open;
+      setKeyboardOpen((current) => (current === open ? current : open));
+      if (open) {
+        accumulatedScrollRef.current = 0;
+        composerHiddenRef.current = false;
+        setComposerHidden((current) => (current ? false : current));
+      }
     };
     update();
     viewport.addEventListener("resize", update);
@@ -386,6 +412,9 @@ export function AiHubChat() {
     setActionError(null);
     setEditingMessageId(null);
     setClassPanelSearch("");
+    accumulatedScrollRef.current = 0;
+    composerHiddenRef.current = false;
+    setComposerHidden(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only when active class changes
   }, [activeClass?.id]);
 
@@ -425,6 +454,12 @@ export function AiHubChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
+  function showComposer() {
+    accumulatedScrollRef.current = 0;
+    composerHiddenRef.current = false;
+    setComposerHidden(false);
+  }
+
   function updateScrollToBottomVisibility() {
     const el = messagesContainerRef.current;
     if (!el) {
@@ -438,6 +473,48 @@ export function AiHubChat() {
     setShowScrollToBottom(
       hasOverflow && distanceFromBottom > SCROLL_NEAR_BOTTOM_PX
     );
+  }
+
+  function handleMessagesScroll() {
+    const el = messagesContainerRef.current;
+    updateScrollToBottomVisibility();
+    if (!el) return;
+
+    const delta = el.scrollTop - lastScrollTopRef.current;
+    lastScrollTopRef.current = el.scrollTop;
+    if (!isMobile) {
+      accumulatedScrollRef.current = 0;
+      return;
+    }
+
+    const distanceFromBottom =
+      el.scrollHeight - el.scrollTop - el.clientHeight;
+    const next = nextMobileComposerHidden({
+      delta,
+      accumulatedDelta: accumulatedScrollRef.current,
+      distanceFromBottom,
+      composerFocused: composerFocusedRef.current,
+      keyboardOpen: keyboardOpenRef.current,
+      hidden: composerHiddenRef.current,
+    });
+    accumulatedScrollRef.current = next.accumulatedDelta;
+    if (next.hidden !== composerHiddenRef.current) {
+      composerHiddenRef.current = next.hidden;
+      setComposerHidden(next.hidden);
+    }
+  }
+
+  function engageComposer() {
+    composerFocusedRef.current = true;
+    setComposerFocused(true);
+    showComposer();
+  }
+
+  function releaseComposerFocus(event: FocusEvent<HTMLDivElement>) {
+    const next = event.relatedTarget;
+    if (next instanceof Node && event.currentTarget.contains(next)) return;
+    composerFocusedRef.current = false;
+    setComposerFocused(false);
   }
 
   useEffect(() => {
@@ -470,6 +547,7 @@ export function AiHubChat() {
 
     setSelectedConversationId(conversationId);
     conversationIdRef.current = conversationId;
+    showComposer();
 
     if (cached) {
       setMessages(cached);
@@ -521,6 +599,7 @@ export function AiHubChat() {
     setActionError(null);
     setEditingMessageId(null);
     setClassPanelTab("conversations");
+    showComposer();
     if (isMobile) {
       handleClassPanelCollapsedChange(true);
     }
@@ -768,14 +847,22 @@ export function AiHubChat() {
     );
   }
 
+  const composerCollapsed =
+    isMobile &&
+    messages.length > 0 &&
+    composerHidden &&
+    !composerFocused &&
+    !keyboardOpen;
+
   return (
     <>
       <div
         className={cn(
-          "relative h-full min-h-0",
+          "relative min-h-0",
           isMobile
-            ? "flex flex-col"
+            ? "absolute inset-0 flex flex-col overflow-hidden"
             : cn(
+                "h-full",
                 "grid gap-3 sm:gap-4",
                 classPanelCollapsed
                   ? "grid-cols-[minmax(0,1fr)_auto]"
@@ -789,43 +876,31 @@ export function AiHubChat() {
             onMobileBackToList={handleMobileBackToResourceList}
           />
           {isMobile ? (
-            <div className="flex h-14 shrink-0 items-center gap-1 px-1 pt-[env(safe-area-inset-top)]">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => handleClassPanelCollapsedChange(false)}
-                title="Hub panel"
-                aria-label="Open hub panel"
-              >
-                <PanelLeft className="h-6 w-6" strokeWidth={1.5} />
-              </Button>
-              <p className="min-w-0 flex-1 truncate text-sm font-medium">
-                {conversations.find((row) => row.id === selectedConversationId)
-                  ?.title ?? activeClass.name}
-              </p>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={handleNewConversation}
-                title="New conversation"
-                aria-label="New conversation"
-              >
-                <SquarePen className="h-6 w-6" strokeWidth={1.5} />
-              </Button>
-            </div>
+            <MobileHubToolbar
+              title={
+                conversations.find((row) => row.id === selectedConversationId)
+                  ?.title ?? activeClass.name
+              }
+              onOpenPanel={() => handleClassPanelCollapsedChange(false)}
+              onNewConversation={handleNewConversation}
+            />
           ) : null}
-
           <div className="flex min-h-0 flex-1 flex-col">
             <div className="relative min-h-0 flex-1">
               <div
                 ref={messagesContainerRef}
-                onScroll={updateScrollToBottomVisibility}
-                className={cn(
-                  "h-full overflow-y-auto px-1 py-4 sm:px-0"
-                )}
+                onScroll={handleMessagesScroll}
+                className="absolute inset-0 overflow-y-auto overscroll-contain"
               >
+                <div
+                  className={cn(
+                    "px-1 sm:px-0",
+                    messages.length === 0
+                      ? "flex min-h-full flex-col"
+                      : "pb-4",
+                    isMobile ? mobileHubToolbarOffsetClass : "pt-4"
+                  )}
+                >
                 {loadingConversation && messages.length === 0 ? (
                   <div
                     className="space-y-5 py-2"
@@ -850,7 +925,7 @@ export function AiHubChat() {
                     </div>
                   </div>
                 ) : messages.length === 0 ? (
-                  <div className="flex h-full flex-col justify-center gap-4 py-6">
+                  <div className="flex flex-1 flex-col justify-center gap-4 py-6">
                     <div className="mx-auto max-w-md text-center">
                       <p className="text-base font-medium text-foreground">
                         How can I help with {activeClass.name}?
@@ -889,6 +964,7 @@ export function AiHubChat() {
                     <div ref={messagesEndRef} />
                   </div>
                 )}
+                </div>
               </div>
 
               {showScrollToBottom ? (
@@ -909,8 +985,28 @@ export function AiHubChat() {
             </div>
 
             <div
-              className="shrink-0 bg-background px-1 pb-[calc(0.25rem+var(--keyboard-inset,0px))] pt-2 sm:px-0 sm:pb-2"
+              className={cn(
+                "shrink-0 bg-background",
+                isMobile && mobileComposerMotionClass,
+                isMobile &&
+                  (composerCollapsed
+                    ? "grid-rows-[0fr] opacity-0"
+                    : "grid-rows-[1fr] opacity-100")
+              )}
+              data-mobile-composer={isMobile ? "true" : undefined}
+              data-composer-collapsed={composerCollapsed ? "true" : "false"}
+              inert={composerCollapsed ? true : undefined}
+              aria-hidden={composerCollapsed || undefined}
+              onFocus={engageComposer}
+              onBlur={releaseComposerFocus}
             >
+              <div
+                className={cn(
+                  "px-1 pb-[calc(0.25rem+var(--keyboard-inset,0px))] pt-2 sm:px-0 sm:pb-2",
+                  isMobile && "min-h-0 overflow-hidden",
+                  composerCollapsed && "pointer-events-none"
+                )}
+              >
               {error || actionError ? (
                 <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2">
                   <p className="text-sm text-destructive">
@@ -1038,6 +1134,7 @@ export function AiHubChat() {
                 Attachments (.txt 2 MB · .pdf/.jpg/.png 5 MB) stay in this chat
                 only — they are not saved to the class library.
               </p>
+              </div>
             </div>
           </div>
         </section>

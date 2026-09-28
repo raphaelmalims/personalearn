@@ -36,7 +36,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background md:flex print:block print:bg-white">
+    <div
+      className={cn(
+        "min-h-screen bg-background md:flex print:block print:bg-white",
+        isHub &&
+          "max-md:h-dvh max-md:max-h-dvh max-md:overflow-hidden print:h-auto print:max-h-none print:overflow-visible"
+      )}
+    >
       {/* Desktop left rail — fixed width; only the center nav cube expands */}
       <aside className="sticky top-0 z-40 hidden h-screen w-[4.5rem] shrink-0 flex-col items-center py-3 md:flex print:hidden">
         <Link
@@ -127,7 +133,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main content */}
-      <div className="flex min-h-screen min-w-0 flex-1 flex-col print:min-h-0">
+      <div
+        className={cn(
+          "flex min-h-screen min-w-0 flex-1 flex-col print:min-h-0",
+          isHub && "max-md:h-full max-md:min-h-0 max-md:overflow-hidden"
+        )}
+      >
         {isHub ? null : (
         <header className="sticky top-0 z-30 flex items-center justify-between gap-2 bg-background/80 px-4 py-3 backdrop-blur-xl md:hidden print:hidden">
           <Link
