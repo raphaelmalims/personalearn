@@ -51,15 +51,6 @@
   --shadow-lg-value: 0 16px 40px rgb(0 0 0 / 0.5), 0 0 0 1px var(--border-strong);
   --shadow-card-value: 0 4px 16px rgb(0 0 0 / 0.4), 0 0 0 1px var(--border-subtle);
 
-  --hero-overlay-from: rgb(0 0 0 / 0.94);
-  --hero-overlay-via: rgb(0 0 0 / 0.86);
-  --hero-overlay-to: rgb(0 0 0 / 0.55);
-  --hero-overlay-bottom: rgb(0 0 0 / 0.75);
-  --hero-accent: var(--gray-300);
-  --hero-muted: var(--text-secondary);
-  --hero-surface: var(--surface-1);
-  --hero-surface-border: var(--border-subtle);
-
   --print-ink: var(--gray-850);
   --print-rule: var(--gray-300);
   --print-wash: var(--gray-100);
@@ -113,13 +104,4 @@
   --shadow-md-value: 0 8px 24px rgb(0 0 0 / 0.08), 0 0 0 1px var(--border-subtle);
   --shadow-lg-value: 0 16px 40px rgb(0 0 0 / 0.1), 0 0 0 1px var(--border-subtle);
   --shadow-card-value: 0 4px 16px rgb(0 0 0 / 0.06), 0 0 0 1px var(--border-subtle);
-
-  --hero-overlay-from: rgb(0 0 0 / 0.92);
-  --hero-overlay-via: rgb(0 0 0 / 0.78);
-  --hero-overlay-to: rgb(0 0 0 / 0.45);
-  --hero-overlay-bottom: rgb(0 0 0 / 0.65);
-  --hero-accent: var(--gray-700);
-  --hero-muted: var(--gray-300);
-  --hero-surface: rgb(255 255 255 / 0.92);
-  --hero-surface-border: var(--border-subtle);
 }

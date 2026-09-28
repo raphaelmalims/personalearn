@@ -53,7 +53,7 @@ Product breakpoints (documented here; Tailwind `sm` stays 640px so existing util
 
 ## Primitives
 
-`src/components/ui/`: button (`primary`, `secondary`, `ghost`, `outline`, `link`, plus landing `hero` aliases), input, textarea, select, badge, card, dialog, sheet, dropdown, tabs, tooltip, kbd, skeleton, icon.
+`src/components/ui/`: button (`primary`, `secondary`, `ghost`, `outline`, `link`), input, textarea, select, badge, card, dialog, sheet, dropdown, tabs, tooltip, kbd, skeleton, icon.
 
 `Icon` defaults to `strokeWidth={1.5}` and sizes `sm 14 / md 16 / lg 20`. ESLint warns on direct `lucide-react` imports outside `src/components/ui`.
 

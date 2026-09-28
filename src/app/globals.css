@@ -36,10 +36,6 @@
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-text-tertiary: var(--text-tertiary);
-  --color-hero-accent: var(--hero-accent);
-  --color-hero-muted: var(--hero-muted);
-  --color-hero-surface: var(--hero-surface);
-  --color-hero-surface-border: var(--hero-surface-border);
   --radius-xs: 6px;
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -199,22 +195,6 @@
 }
 
 @layer utilities {
-  .hero-overlay {
-    background:
-      linear-gradient(
-        to right,
-        var(--hero-overlay-from),
-        var(--hero-overlay-via),
-        var(--hero-overlay-to)
-      ),
-      linear-gradient(
-        to top,
-        var(--hero-overlay-bottom),
-        transparent 50%,
-        var(--hero-overlay-via)
-      );
-  }
-
   .surface-1 {
     background: var(--surface-1);
     box-shadow: 0 0 0 1px var(--border-subtle);
