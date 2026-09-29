@@ -194,7 +194,7 @@ export function LoginForm() {
           <span className="w-full border-t border-border/80" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-hero-surface px-3 text-muted-foreground">
+          <span className="bg-surface-1 px-3 text-muted-foreground">
             or continue with email
           </span>
         </div>

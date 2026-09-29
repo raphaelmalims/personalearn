@@ -12,9 +12,6 @@ export const buttonVariants = cva(
         outline: "border border-input bg-transparent text-foreground hover:bg-muted",
         link: "h-auto rounded-none px-0 text-foreground underline-offset-4 hover:underline",
         accent: "bg-foreground text-background hover:bg-foreground/90",
-        hero: "border border-white/25 bg-white/10 text-white hover:bg-white/20",
-        "hero-primary":
-          "bg-primary text-primary-foreground hover:bg-primary/90",
       },
       size: {
         default: "h-11 px-5",

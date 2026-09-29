@@ -13,7 +13,7 @@ export function SignOutButton({
   variant = "menu",
 }: {
   className?: string;
-  variant?: "menu" | "hero";
+  variant?: "menu" | "header";
 }) {
   const router = useRouter();
   const clearActiveClass = useActiveClassStore((state) => state.clearActiveClass);
@@ -47,12 +47,12 @@ export function SignOutButton({
     router.refresh();
   }
 
-  if (variant === "hero") {
+  if (variant === "header") {
     return (
       <button
         type="button"
         onClick={handleSignOut}
-        className={cn(buttonVariants({ variant: "hero", size: "sm" }), className)}
+        className={cn(buttonVariants({ variant: "secondary", size: "sm" }), className)}
       >
         <LogOut className="h-4 w-4 shrink-0" />
         Sign out
