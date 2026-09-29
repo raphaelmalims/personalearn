@@ -6,15 +6,14 @@ import { DefaultChatTransport, type UIMessage } from "ai";
 import {
   ArrowUp,
   ChevronDown,
-  PanelRight,
   Paperclip,
   Plus,
   RotateCcw,
   Square,
-  SquarePen,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { useEffect, useMemo, useRef, useState, type FocusEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import { ChatMessage } from "@/components/ai-hub/chat-message";
 import { HubEvalSessionHost } from "@/components/ai-hub/hub-eval-session-host";
@@ -25,11 +24,18 @@ import {
   writeClassPanelCollapsedPreference,
   type HubClassPanelTab,
 } from "@/components/ai-hub/hub-class-panel";
+import {
+  MobileHubToolbar,
+  mobileHubToolbarOffsetClass,
+} from "@/components/ai-hub/mobile-hub-toolbar";
 import { ThinkingBubble } from "@/components/ai-hub/thinking-bubble";
 import { ClassSelector } from "@/components/classes/class-selector";
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Dialog } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { presets } from "@/lib/motion";
 import type { ConversationRow } from "@/lib/ai-hub/conversations";
 import { generateConversationTitle } from "@/lib/ai-hub/conversation-title";
 import {
@@ -41,6 +47,11 @@ import {
   validateChatAttachments,
   type PendingAttachment,
 } from "@/lib/ai-hub/chat-attachments";
+import {
+  isKeyboardOpen,
+  mobileComposerMotionClass,
+  nextMobileComposerHidden,
+} from "@/lib/ai-hub/mobile-composer-visibility";
 import {
   CONVERSATION_MESSAGES_STALE_TIME,
   conversationMessagesQueryKey,
@@ -108,6 +119,7 @@ export function AiHubChat() {
     useState<HubClassPanelTab>("resources");
   const [classPanelSearch, setClassPanelSearch] = useState("");
   const isMobile = useIsMobile();
+  const reduceMotion = useReducedMotion();
   const { enqueueUpload } = useEvalUploadQueue();
   const openEvalBatch = useHubEvalSessionStore((s) => s.openBatch);
   const composerHint = useHubEvalSessionStore((s) => s.composerHint);
@@ -119,6 +131,14 @@ export function AiHubChat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  const [composerHidden, setComposerHidden] = useState(false);
+  const [composerFocused, setComposerFocused] = useState(false);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  const composerHiddenRef = useRef(false);
+  const composerFocusedRef = useRef(false);
+  const keyboardOpenRef = useRef(false);
+  const lastScrollTopRef = useRef(0);
+  const accumulatedScrollRef = useRef(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const draftRef = useRef(draft);
@@ -126,13 +146,16 @@ export function AiHubChat() {
 
   setSelectedConversationIdRef.current = setSelectedConversationId;
   draftRef.current = draft;
+  composerHiddenRef.current = composerHidden;
+  composerFocusedRef.current = composerFocused;
+  keyboardOpenRef.current = keyboardOpen;
 
   useEffect(() => {
     const stored = readClassPanelCollapsedPreference();
     if (stored === null) {
-      // No preference yet: collapsed on mobile, expanded on desktop.
+      // No preference yet: drawer/rail below lg, expanded IDE split at lg+.
       setClassPanelCollapsed(
-        window.matchMedia("(max-width: 767px)").matches
+        window.matchMedia("(max-width: 1023px)").matches
       );
       return;
     }
@@ -143,6 +166,71 @@ export function AiHubChat() {
     setClassPanelCollapsed(collapsed);
     writeClassPanelCollapsedPreference(collapsed);
   }
+
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+    const update = () => {
+      const inset = Math.max(
+        0,
+        window.innerHeight - viewport.height - viewport.offsetTop
+      );
+      document.documentElement.style.setProperty(
+        "--keyboard-inset",
+        `${inset}px`
+      );
+      const open = isKeyboardOpen(inset);
+      keyboardOpenRef.current = open;
+      setKeyboardOpen((current) => (current === open ? current : open));
+      if (open) {
+        accumulatedScrollRef.current = 0;
+        composerHiddenRef.current = false;
+        setComposerHidden((current) => (current ? false : current));
+      }
+    };
+    update();
+    viewport.addEventListener("resize", update);
+    viewport.addEventListener("scroll", update);
+    return () => {
+      viewport.removeEventListener("resize", update);
+      viewport.removeEventListener("scroll", update);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isMobile) return;
+    let startX = 0;
+    let startY = 0;
+    let tracking = false;
+
+    function onStart(event: TouchEvent) {
+      const touch = event.touches[0];
+      if (!touch || touch.clientX > 24) return;
+      startX = touch.clientX;
+      startY = touch.clientY;
+      tracking = true;
+    }
+
+    function onMove(event: TouchEvent) {
+      if (!tracking) return;
+      const touch = event.touches[0];
+      if (!touch) return;
+      const dx = touch.clientX - startX;
+      const dy = Math.abs(touch.clientY - startY);
+      if (dx > 48 && dy < 40) {
+        setClassPanelCollapsed(false);
+        writeClassPanelCollapsedPreference(false);
+        tracking = false;
+      }
+    }
+
+    window.addEventListener("touchstart", onStart, { passive: true });
+    window.addEventListener("touchmove", onMove, { passive: true });
+    return () => {
+      window.removeEventListener("touchstart", onStart);
+      window.removeEventListener("touchmove", onMove);
+    };
+  }, [isMobile]);
 
 
   const {
@@ -324,6 +412,9 @@ export function AiHubChat() {
     setActionError(null);
     setEditingMessageId(null);
     setClassPanelSearch("");
+    accumulatedScrollRef.current = 0;
+    composerHiddenRef.current = false;
+    setComposerHidden(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only when active class changes
   }, [activeClass?.id]);
 
@@ -363,6 +454,12 @@ export function AiHubChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
+  function showComposer() {
+    accumulatedScrollRef.current = 0;
+    composerHiddenRef.current = false;
+    setComposerHidden(false);
+  }
+
   function updateScrollToBottomVisibility() {
     const el = messagesContainerRef.current;
     if (!el) {
@@ -376,6 +473,48 @@ export function AiHubChat() {
     setShowScrollToBottom(
       hasOverflow && distanceFromBottom > SCROLL_NEAR_BOTTOM_PX
     );
+  }
+
+  function handleMessagesScroll() {
+    const el = messagesContainerRef.current;
+    updateScrollToBottomVisibility();
+    if (!el) return;
+
+    const delta = el.scrollTop - lastScrollTopRef.current;
+    lastScrollTopRef.current = el.scrollTop;
+    if (!isMobile) {
+      accumulatedScrollRef.current = 0;
+      return;
+    }
+
+    const distanceFromBottom =
+      el.scrollHeight - el.scrollTop - el.clientHeight;
+    const next = nextMobileComposerHidden({
+      delta,
+      accumulatedDelta: accumulatedScrollRef.current,
+      distanceFromBottom,
+      composerFocused: composerFocusedRef.current,
+      keyboardOpen: keyboardOpenRef.current,
+      hidden: composerHiddenRef.current,
+    });
+    accumulatedScrollRef.current = next.accumulatedDelta;
+    if (next.hidden !== composerHiddenRef.current) {
+      composerHiddenRef.current = next.hidden;
+      setComposerHidden(next.hidden);
+    }
+  }
+
+  function engageComposer() {
+    composerFocusedRef.current = true;
+    setComposerFocused(true);
+    showComposer();
+  }
+
+  function releaseComposerFocus(event: FocusEvent<HTMLDivElement>) {
+    const next = event.relatedTarget;
+    if (next instanceof Node && event.currentTarget.contains(next)) return;
+    composerFocusedRef.current = false;
+    setComposerFocused(false);
   }
 
   useEffect(() => {
@@ -408,6 +547,7 @@ export function AiHubChat() {
 
     setSelectedConversationId(conversationId);
     conversationIdRef.current = conversationId;
+    showComposer();
 
     if (cached) {
       setMessages(cached);
@@ -459,6 +599,7 @@ export function AiHubChat() {
     setActionError(null);
     setEditingMessageId(null);
     setClassPanelTab("conversations");
+    showComposer();
     if (isMobile) {
       handleClassPanelCollapsedChange(true);
     }
@@ -706,14 +847,22 @@ export function AiHubChat() {
     );
   }
 
+  const composerCollapsed =
+    isMobile &&
+    messages.length > 0 &&
+    composerHidden &&
+    !composerFocused &&
+    !keyboardOpen;
+
   return (
     <>
       <div
         className={cn(
-          "relative h-full min-h-0",
+          "relative min-h-0",
           isMobile
-            ? "flex flex-col"
+            ? "absolute inset-0 flex flex-col overflow-hidden"
             : cn(
+                "h-full",
                 "grid gap-3 sm:gap-4",
                 classPanelCollapsed
                   ? "grid-cols-[minmax(0,1fr)_auto]"
@@ -727,42 +876,31 @@ export function AiHubChat() {
             onMobileBackToList={handleMobileBackToResourceList}
           />
           {isMobile ? (
-            <div className="absolute right-1 top-2 z-10 flex items-center gap-1">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 rounded-full bg-background/80 backdrop-blur-sm"
-                onClick={handleNewConversation}
-                title="New conversation"
-                aria-label="New conversation"
-              >
-                <SquarePen className="h-5 w-5" />
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 rounded-full bg-background/80 backdrop-blur-sm"
-                onClick={() => handleClassPanelCollapsedChange(false)}
-                title="Hub panel"
-                aria-label="Open hub panel"
-              >
-                <PanelRight className="h-5 w-5" />
-              </Button>
-            </div>
+            <MobileHubToolbar
+              title={
+                conversations.find((row) => row.id === selectedConversationId)
+                  ?.title ?? activeClass.name
+              }
+              onOpenPanel={() => handleClassPanelCollapsedChange(false)}
+              onNewConversation={handleNewConversation}
+            />
           ) : null}
-
           <div className="flex min-h-0 flex-1 flex-col">
             <div className="relative min-h-0 flex-1">
               <div
                 ref={messagesContainerRef}
-                onScroll={updateScrollToBottomVisibility}
-                className={cn(
-                  "h-full overflow-y-auto px-1 py-4 sm:px-0",
-                  isMobile && "pt-12"
-                )}
+                onScroll={handleMessagesScroll}
+                className="absolute inset-0 overflow-y-auto overscroll-contain"
               >
+                <div
+                  className={cn(
+                    "px-1 sm:px-0",
+                    messages.length === 0
+                      ? "flex min-h-full flex-col"
+                      : "pb-4",
+                    isMobile ? mobileHubToolbarOffsetClass : "pt-4"
+                  )}
+                >
                 {loadingConversation && messages.length === 0 ? (
                   <div
                     className="space-y-5 py-2"
@@ -787,7 +925,7 @@ export function AiHubChat() {
                     </div>
                   </div>
                 ) : messages.length === 0 ? (
-                  <div className="flex h-full flex-col justify-center gap-4 py-6">
+                  <div className="flex flex-1 flex-col justify-center gap-4 py-6">
                     <div className="mx-auto max-w-md text-center">
                       <p className="text-base font-medium text-foreground">
                         How can I help with {activeClass.name}?
@@ -805,7 +943,7 @@ export function AiHubChat() {
                           type="button"
                           disabled={isBusy}
                           onClick={() => void submitMessage(prompt)}
-                          className="rounded-full border border-border bg-background px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-foreground disabled:opacity-50"
+                          className="min-h-11 rounded-full border border-border bg-background px-4 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-foreground disabled:opacity-50"
                         >
                           {prompt}
                         </button>
@@ -826,6 +964,7 @@ export function AiHubChat() {
                     <div ref={messagesEndRef} />
                   </div>
                 )}
+                </div>
               </div>
 
               {showScrollToBottom ? (
@@ -845,7 +984,29 @@ export function AiHubChat() {
               ) : null}
             </div>
 
-            <div className="shrink-0 bg-background px-1 pb-1 pt-2 sm:px-0 sm:pb-2">
+            <div
+              className={cn(
+                "shrink-0 bg-background",
+                isMobile && mobileComposerMotionClass,
+                isMobile &&
+                  (composerCollapsed
+                    ? "grid-rows-[0fr] opacity-0"
+                    : "grid-rows-[1fr] opacity-100")
+              )}
+              data-mobile-composer={isMobile ? "true" : undefined}
+              data-composer-collapsed={composerCollapsed ? "true" : "false"}
+              inert={composerCollapsed ? true : undefined}
+              aria-hidden={composerCollapsed || undefined}
+              onFocus={engageComposer}
+              onBlur={releaseComposerFocus}
+            >
+              <div
+                className={cn(
+                  "px-1 pb-[calc(0.25rem+var(--keyboard-inset,0px))] pt-2 sm:px-0 sm:pb-2",
+                  isMobile && "min-h-0 overflow-hidden",
+                  composerCollapsed && "pointer-events-none"
+                )}
+              >
               {error || actionError ? (
                 <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2">
                   <p className="text-sm text-destructive">
@@ -916,7 +1077,7 @@ export function AiHubChat() {
                     variant="ghost"
                     disabled={isBusy || editingMessageId !== null}
                     onClick={() => fileInputRef.current?.click()}
-                    className="h-9 w-9 shrink-0 rounded-full p-0 text-muted-foreground hover:text-foreground"
+                    className="h-11 w-11 shrink-0 rounded-full p-0 text-muted-foreground hover:text-foreground"
                     title="Attach file"
                     aria-label="Attach file"
                   >
@@ -940,6 +1101,8 @@ export function AiHubChat() {
                     disabled={isBusy}
                     rows={1}
                     maxLength={4000}
+                    inputMode="text"
+                    enterKeyHint="send"
                     className={cn(
                       "min-h-9 max-h-32 flex-1 resize-none bg-transparent px-1 py-2 text-sm outline-none",
                       "disabled:cursor-not-allowed disabled:opacity-50"
@@ -959,7 +1122,7 @@ export function AiHubChat() {
                     <Button
                       type="submit"
                       disabled={!canSend}
-                      className="h-9 w-9 shrink-0 rounded-full p-0 shadow-sm"
+                      className="h-11 w-11 shrink-0 rounded-full p-0 shadow-sm"
                     >
                       <ArrowUp className="h-4 w-4" strokeWidth={2.5} />
                       <span className="sr-only">Send message</span>
@@ -971,6 +1134,7 @@ export function AiHubChat() {
                 Attachments (.txt 2 MB · .pdf/.jpg/.png 5 MB) stay in this chat
                 only — they are not saved to the class library.
               </p>
+              </div>
             </div>
           </div>
         </section>
@@ -996,35 +1160,63 @@ export function AiHubChat() {
           />
         ) : null}
 
+        <AnimatePresence>
         {isMobile && !classPanelCollapsed ? (
-          <div
-            className="absolute inset-0 z-30 flex flex-col bg-background"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Hub panel"
-          >
-            <HubClassPanel
-              classId={activeClass.id}
-              collapsed={false}
-              onCollapsedChange={handleClassPanelCollapsedChange}
-              activeTab={classPanelTab}
-              onTabChange={setClassPanelTab}
-              searchQuery={classPanelSearch}
-              onSearchQueryChange={setClassPanelSearch}
-              conversations={conversations}
-              selectedConversationId={selectedConversationId}
-              conversationsLoading={conversationsLoading}
-              deletingConversationId={deletingConversationId}
-              onSelectConversation={(conversationId) => {
-                void handleSelectConversation(conversationId);
-              }}
-              onNewConversation={handleNewConversation}
-              onDeleteConversation={setPendingDeleteId}
-              className="h-full w-full rounded-none border-0 bg-background shadow-none backdrop-blur-none"
-              sheetMode
+          <div key="hub-drawer" className="fixed inset-0 z-50" role="presentation">
+            <motion.button
+              type="button"
+              className="absolute inset-0 bg-black/60"
+              aria-label="Close hub panel"
+              onClick={() => handleClassPanelCollapsedChange(true)}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={presets.crossfade.transition}
             />
+            <motion.div
+              className="absolute inset-y-0 left-0 flex w-[88%] max-w-sm flex-col bg-background shadow-lg"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Hub panel"
+              initial={reduceMotion ? presets.crossfade.initial : presets.drawer.initial}
+              animate={reduceMotion ? presets.crossfade.animate : presets.drawer.animate}
+              exit={reduceMotion ? presets.crossfade.exit : presets.drawer.exit}
+              transition={
+                reduceMotion ? presets.crossfade.transition : presets.drawer.transition
+              }
+            >
+              <HubClassPanel
+                classId={activeClass.id}
+                collapsed={false}
+                onCollapsedChange={handleClassPanelCollapsedChange}
+                activeTab={classPanelTab}
+                onTabChange={setClassPanelTab}
+                searchQuery={classPanelSearch}
+                onSearchQueryChange={setClassPanelSearch}
+                conversations={conversations}
+                selectedConversationId={selectedConversationId}
+                conversationsLoading={conversationsLoading}
+                deletingConversationId={deletingConversationId}
+                onSelectConversation={(conversationId) => {
+                  void handleSelectConversation(conversationId);
+                  handleClassPanelCollapsedChange(true);
+                }}
+                onNewConversation={() => {
+                  handleNewConversation();
+                  handleClassPanelCollapsedChange(true);
+                }}
+                onDeleteConversation={setPendingDeleteId}
+                className="min-h-0 flex-1 rounded-none border-0 bg-background shadow-none"
+                sheetMode
+              />
+              <div className="flex items-center justify-between gap-2 border-t border-border px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+                <ThemeToggle label="Appearance" />
+                <SignOutButton />
+              </div>
+            </motion.div>
           </div>
         ) : null}
+        </AnimatePresence>
       </div>
 
       <Dialog

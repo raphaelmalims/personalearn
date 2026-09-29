@@ -8,8 +8,10 @@ import {
 } from "@/components/classes/eval-review-workspace";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useIsMobile } from "@/lib/hooks/use-is-mobile";
 import { useHubEvalSessionStore } from "@/lib/store/hub-eval-session";
 import { useActiveClassStore } from "@/lib/store/active-class";
+import { cn } from "@/lib/utils";
 import type { ScriptReviewDto } from "@/lib/evaluation/identity";
 import type { Assessment } from "@/types/database";
 
@@ -52,13 +54,19 @@ export function HubEvalSessionHost() {
   const openScript = useHubEvalSessionStore((s) => s.openScript);
   const backToQueue = useHubEvalSessionStore((s) => s.backToQueue);
   const activeClass = useActiveClassStore((s) => s.activeClass);
+  const isMobile = useIsMobile();
 
   if (!expanded || !classId || !batchId) {
     return null;
   }
 
   return (
-    <div className="absolute inset-0 z-20 flex min-h-0 flex-col bg-background">
+    <div
+      className={cn(
+        "flex min-h-0 flex-col bg-background",
+        isMobile ? "fixed inset-0 z-50 h-dvh" : "absolute inset-0 z-20"
+      )}
+    >
       <header className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-2">
         <p className="truncate text-sm font-medium">Evaluation workspace</p>
         <Button type="button" size="sm" variant="secondary" onClick={collapse}>

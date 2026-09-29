@@ -16,6 +16,24 @@ const eslintConfig = [
       "react-hooks/immutability": "off",
     },
   },
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: ["src/components/ui/**"],
+    rules: {
+      "no-restricted-imports": [
+        "warn",
+        {
+          paths: [
+            {
+              name: "lucide-react",
+              message:
+                "Use Icon from @/components/ui/icon in feature code. Direct lucide imports stay inside src/components/ui.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 ];
 
 export default eslintConfig;

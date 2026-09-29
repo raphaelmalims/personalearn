@@ -45,7 +45,7 @@ export default function OnboardingPage() {
         ))}
       </ul>
 
-      <div className="hero-glass rounded-2xl p-6 sm:p-8">
+      <div className="surface-1 rounded-lg p-6 sm:p-8">
         <div className="mb-6">
           <h2 className="font-display text-xl font-semibold text-foreground">
             Create your first class

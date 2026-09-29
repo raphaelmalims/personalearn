@@ -11,7 +11,7 @@ export default function SentryTestPage() {
   return (
     <div className="mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-6 p-6">
       <div>
-        <p className="text-sm font-medium text-teal-700">Development only</p>
+        <p className="text-sm font-medium text-info">Development only</p>
         <h1 className="text-2xl font-semibold tracking-tight">
           Sentry verification
         </h1>
@@ -35,7 +35,7 @@ export default function SentryTestPage() {
       </dl>
 
       {!publicDsnConfigured && (
-        <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+        <p className="rounded-md border border-warning/40 bg-warning/10 p-3 text-sm text-warning">
           Add <code className="font-mono">SENTRY_DSN</code> and{" "}
           <code className="font-mono">NEXT_PUBLIC_SENTRY_DSN</code> to{" "}
           <code className="font-mono">.env.local</code>, then restart{" "}
@@ -52,7 +52,7 @@ export default function SentryTestPage() {
           href={SENTRY_ISSUES_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="font-medium text-teal-700 underline-offset-2 hover:underline"
+          className="font-medium text-info underline-offset-2 hover:underline"
         >
           Sentry Issues
         </a>{" "}

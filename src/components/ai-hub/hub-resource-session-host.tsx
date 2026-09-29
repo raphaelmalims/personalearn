@@ -66,7 +66,7 @@ export function HubResourceSessionHost({
       className={cn(
         "flex min-h-0 flex-col bg-background",
         coverViewport
-          ? "fixed inset-0 z-40"
+          ? "fixed inset-0 z-50 h-dvh"
           : "absolute inset-0 z-20"
       )}
       role="region"

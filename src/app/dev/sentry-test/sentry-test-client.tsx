@@ -46,7 +46,7 @@ export function SentryTestClient() {
       <button
         type="button"
         onClick={triggerClientError}
-        className="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800"
+        className="rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
       >
         1. Trigger client error
       </button>
@@ -57,7 +57,7 @@ export function SentryTestClient() {
       <button
         type="button"
         onClick={triggerServerError}
-        className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium hover:bg-slate-50"
+        className="rounded-full border border-border bg-card px-4 py-2.5 text-sm font-medium hover:bg-muted"
       >
         2. Trigger server error (API route)
       </button>
@@ -69,7 +69,7 @@ export function SentryTestClient() {
         href={SENTRY_ISSUES_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-center text-sm font-medium text-teal-700 underline-offset-2 hover:underline"
+        className="text-center text-sm font-medium text-info underline-offset-2 hover:underline"
       >
         Open Sentry Issues →
       </a>

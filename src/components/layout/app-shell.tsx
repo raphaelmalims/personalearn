@@ -2,13 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, MoreHorizontal, WandSparkles } from "lucide-react";
+import { Menu, WandSparkles } from "lucide-react";
 import { useEffect, useRef, useState, ViewTransition } from "react";
 import { cn } from "@/lib/utils";
 import { BrandMark } from "@/components/layout/brand-mark";
 import { ClassSelector } from "@/components/classes/class-selector";
 import { SignOutButton } from "@/components/auth/sign-out-button";
-import { DropdownMenu } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { isHubNavActive } from "@/components/layout/is-hub-nav-active";
 
@@ -18,6 +17,7 @@ const navItems = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const isHub = pathname.startsWith("/ai-hub");
   const [railExpanded, setRailExpanded] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
@@ -36,7 +36,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background md:flex print:block print:bg-white">
+    <div
+      className={cn(
+        "min-h-screen bg-background md:flex print:block print:bg-white",
+        isHub &&
+          "max-md:h-dvh max-md:max-h-dvh max-md:overflow-hidden print:h-auto print:max-h-none print:overflow-visible"
+      )}
+    >
       {/* Desktop left rail — fixed width; only the center nav cube expands */}
       <aside className="sticky top-0 z-40 hidden h-screen w-[4.5rem] shrink-0 flex-col items-center py-3 md:flex print:hidden">
         <Link
@@ -127,7 +133,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main content */}
-      <div className="flex min-h-screen min-w-0 flex-1 flex-col pb-20 md:pb-0 print:min-h-0 print:pb-0">
+      <div
+        className={cn(
+          "flex min-h-screen min-w-0 flex-1 flex-col print:min-h-0",
+          isHub && "max-md:h-full max-md:min-h-0 max-md:overflow-hidden"
+        )}
+      >
+        {isHub ? null : (
         <header className="sticky top-0 z-30 flex items-center justify-between gap-2 bg-background/80 px-4 py-3 backdrop-blur-xl md:hidden print:hidden">
           <Link
             href="/ai-hub"
@@ -138,59 +150,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </span>
             PersonaLearn
           </Link>
-          <ClassSelector />
+          <div className="flex items-center gap-2">
+            <ClassSelector />
+            <ThemeToggle />
+          </div>
         </header>
+        )}
 
-        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 md:px-6 md:py-8 print:max-w-none print:px-0 print:py-0">
+        <main
+          className={cn(
+            "mx-auto w-full max-w-7xl flex-1 px-4 py-6 md:px-6 md:py-8 print:max-w-none print:px-0 print:py-0",
+            isHub && "max-md:flex max-md:h-dvh max-md:max-w-none max-md:flex-col max-md:px-0 max-md:py-0"
+          )}
+        >
           <ViewTransition>
             {children}
           </ViewTransition>
         </main>
       </div>
-
-      {/* Mobile bottom tab bar */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 bg-background/90 px-2 pb-[env(safe-area-inset-bottom)] pt-1 shadow-[0_-8px_24px_rgb(0_0_0_/0.06)] backdrop-blur-xl md:hidden print:hidden">
-        <div className="mx-auto flex max-w-lg items-stretch justify-around">
-          {navItems.map(({ href, label, icon: Icon }) => {
-            const active = isHubNavActive(pathname);
-            return (
-              <Link
-                key={href}
-                href={href}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "flex min-w-[4.5rem] flex-col items-center gap-0.5 rounded-xl px-3 py-2 text-[11px] font-medium transition-colors",
-                  active ? "text-primary" : "text-muted-foreground"
-                )}
-              >
-                <Icon className="h-5 w-5" />
-                {label}
-              </Link>
-            );
-          })}
-          <DropdownMenu
-            align="end"
-            side="top"
-            trigger={
-              <button
-                type="button"
-                className="flex min-w-[4.5rem] flex-col items-center gap-0.5 rounded-xl px-3 py-2 text-[11px] font-medium text-muted-foreground"
-                aria-label="More"
-              >
-                <MoreHorizontal className="h-5 w-5" />
-                More
-              </button>
-            }
-          >
-            <div className="flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm">
-              <span className="text-muted-foreground">Appearance</span>
-              <ThemeToggle side="top" />
-            </div>
-            <div className="my-1 h-px bg-border/60" />
-            <SignOutButton />
-          </DropdownMenu>
-        </div>
-      </nav>
     </div>
   );
 }

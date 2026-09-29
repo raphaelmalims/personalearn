@@ -334,8 +334,8 @@ export function StartEvaluationDialog({
               ) : null}
 
               {openBatchForAssessment ? (
-                <div className="rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-3 py-2 text-sm">
-                  <p className="font-medium text-indigo-950 dark:text-indigo-100">
+                <div className="rounded-md border border-info/30 bg-info/10 px-3 py-2 text-sm">
+                  <p className="font-medium text-info">
                     Open session for this assessment
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
@@ -397,7 +397,7 @@ export function StartEvaluationDialog({
                   save, then return here and attach the new scheme.
                 </p>
               ) : (
-                <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-950 dark:text-amber-100">
+                <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-warning">
                   AI will grade using its own judgment, which is less reliable.
                   All resulting marks will be flagged as AI estimates.
                 </p>

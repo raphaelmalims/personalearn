@@ -55,9 +55,9 @@ export function EvalProgressDot({
         "inline-block h-2.5 w-2.5 rounded-full",
         state === "none" && "bg-muted-foreground/30",
         state === "processing" && "animate-pulse bg-muted-foreground/70",
-        state === "amber" && "bg-amber-500",
-        state === "ready" && "bg-indigo-500",
-        state === "done" && "bg-emerald-500",
+        state === "amber" && "bg-warning",
+        state === "ready" && "bg-primary",
+        state === "done" && "bg-success",
         className
       )}
     />

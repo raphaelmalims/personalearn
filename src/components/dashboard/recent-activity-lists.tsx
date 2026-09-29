@@ -50,7 +50,7 @@ export function RecentActivityLists({
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-      <Card className={cn("surface-float border-0")}>
+      <Card className={cn("surface-1 rounded-lg border-0")}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <MessageSquare className="h-4 w-4 text-primary" />
@@ -102,7 +102,7 @@ export function RecentActivityLists({
         </CardContent>
       </Card>
 
-      <Card className={cn("surface-float border-0")}>
+      <Card className={cn("surface-1 rounded-lg border-0")}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <FileText className="h-4 w-4 text-primary" />

@@ -84,7 +84,7 @@ export function DropdownMenu({
       ref={panelRef}
       style={portal ? coords ?? undefined : undefined}
       className={cn(
-        "z-50 w-max rounded-xl bg-card/95 p-1 shadow-lg backdrop-blur-xl",
+        "z-50 w-max rounded-md bg-card p-1 shadow-lg",
         portal
           ? "fixed"
           : cn(
@@ -129,7 +129,7 @@ export function DropdownMenuItem({
     <button
       type="button"
       className={cn(
-        "flex w-full min-w-0 items-center rounded-lg px-3 py-2 text-left text-sm hover:bg-muted",
+        "flex w-full min-w-0 items-center rounded-md px-3 py-2 text-left text-sm hover:bg-muted",
         className
       )}
       onClick={() => {
