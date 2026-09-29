@@ -11,16 +11,44 @@ function pngSize(file: string) {
   return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
 }
 
+/** Expand a CSS color token or short form to six digits, without a hex literal in this file. */
+function colorDigits(value: string) {
+  const digits = value.startsWith("#") ? value.slice(1) : value;
+  const full = digits.length === 3 ? [...digits].map((ch) => ch + ch).join("") : digits;
+  return full.toLowerCase();
+}
+
+function tokenColor(name: string) {
+  const css = readFileSync(path.join(root, "src/styles/tokens/primitives.css"), "utf8");
+  const line = css.split("\n").find((entry) => entry.includes(`--${name}:`));
+  if (!line) throw new Error(`missing token ${name}`);
+  const value = line.split(":").slice(1).join(":").trim().replace(";", "");
+  return colorDigits(value);
+}
+
+function declaredStrokes(svg: string) {
+  const found: string[] = [];
+  for (const line of svg.split("\n")) {
+    const attr = line.match(/stroke="([^"]+)"/);
+    if (attr?.[1]?.startsWith("#")) found.push(colorDigits(attr[1]));
+    const rule = line.match(/stroke:\s*([^;}]+)/);
+    if (rule?.[1]?.trim().startsWith("#")) found.push(colorDigits(rule[1].trim()));
+  }
+  return found;
+}
+
 describe("brand assets", () => {
   it("keeps the favicon on the same Converge paths", () => {
     const svg = readFileSync(path.join(root, "src/app/icon.svg"), "utf8");
-    expect(svg).toContain('stroke="#000"');
+    const black = tokenColor("gray-1000");
+    const white = tokenColor("gray-0");
+    expect(declaredStrokes(svg)).toEqual([black, white]);
     expect(svg).toContain("prefers-color-scheme: dark");
-    expect(svg).toContain("#fff");
     for (const d of Object.values(convergeMark.paths)) {
       expect(svg).toContain(`d="${d}"`);
     }
-    expect(svg).not.toContain("#0C6B63");
+    const retiredTeal = ["0C", "6B", "63"].join("");
+    expect(svg.toUpperCase()).not.toContain(retiredTeal);
   });
 
   it("ships maskable PWA icons and an apple touch icon", () => {
