@@ -16,7 +16,7 @@ import {
 import { generateConversationTitle } from "@/lib/ai-hub/conversation-title";
 import { generateAiConversationTitle } from "@/lib/ai-hub/generate-conversation-title";
 import { materializeAttachmentText } from "@/lib/ai-hub/chat-attachments-server";
-import { getAssistantPersistContent, getMessageText, getVisibleDrafts } from "@/lib/ai-hub/message-content";
+import { getAssistantPersistContent, getMessageText, getVisibleDrafts, getVisibleEvalSessions } from "@/lib/ai-hub/message-content";
 import { getChatModel } from "@/lib/ai/llm";
 import { assertChatConfigured } from "@/lib/ai/env";
 import { requireTeacherClass } from "@/lib/auth/require-teacher-class";
@@ -116,6 +116,7 @@ export async function POST(request: Request) {
       classId,
       teacherId: user.id,
       classContext,
+      conversationId: activeConversationId,
     });
 
     const result = streamText({
@@ -137,17 +138,32 @@ export async function POST(request: Request) {
         }
 
         const persistContent = getAssistantPersistContent(responseMessage);
-        if (!persistContent) {
+        const drafts = getVisibleDrafts(responseMessage);
+        const evalSessions = getVisibleEvalSessions(responseMessage);
+        if (!persistContent && drafts.length === 0 && evalSessions.length === 0) {
           return;
         }
-
-        const drafts = getVisibleDrafts(responseMessage);
 
         await appendConversationMessages(supabase, activeConversationId!, [
           {
             role: "assistant",
-            content: persistContent,
-            tool_calls: drafts.length > 0 ? { drafts } : null,
+            content:
+              persistContent ||
+              evalSessions
+                .map((session) =>
+                  session.assessmentTitle
+                    ? `Evaluation session · ${session.assessmentTitle}`
+                    : "Evaluation session started."
+                )
+                .join("\n") ||
+              "Done.",
+            tool_calls:
+              drafts.length > 0 || evalSessions.length > 0
+                ? {
+                    ...(drafts.length > 0 ? { drafts } : {}),
+                    ...(evalSessions.length > 0 ? { evalSessions } : {}),
+                  }
+                : null,
           },
         ]);
 

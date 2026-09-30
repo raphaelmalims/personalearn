@@ -29,7 +29,7 @@ function forwardOAuthCode(request: NextRequest) {
   const redirectUrl = request.nextUrl.clone();
   redirectUrl.pathname = "/auth/callback";
   if (!redirectUrl.searchParams.has("next")) {
-    redirectUrl.searchParams.set("next", "/dashboard");
+    redirectUrl.searchParams.set("next", getPostLoginPath(true));
   }
   return NextResponse.redirect(redirectUrl);
 }
@@ -54,7 +54,7 @@ function configurationErrorResponse(message: string) {
   });
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const oauthForward = forwardOAuthCode(request);
   if (oauthForward) {
     return oauthForward;
@@ -115,7 +115,7 @@ export async function middleware(request: NextRequest) {
 
     if (pathname === onboardingPath && hasClasses) {
       const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = "/dashboard";
+      redirectUrl.pathname = getPostLoginPath(hasClasses);
       return NextResponse.redirect(redirectUrl);
     }
 
@@ -125,6 +125,8 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
 
+    // Authenticated `/dashboard*` is allowed through so the page can
+    // `router.replace("/ai-hub")` and not leave a Back bounce.
     return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Middleware failed";

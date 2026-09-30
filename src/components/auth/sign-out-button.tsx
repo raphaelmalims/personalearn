@@ -5,7 +5,7 @@ import { LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useActiveClassStore } from "@/lib/store/active-class";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button-variants";
 import { cn } from "@/lib/utils";
 
 export function SignOutButton({
@@ -13,7 +13,7 @@ export function SignOutButton({
   variant = "menu",
 }: {
   className?: string;
-  variant?: "menu" | "hero";
+  variant?: "menu" | "header";
 }) {
   const router = useRouter();
   const clearActiveClass = useActiveClassStore((state) => state.clearActiveClass);
@@ -47,12 +47,12 @@ export function SignOutButton({
     router.refresh();
   }
 
-  if (variant === "hero") {
+  if (variant === "header") {
     return (
       <button
         type="button"
         onClick={handleSignOut}
-        className={cn(buttonVariants({ variant: "hero", size: "sm" }), className)}
+        className={cn(buttonVariants({ variant: "secondary", size: "sm" }), className)}
       >
         <LogOut className="h-4 w-4 shrink-0" />
         Sign out

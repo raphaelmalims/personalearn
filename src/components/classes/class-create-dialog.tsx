@@ -58,9 +58,9 @@ export function ClassCreateDialog({
         <ClassForm
           submitLabel="Create class"
           redirectOnSuccess={null}
-          onSuccess={(created) => {
+          onSuccess={() => {
             setOpen(false);
-            router.push(`/classes/${created.id}`);
+            router.push("/ai-hub");
             router.refresh();
           }}
         />

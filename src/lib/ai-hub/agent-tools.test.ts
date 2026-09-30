@@ -339,12 +339,14 @@ describe("executeListStudents", () => {
                   full_name: "Ada Lovelace",
                   admission_number: "A001",
                   gender: "Female",
+                  interests: "mathematics, chess",
                 },
                 {
                   id: "s2",
                   full_name: "Grace Hopper",
                   admission_number: null,
                   gender: null,
+                  interests: null,
                 },
               ],
               error: null,
@@ -366,12 +368,14 @@ describe("executeListStudents", () => {
           fullName: "Ada Lovelace",
           admissionNumber: "A001",
           gender: "Female",
+          interests: "mathematics, chess",
         },
         {
           studentId: "s2",
           fullName: "Grace Hopper",
           admissionNumber: null,
           gender: null,
+          interests: null,
         },
       ],
     });
@@ -455,6 +459,7 @@ describe("executeCreateStudent / executeUpdateStudent", () => {
       fullName: "Alan Turing",
       admissionNumber: "A010",
       gender: "Male",
+      interests: null,
     });
 
     const duplicate = await executeCreateStudent(
@@ -497,6 +502,7 @@ describe("executeCreateStudent / executeUpdateStudent", () => {
         full_name: "Ada King",
         admission_number: "A001",
         gender: "Female",
+        interests: "poetry",
       },
       error: null,
     }));
@@ -589,6 +595,7 @@ describe("executeCreateStudent / executeUpdateStudent", () => {
         studentId: "s1",
         fullName: "Ada King",
         teacherConfirmed: true,
+        interests: "poetry",
       }
     );
 
@@ -598,6 +605,7 @@ describe("executeCreateStudent / executeUpdateStudent", () => {
       fullName: "Ada King",
       admissionNumber: "A001",
       gender: "Female",
+      interests: "poetry",
     });
     expect(supabase).toBeTruthy();
   });

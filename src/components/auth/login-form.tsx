@@ -18,11 +18,12 @@ import {
 import { GoogleIcon } from "@/components/auth/google-icon";
 import { OAuthSetupCallout } from "@/components/auth/oauth-setup-callout";
 import { buildOAuthCallbackUrl } from "@/lib/auth/oauth-redirect";
+import { getPostLoginPath } from "@/lib/auth/post-login-path";
 
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") ?? "/dashboard";
+  const redirectTo = searchParams.get("redirectTo") ?? getPostLoginPath(true);
   const authError = searchParams.get("error") === "auth";
   const authErrorCode = searchParams.get("error_code");
   const authErrorDetail = searchParams.get("error_detail");
@@ -193,7 +194,7 @@ export function LoginForm() {
           <span className="w-full border-t border-border/80" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-hero-surface px-3 text-muted-foreground">
+          <span className="bg-surface-1 px-3 text-muted-foreground">
             or continue with email
           </span>
         </div>

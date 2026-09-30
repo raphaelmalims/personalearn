@@ -5,6 +5,7 @@ import {
   getAssistantPersistContent,
   getMessageReasoning,
   getVisibleDrafts,
+  getVisibleEvalSessions,
   stripDatabaseIdsFromTeacherText,
   toUIMessageFromRow,
   truncateMessagesBefore,
@@ -257,6 +258,36 @@ describe("toUIMessageFromRow", () => {
         }
       }
     }
+  });
+});
+
+describe("eval session artifacts", () => {
+  it("rebuilds a reopenable eval card from tool_calls", () => {
+    const uiMessage = toUIMessageFromRow({
+      id: "m-eval",
+      role: "assistant",
+      content: "Evaluation session · CAT 2",
+      tool_calls: {
+        evalSessions: [
+          {
+            batchId: "batch-1",
+            conversationId: "conv-1",
+            status: "draft",
+            assessmentTitle: "CAT 2",
+          },
+        ],
+      },
+    });
+
+    expect(getVisibleEvalSessions(uiMessage)).toEqual([
+      {
+        batchId: "batch-1",
+        conversationId: "conv-1",
+        status: "draft",
+        assessmentTitle: "CAT 2",
+        reused: false,
+      },
+    ]);
   });
 });
 

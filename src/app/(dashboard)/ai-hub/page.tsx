@@ -1,16 +1,23 @@
 import { Suspense } from "react";
 import { AiHubChat } from "@/components/ai-hub/ai-hub-chat";
+import { WelcomeTour } from "@/components/onboarding/welcome-tour";
 
 export default function AiHubPage() {
   return (
-    <div className="-mx-4 mb-[-1.5rem] h-[calc(100dvh-3.75rem)] min-h-[28rem] px-4 md:-mx-6 md:mb-[-2rem] md:h-[calc(100dvh-4rem)] md:min-h-[32rem] md:px-6">
-      <Suspense
-        fallback={
-          <p className="text-sm text-muted-foreground">Loading AI Hub…</p>
-        }
-      >
-        <AiHubChat />
-      </Suspense>
-    </div>
+    <>
+      {/* Hub is the post-auth landing (PSL-114), so the first-run tour lives here. */}
+      <WelcomeTour />
+      <div className="flex h-dvh min-h-0 flex-1 flex-col max-md:overflow-hidden md:-mx-6 md:mb-[-2rem] md:h-[calc(100dvh-4rem)] md:min-h-[32rem] md:px-6">
+        <div className="relative min-h-0 flex-1">
+          <Suspense
+            fallback={
+              <p className="text-sm text-muted-foreground">Loading AI Hub…</p>
+            }
+          >
+            <AiHubChat />
+          </Suspense>
+        </div>
+      </div>
+    </>
   );
 }

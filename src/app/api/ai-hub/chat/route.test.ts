@@ -75,7 +75,8 @@ const mockCreateAgentTools = vi.fn(() => ({
 }));
 
 vi.mock("@/lib/ai-hub/agent-tools", () => ({
-  createAgentTools: (...args: unknown[]) => mockCreateAgentTools(...args),
+  createAgentTools: (...args: unknown[]) =>
+    (mockCreateAgentTools as (...inner: unknown[]) => unknown)(...args),
 }));
 
 vi.mock("ai", async () => {
@@ -146,6 +147,7 @@ describe("POST /api/ai-hub/chat", () => {
     expect(mockCreateAgentTools).toHaveBeenCalledWith(
       expect.objectContaining({
         classId,
+        conversationId,
       })
     );
     expect(mockAppendConversationMessages).toHaveBeenCalledWith(

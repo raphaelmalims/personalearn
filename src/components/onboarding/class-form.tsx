@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { getPostLoginPath } from "@/lib/auth/post-login-path";
 import { classSchema, type ClassFormValues } from "@/lib/validations/class";
 import { useCreateClass } from "@/lib/hooks/use-classes";
 import type { Class } from "@/types/database";
@@ -23,7 +24,7 @@ type ClassFormProps = {
 export function ClassForm({
   onSuccess,
   submitLabel = "Create class",
-  redirectOnSuccess = "/dashboard",
+  redirectOnSuccess = getPostLoginPath(true),
 }: ClassFormProps) {
   const router = useRouter();
   const createClass = useCreateClass();

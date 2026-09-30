@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { SplitPaneScriptReview } from "@/components/classes/eval-review-workspace";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useClasses } from "@/lib/hooks/use-classes";
 import type { ScriptReviewDto } from "@/lib/evaluation/identity";
 import type { Assessment } from "@/types/database";
 
@@ -47,6 +48,9 @@ async function fetchScriptReview(
 
 export default function ScriptReviewPage({ params }: ReviewPageProps) {
   const { classId, assessmentId, scriptId } = use(params);
+  const { data: classes } = useClasses();
+  const classLabel =
+    classes?.find((cls) => cls.id === classId)?.name ?? "Class";
   const { data, isLoading, error } = useQuery({
     queryKey: ["script-review", classId, assessmentId, scriptId],
     queryFn: () => fetchScriptReview(classId, assessmentId, scriptId),
@@ -67,8 +71,8 @@ export default function ScriptReviewPage({ params }: ReviewPageProps) {
         <p className="text-sm text-destructive">
           {error instanceof Error ? error.message : "Review not available"}
         </p>
-        <Link href={`/classes/${classId}`} className="text-sm underline">
-          Back to class
+        <Link href="/ai-hub" className="text-sm underline">
+          Back to Hub
         </Link>
       </div>
     );
@@ -83,8 +87,8 @@ export default function ScriptReviewPage({ params }: ReviewPageProps) {
     <div className="flex min-h-0 flex-col gap-3 p-4 lg:h-[calc(100dvh-1rem)] lg:overflow-hidden">
       <Breadcrumbs
         items={[
-          { label: "Classes", href: "/classes" },
-          { label: "Class", href: `/classes/${classId}` },
+          { label: "AI Hub", href: "/ai-hub" },
+          { label: classLabel, href: "/ai-hub" },
           {
             label: assessmentTitle,
             href: `/classes/${classId}/evaluations/${data.batchId}`,

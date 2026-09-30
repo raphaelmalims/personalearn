@@ -50,7 +50,7 @@ export function RecentActivityLists({
 
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-      <Card className={cn("surface-float border-0")}>
+      <Card className={cn("surface-1 rounded-lg border-0")}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <MessageSquare className="h-4 w-4 text-primary" />
@@ -102,7 +102,7 @@ export function RecentActivityLists({
         </CardContent>
       </Card>
 
-      <Card className={cn("surface-float border-0")}>
+      <Card className={cn("surface-1 rounded-lg border-0")}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <FileText className="h-4 w-4 text-primary" />
@@ -120,15 +120,15 @@ export function RecentActivityLists({
           ) : recentResources.length === 0 ? (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                No resources yet. Upload a scheme, notes, or assignment on the
-                class page.
+                No resources yet. Upload a scheme, notes, or assignment in the
+                Hub class panel.
               </p>
               {classId ? (
                 <Link
-                  href={`/classes/${classId}`}
+                  href="/ai-hub"
                   className="inline-flex h-9 items-center rounded-xl bg-primary px-4 text-xs font-medium text-primary-foreground hover:bg-primary/90"
                 >
-                  Open class
+                  Open Hub
                 </Link>
               ) : null}
             </div>

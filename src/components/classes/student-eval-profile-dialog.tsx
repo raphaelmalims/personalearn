@@ -10,6 +10,7 @@ import {
   EvalProgressDot,
   type EvalDotState,
 } from "@/components/classes/eval-progress-dot";
+import { StudentInterestsEditor } from "@/components/classes/student-interests-editor";
 import { cn } from "@/lib/utils";
 
 type StudentEvalProfileDialogProps = {
@@ -17,7 +18,7 @@ type StudentEvalProfileDialogProps = {
   student: Student | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onEvaluateAssessment: (assessmentId: string) => void;
+  onEvaluateAssessment: (assessmentId: string, title: string) => void;
   /** Open existing review when status is in_review. */
   onContinueReview?: (input: {
     batchId: string;
@@ -49,9 +50,9 @@ function StatusBadge({ status }: { status: StudentAssessmentStatus }) {
       className={cn(
         "inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium",
         status === "signed_off" &&
-          "bg-emerald-500/15 text-emerald-900 dark:text-emerald-100",
+          "bg-success/15 text-success",
         status === "in_review" &&
-          "bg-indigo-500/15 text-indigo-950 dark:text-indigo-100",
+          "bg-info/15 text-info",
         status === "not_started" && "bg-muted text-muted-foreground"
       )}
     >
@@ -107,6 +108,10 @@ export function StudentEvalProfileDialog({
               <dd className="font-medium">{profileStudent.gender ?? "—"}</dd>
             </div>
           </dl>
+        ) : null}
+
+        {profileStudent ? (
+          <StudentInterestsEditor classId={classId} student={profileStudent} />
         ) : null}
 
         {isLoading ? (
@@ -191,7 +196,9 @@ export function StudentEvalProfileDialog({
                       <Button
                         type="button"
                         size="sm"
-                        onClick={() => onEvaluateAssessment(assessment.id)}
+                        onClick={() =>
+                          onEvaluateAssessment(assessment.id, assessment.title)
+                        }
                       >
                         Evaluate / Upload work
                       </Button>

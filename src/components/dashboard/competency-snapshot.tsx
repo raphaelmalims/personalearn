@@ -172,14 +172,14 @@ export function CompetencySnapshot({
     return (
       <div className="space-y-3 rounded-xl bg-muted/40 p-4">
         <p className="text-sm text-muted-foreground">
-          This class has no students yet. Add a roster on the class page to
-          track competency after you sign off evaluations.
+          This class has no students yet. Add a roster in the Hub class panel
+          to track competency after you sign off evaluations.
         </p>
         <Link
-          href={`/classes/${classId}`}
+          href="/ai-hub"
           className="inline-flex h-9 items-center rounded-xl bg-primary px-4 text-xs font-medium text-primary-foreground hover:bg-primary/90"
         >
-          Open class
+          Open Hub
         </Link>
       </div>
     );
@@ -290,10 +290,10 @@ export function CompetencySnapshot({
             Students
           </p>
           <Link
-            href={`/classes/${classId}`}
+            href="/ai-hub"
             className="text-xs font-medium text-primary hover:underline"
           >
-            Open class
+            Open Hub
           </Link>
         </div>
         <ul className="max-h-[min(28rem,55vh)] space-y-2 overflow-y-auto pr-1">
@@ -305,7 +305,7 @@ export function CompetencySnapshot({
               <div className="flex items-center justify-between gap-2">
                 <div className="flex min-w-0 items-baseline gap-2">
                   <Link
-                    href={`/classes/${classId}`}
+                    href="/ai-hub"
                     className="truncate text-sm font-medium hover:underline"
                   >
                     {entry.student.full_name}

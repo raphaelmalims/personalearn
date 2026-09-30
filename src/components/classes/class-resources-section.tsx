@@ -1,14 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { useResources } from "@/lib/hooks/use-resources";
+import {
+  usePrefetchResource,
+  useResources,
+} from "@/lib/hooks/use-resources";
 import { filterResourcesByQuery } from "@/lib/classes/filter-class-lists";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ResourceListTable } from "@/components/classes/resource-list-table";
 import { ResourceUploadDialog } from "@/components/classes/resource-upload-dialog";
 import { StartEvaluationDialog } from "@/components/classes/start-evaluation-dialog";
+import { useHubResourceSessionStore } from "@/lib/store/hub-resource-session";
 import { cn } from "@/lib/utils";
 
 type ClassResourcesSectionProps = {
@@ -16,9 +19,13 @@ type ClassResourcesSectionProps = {
   /** Constrain height and scroll the list (side-by-side class page layout). */
   scrollable?: boolean;
   searchQuery?: string;
-  /** Open a resource from Home / assessment cube deep-link (PSL-66 / PSL-67). */
+  /** Open a resource from a leftover assessment / Hub deep-link (PSL-66 / PSL-67). */
   openResourceId?: string | null;
   onOpenResourceConsumed?: () => void;
+  /** Narrow container (Hub class panel): no card chrome, stacked list only. */
+  compact?: boolean;
+  /** After opening on mobile, hide the list sheet so the reader is full viewport. */
+  onOpenedOnMobile?: () => void;
 };
 
 export function ClassResourcesSection({
@@ -27,9 +34,13 @@ export function ClassResourcesSection({
   searchQuery = "",
   openResourceId = null,
   onOpenResourceConsumed,
+  compact = false,
+  onOpenedOnMobile,
 }: ClassResourcesSectionProps) {
-  const router = useRouter();
   const { data: resources, isLoading, error } = useResources(classId);
+  const prefetchResource = usePrefetchResource();
+  const selectedResourceId = useHubResourceSessionStore((s) => s.openResourceId);
+  const openResource = useHubResourceSessionStore((s) => s.openResource);
   const filteredResources = useMemo(
     () => filterResourcesByQuery(resources ?? [], searchQuery),
     [resources, searchQuery]
@@ -41,16 +52,23 @@ export function ClassResourcesSection({
     return resources.find((resource) => resource.id === openResourceId) ?? null;
   }, [openResourceId, resources]);
 
-  const navigatedDeepLinkId = useRef<string | null>(null);
+  const openedDeepLinkId = useRef<string | null>(null);
 
-  // Home deep-link → resource page (dialog retired in PSL-71).
+  function handleOpen(resourceId: string) {
+    prefetchResource(resourceId);
+    openResource({ classId, resourceId });
+    onOpenedOnMobile?.();
+  }
+
+  // Leftover deep-link → Hub reader (stay on Hub; list stays mounted).
   useEffect(() => {
     if (!autoOpenResource) return;
-    if (navigatedDeepLinkId.current === autoOpenResource.id) return;
-    navigatedDeepLinkId.current = autoOpenResource.id;
+    if (openedDeepLinkId.current === autoOpenResource.id) return;
+    openedDeepLinkId.current = autoOpenResource.id;
     onOpenResourceConsumed?.();
-    router.push(`/classes/${classId}/resources/${autoOpenResource.id}`);
-  }, [autoOpenResource, classId, onOpenResourceConsumed, router]);
+    handleOpen(autoOpenResource.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- consume once per id
+  }, [autoOpenResource, classId]);
 
   // Linked resource missing (deleted) — consume so the query param is cleared.
   useEffect(() => {
@@ -65,6 +83,49 @@ export function ClassResourcesSection({
     resources,
   ]);
 
+  const list = isLoading ? (
+    <div className="space-y-2" aria-busy="true" aria-label="Loading resources">
+      {Array.from({ length: 5 }).map((_, index) => (
+        <Skeleton key={index} className="h-10 w-full rounded-lg" />
+      ))}
+    </div>
+  ) : error ? (
+    <p className="text-sm text-destructive">
+      {error instanceof Error ? error.message : "Failed to load resources"}
+    </p>
+  ) : (
+    <ResourceListTable
+      classId={classId}
+      resources={filteredResources}
+      compact={compact}
+      selectedResourceId={selectedResourceId}
+      onOpenResource={handleOpen}
+      onPrefetchResource={prefetchResource}
+      emptyMessage={
+        hasQuery
+          ? "No matching resources."
+          : compact
+            ? "No resources yet."
+            : "No resources yet. Upload a scheme, notes, or assignment to get started."
+      }
+    />
+  );
+
+  const actions = (
+    <div className="flex flex-wrap items-center gap-2">
+      <StartEvaluationDialog classId={classId} />
+      <ResourceUploadDialog classId={classId} />
+    </div>
+  );
+
+  if (compact) {
+    return (
+      <section aria-label="Class resources">
+        {list}
+      </section>
+    );
+  }
+
   return (
     <Card
       className={cn(
@@ -74,10 +135,7 @@ export function ClassResourcesSection({
     >
       <CardHeader className="flex shrink-0 flex-row flex-wrap items-center justify-between gap-2">
         <CardTitle className="text-lg">Class resources</CardTitle>
-        <div className="flex flex-wrap items-center gap-2">
-          <StartEvaluationDialog classId={classId} />
-          <ResourceUploadDialog classId={classId} />
-        </div>
+        {actions}
       </CardHeader>
       <CardContent
         className={cn(
@@ -91,33 +149,7 @@ export function ClassResourcesSection({
             scrollable && "overflow-y-auto pr-1"
           )}
         >
-          {isLoading ? (
-            <div
-              className="space-y-2"
-              aria-busy="true"
-              aria-label="Loading resources"
-            >
-              {Array.from({ length: 5 }).map((_, index) => (
-                <Skeleton key={index} className="h-10 w-full rounded-lg" />
-              ))}
-            </div>
-          ) : error ? (
-            <p className="text-sm text-destructive">
-              {error instanceof Error
-                ? error.message
-                : "Failed to load resources"}
-            </p>
-          ) : (
-            <ResourceListTable
-              classId={classId}
-              resources={filteredResources}
-              emptyMessage={
-                hasQuery
-                  ? "No matching resources."
-                  : "No resources yet. Upload a scheme, notes, or assignment to get started."
-              }
-            />
-          )}
+          {list}
         </div>
       </CardContent>
     </Card>

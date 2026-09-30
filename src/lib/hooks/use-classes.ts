@@ -5,6 +5,8 @@ import { ensureUserProfile } from "@/lib/auth/ensure-user-profile";
 import { createClient } from "@/lib/supabase/client";
 import type { Class, Student } from "@/types/database";
 import type { ClassFormValues, StudentFormValues } from "@/lib/validations/class";
+import { normalizeStudentInterests } from "@/lib/students/interests";
+import { studentEvalProfileQueryKey } from "@/lib/hooks/use-evaluation";
 import { useActiveClassStore } from "@/lib/store/active-class";
 
 export const classesQueryKey = ["classes"] as const;
@@ -181,6 +183,7 @@ export function useCreateStudent(classId: string) {
           full_name: values.full_name,
           admission_number: values.admission_number || null,
           gender: values.gender || null,
+          interests: normalizeStudentInterests(values.interests),
         })
         .select()
         .single();
@@ -205,6 +208,7 @@ export function useCreateStudentsBulk(classId: string) {
         full_name: s.full_name,
         admission_number: s.admission_number || null,
         gender: s.gender || null,
+        interests: normalizeStudentInterests(s.interests),
       }));
       const { data, error } = await supabase.from("students").insert(rows).select();
       if (error) throw error;
@@ -212,6 +216,39 @@ export function useCreateStudentsBulk(classId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: studentsQueryKey(classId) });
+    },
+  });
+}
+
+export type StudentUpdatePatch = {
+  id: string;
+  interests?: string | null;
+};
+
+export function useUpdateStudent(classId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, interests }: StudentUpdatePatch) => {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("students")
+        .update({
+          interests: normalizeStudentInterests(interests),
+        })
+        .eq("id", id)
+        .eq("class_id", classId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data as Student;
+    },
+    onSuccess: (student) => {
+      queryClient.invalidateQueries({ queryKey: studentsQueryKey(classId) });
+      queryClient.invalidateQueries({
+        queryKey: studentEvalProfileQueryKey(classId, student.id),
+      });
     },
   });
 }

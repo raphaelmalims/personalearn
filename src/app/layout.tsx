@@ -1,21 +1,21 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans, Source_Sans_3 } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import { Providers } from "@/lib/providers";
+import { canvasDark, canvasLight } from "@/styles/tokens/canvas";
 import "./globals.css";
 
-const display = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  variable: "--font-display-family",
-  weight: ["500", "600", "700", "800"],
-});
-
-const body = Source_Sans_3({
+const sans = Geist({
   subsets: ["latin"],
   variable: "--font-body",
-  weight: ["400", "500", "600", "700"],
+});
+
+const mono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
   title: "PersonaLearn",
   description:
     "AI-powered co-pilot for Kenyan CBC educators — lesson planning, resources, and student feedback.",
@@ -28,8 +28,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#0C6B63" },
-    { media: "(prefers-color-scheme: dark)", color: "#0B1018" },
+    { media: "(prefers-color-scheme: light)", color: canvasLight },
+    { media: "(prefers-color-scheme: dark)", color: canvasDark },
   ],
 };
 
@@ -40,7 +40,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${display.variable} ${body.variable} antialiased`}>
+      <body className={`${sans.variable} ${mono.variable} antialiased`}>
         <Providers>{children}</Providers>
       </body>
     </html>

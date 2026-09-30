@@ -6,24 +6,24 @@ describe("getPostLoginPath", () => {
     expect(getPostLoginPath(false)).toBe("/onboarding");
   });
 
-  it("returns dashboard when the teacher has classes", () => {
-    expect(getPostLoginPath(true)).toBe("/dashboard");
+  it("returns the AI Hub when the teacher has classes", () => {
+    expect(getPostLoginPath(true)).toBe("/ai-hub");
   });
 });
 
 describe("getLandingCtas", () => {
-  it("keeps public login and dashboard links when signed out", () => {
+  it("keeps public login links and points the secondary CTA at the Hub when signed out", () => {
     expect(getLandingCtas(false, false)).toEqual({
       signedIn: false,
       headerHref: "/login",
       headerLabel: "Sign in",
       primaryHref: "/login",
-      secondaryHref: "/dashboard",
+      secondaryHref: "/ai-hub",
       footerHref: "/login",
     });
   });
 
-  it("sends signed-in teachers with no class to onboarding, including Open dashboard", () => {
+  it("sends signed-in teachers with no class to onboarding", () => {
     expect(getLandingCtas(true, false)).toEqual({
       signedIn: true,
       headerHref: "/onboarding",
@@ -34,14 +34,14 @@ describe("getLandingCtas", () => {
     });
   });
 
-  it("sends signed-in teachers with classes to dashboard", () => {
+  it("sends signed-in teachers with classes to the AI Hub", () => {
     expect(getLandingCtas(true, true)).toEqual({
       signedIn: true,
-      headerHref: "/dashboard",
-      headerLabel: "Open dashboard",
-      primaryHref: "/dashboard",
-      secondaryHref: "/dashboard",
-      footerHref: "/dashboard",
+      headerHref: "/ai-hub",
+      headerLabel: "Open AI Hub",
+      primaryHref: "/ai-hub",
+      secondaryHref: "/ai-hub",
+      footerHref: "/ai-hub",
     });
   });
 });

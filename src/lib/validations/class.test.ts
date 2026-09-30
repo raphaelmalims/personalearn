@@ -56,4 +56,20 @@ describe("studentSchema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("accepts optional interests text", () => {
+    const result = studentSchema.safeParse({
+      full_name: "Jane Doe",
+      interests: "football, choir",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects interests longer than 500 characters", () => {
+    const result = studentSchema.safeParse({
+      full_name: "Jane Doe",
+      interests: "a".repeat(501),
+    });
+    expect(result.success).toBe(false);
+  });
 });

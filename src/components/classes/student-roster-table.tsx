@@ -1,8 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { scriptReviewPath } from "@/lib/evaluation/review-routes";
 import { Trash2 } from "lucide-react";
 import type { EvaluatedScriptStatus, Student } from "@/types/database";
 import { useDeleteStudent } from "@/lib/hooks/use-classes";
@@ -12,7 +10,6 @@ import {
 } from "@/lib/hooks/use-evaluation";
 import { useEvalScriptRealtime } from "@/lib/hooks/use-eval-script-realtime";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -26,17 +23,16 @@ import {
   evalDotStateFromScriptStatus,
 } from "@/components/classes/eval-progress-dot";
 import { StudentEvalProfileDialog } from "@/components/classes/student-eval-profile-dialog";
-import { StartEvaluationDialog } from "@/components/classes/start-evaluation-dialog";
+import { cn } from "@/lib/utils";
+import { useHubEvalSessionStore } from "@/lib/store/hub-eval-session";
+import { studentInterestsDisplay } from "@/lib/students/interests";
 
 type StudentRosterTableProps = {
   classId: string;
   students: Student[];
   emptyMessage?: string;
-};
-
-type N1EvalTarget = {
-  student: Student;
-  assessmentId: string;
+  /** Narrow container (Hub class panel): conversation-row density, no card chrome. */
+  compact?: boolean;
 };
 
 const STATUS_PRIORITY: EvaluatedScriptStatus[] = [
@@ -64,11 +60,12 @@ export function StudentRosterTable({
   classId,
   students,
   emptyMessage = "No students yet. Use the buttons above to add one or import a CSV.",
+  compact = false,
 }: StudentRosterTableProps) {
-  const router = useRouter();
   const deleteStudent = useDeleteStudent(classId);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [n1Eval, setN1Eval] = useState<N1EvalTarget | null>(null);
+  const openEvalBatch = useHubEvalSessionStore((s) => s.openBatch);
+  const setComposerHint = useHubEvalSessionStore((s) => s.setComposerHint);
 
   const { data: batches } = useEvaluationBatches(classId);
   const activeBatch = useMemo(() => {
@@ -140,9 +137,12 @@ export function StudentRosterTable({
           }
           onClick={(event) => {
             event.stopPropagation();
-            router.push(
-              scriptReviewPath(classId, assessmentId, reviewScriptId)
-            );
+            openEvalBatch({
+              classId,
+              batchId: activeBatch!.id,
+              assessmentId,
+              scriptId: reviewScriptId,
+            });
           }}
         >
           <EvalProgressDot state={state} />
@@ -157,7 +157,7 @@ export function StudentRosterTable({
 
   return (
     <>
-      <div className="hidden md:block">
+      <div className={compact ? "hidden" : "hidden md:block"}>
         <Table containerClassName="overflow-visible">
           <TableHeader>
             <TableRow>
@@ -165,6 +165,7 @@ export function StudentRosterTable({
               <TableHead sticky>Name</TableHead>
               <TableHead sticky>Admission</TableHead>
               <TableHead sticky>Gender</TableHead>
+              <TableHead sticky>Interests</TableHead>
               <TableHead sticky className="w-12" />
             </TableRow>
           </TableHeader>
@@ -190,6 +191,9 @@ export function StudentRosterTable({
                 </TableCell>
                 <TableCell>{student.admission_number ?? "—"}</TableCell>
                 <TableCell>{student.gender ?? "—"}</TableCell>
+                <TableCell className="max-w-[12rem] truncate text-muted-foreground">
+                  {studentInterestsDisplay(student.interests)}
+                </TableCell>
                 <TableCell>
                   <div className="flex justify-end">
                     <Button
@@ -214,21 +218,24 @@ export function StudentRosterTable({
         </Table>
       </div>
 
-      <div className="space-y-2 md:hidden">
+      <ul className={cn("space-y-1", !compact && "md:hidden")}>
         {students.map((student) => (
-          <Card key={student.id}>
-            <CardContent className="flex items-center justify-between p-4">
+          <li key={student.id}>
+            <div className="group relative rounded-xl transition-colors hover:bg-muted/80">
               <button
                 type="button"
-                className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                className="flex w-full min-w-0 items-center gap-1.5 px-2.5 py-1 text-left"
                 onClick={() => setSelectedStudent(student)}
               >
                 {renderDot(student)}
-                <span className="min-w-0">
-                  <p className="font-medium">{student.full_name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {student.admission_number ?? "No admission no."}
-                    {student.gender ? ` · ${student.gender}` : ""}
+                <span className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">
+                    {student.admission_number
+                      ? `${student.full_name} · ${student.admission_number}`
+                      : student.full_name}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {studentInterestsDisplay(student.interests)}
                   </p>
                 </span>
               </button>
@@ -236,53 +243,42 @@ export function StudentRosterTable({
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                className="absolute top-1/2 right-0.5 h-6 w-6 -translate-y-1/2 p-0 text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100 focus-visible:opacity-100"
                 disabled={deleteStudent.isPending}
                 onClick={() => deleteStudent.mutate(student.id)}
                 aria-label={`Remove ${student.full_name}`}
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </li>
         ))}
-      </div>
+      </ul>
 
       <StudentEvalProfileDialog
         classId={classId}
         student={selectedStudent}
-        open={Boolean(selectedStudent) && !n1Eval}
+        open={Boolean(selectedStudent)}
         onOpenChange={(next) => {
           if (!next) setSelectedStudent(null);
         }}
-        onEvaluateAssessment={(assessmentId) => {
+        onEvaluateAssessment={(_assessmentId, title) => {
           if (!selectedStudent) return;
-          setN1Eval({ student: selectedStudent, assessmentId });
+          setComposerHint(
+            `Evaluate ${selectedStudent.full_name} on ${title}. I'll attach the script photos.`
+          );
           setSelectedStudent(null);
         }}
         onContinueReview={({ batchId, assessmentId, scriptId }) => {
           setSelectedStudent(null);
-          if (scriptId) {
-            router.push(scriptReviewPath(classId, assessmentId, scriptId));
-            return;
-          }
-          router.push(`/classes/${classId}/evaluations/${batchId}`);
+          openEvalBatch({
+            classId,
+            batchId,
+            assessmentId,
+            scriptId: scriptId ?? null,
+          });
         }}
       />
-
-      {n1Eval ? (
-        <StartEvaluationDialog
-          classId={classId}
-          studentId={n1Eval.student.id}
-          studentName={n1Eval.student.full_name}
-          preselectedAssessmentId={n1Eval.assessmentId}
-          hideTrigger
-          open
-          onOpenChange={(next) => {
-            if (!next) setN1Eval(null);
-          }}
-        />
-      ) : null}
     </>
   );
 }

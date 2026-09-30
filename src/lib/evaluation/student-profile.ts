@@ -100,7 +100,7 @@ export function buildStudentAssessmentRows(input: {
 }
 
 const STUDENT_PROFILE_SELECT =
-  "id, class_id, admission_number, full_name, gender, metadata, created_at";
+  "id, class_id, admission_number, full_name, gender, interests, metadata, created_at";
 
 const SUBMISSION_PROFILE_SELECT =
   "id, assessment_id, student_id, ai_feedback, teacher_feedback, competency_flags, submitted_at, created_at";

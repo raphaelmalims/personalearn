@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { BookOpen } from "lucide-react";
+import { LogoLockup } from "@/components/brand/logo";
 import { SignOutButton } from "@/components/auth/sign-out-button";
-import { HeroBackdrop } from "@/components/layout/hero-backdrop";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export default function OnboardingLayout({
@@ -10,26 +9,18 @@ export default function OnboardingLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative flex min-h-dvh flex-col">
-      <div className="fixed inset-0" aria-hidden>
-        <HeroBackdrop blur />
-      </div>
-
-      <header className="relative z-20 mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-6">
-        <Link
-          href="/"
-          className="flex items-center gap-2 font-display font-semibold text-white transition-opacity hover:opacity-90"
-        >
-          <BookOpen className="h-6 w-6 text-hero-accent" />
-          <span>PersonaLearn</span>
+    <div className="flex min-h-dvh flex-col bg-background">
+      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-6">
+        <Link href="/" className="text-foreground transition-opacity hover:opacity-80">
+          <LogoLockup />
         </Link>
         <div className="flex items-center gap-2">
-          <SignOutButton variant="hero" />
-          <ThemeToggle variant="hero" />
+          <SignOutButton variant="header" />
+          <ThemeToggle />
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto flex w-full max-w-lg flex-1 flex-col px-4 pb-12 pt-2">
+      <main className="mx-auto flex w-full max-w-lg flex-1 flex-col px-4 pb-12 pt-2">
         {children}
       </main>
     </div>

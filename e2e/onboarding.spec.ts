@@ -17,18 +17,21 @@ test.describe("onboarding", () => {
     await page.getByLabel("Password").fill(e2ePassword!);
     await page.getByRole("button", { name: "Sign in with email" }).click();
 
-    await page.waitForURL(/\/(onboarding|dashboard)/);
+    // Hub is the post-auth landing since PSL-114.
+    await page.waitForURL(/\/(onboarding|ai-hub)/);
 
     if (page.url().includes("/onboarding")) {
       await page.getByLabel("Class name").fill(className);
       await page.getByLabel("Subject").fill("Mathematics");
       await page.getByRole("button", { name: "Create class" }).click();
-      await expect(page).toHaveURL(/\/dashboard/);
+      await expect(page).toHaveURL(/\/ai-hub/);
       await expect(page.getByText(className)).toBeVisible();
       return;
     }
 
-    await expect(page).toHaveURL(/\/dashboard/);
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+    await expect(page).toHaveURL(/\/ai-hub/);
+    await expect(
+      page.getByRole("complementary", { name: "Class panel" })
+    ).toBeVisible();
   });
 });

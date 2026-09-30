@@ -17,7 +17,8 @@ import { parseStudentRows } from "@/lib/csv/parse-student-rows";
 import type { StudentFormValues } from "@/lib/validations/class";
 import { useCreateStudentsBulk } from "@/lib/hooks/use-classes";
 
-const TEMPLATE_CSV = "full_name,admission_number,gender\nJane Doe,ADM001,Female\nJohn Kamau,ADM002,Male";
+const TEMPLATE_CSV =
+  "full_name,admission_number,gender,interests\nJane Doe,ADM001,Female,football\nJohn Kamau,ADM002,Male,";
 
 type CsvImportDialogProps = {
   classId: string;
@@ -89,7 +90,7 @@ export function CsvImportDialog({ classId }: CsvImportDialogProps) {
         open={open}
         onOpenChange={setOpen}
         title="Import students from CSV"
-        description="Upload a CSV with columns: full_name, admission_number, gender"
+        description="Upload a CSV with columns: full_name, admission_number, gender, interests"
       >
         <div className="space-y-4">
           <Button type="button" variant="secondary" size="sm" onClick={downloadTemplate}>
@@ -119,6 +120,7 @@ export function CsvImportDialog({ classId }: CsvImportDialogProps) {
                       <TableHead>Name</TableHead>
                       <TableHead>Admission</TableHead>
                       <TableHead>Gender</TableHead>
+                      <TableHead>Interests</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -127,6 +129,7 @@ export function CsvImportDialog({ classId }: CsvImportDialogProps) {
                         <TableCell>{row.full_name}</TableCell>
                         <TableCell>{row.admission_number ?? "—"}</TableCell>
                         <TableCell>{row.gender ?? "—"}</TableCell>
+                        <TableCell>{row.interests ?? "—"}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

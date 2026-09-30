@@ -96,9 +96,9 @@ export function EvalUploadProgressPanel({
               {job.status === "failed" ? (
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
               ) : job.status === "completed" ? (
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" />
               ) : (
-                <Upload className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600" />
+                <Upload className="mt-0.5 h-4 w-4 shrink-0 text-info" />
               )}
               <div className="min-w-0">
                 <p className="text-sm font-medium">{jobSummary(job)}</p>
@@ -132,8 +132,8 @@ export function EvalUploadProgressPanel({
                 job.status === "failed"
                   ? "bg-destructive/80"
                   : job.status === "completed"
-                    ? "bg-emerald-500"
-                    : "bg-indigo-500"
+                    ? "bg-success"
+                    : "bg-primary"
               )}
               style={{ width: `${jobProgress(job)}%` }}
             />
@@ -148,7 +148,7 @@ export function EvalUploadProgressPanel({
                   file.status === "failed"
                     ? "text-destructive"
                     : file.status === "skipped"
-                      ? "text-amber-700 dark:text-amber-300"
+                      ? "text-warning"
                       : "text-muted-foreground"
                 )}
               >
@@ -158,7 +158,7 @@ export function EvalUploadProgressPanel({
           </ul>
 
           {job.warnings.length > 0 ? (
-            <ul className="mt-2 space-y-1 text-xs text-amber-800 dark:text-amber-200">
+            <ul className="mt-2 space-y-1 text-xs text-warning">
               {job.warnings.map((warning) => (
                 <li key={warning}>{warning}</li>
               ))}
@@ -205,7 +205,7 @@ export function EvalUploadFloatingIndicator() {
         <p className="text-sm font-medium">{jobSummary(activeJob)}</p>
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
           <div
-            className="h-full rounded-full bg-indigo-500 transition-all duration-300"
+            className="h-full rounded-full bg-primary transition-all duration-[var(--duration-base)]"
             style={{ width: `${progress}%` }}
           />
         </div>
