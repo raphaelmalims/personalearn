@@ -4,7 +4,7 @@ Canonical headings for GitHub Issues, Jira tickets, and PRs. **Do not invent thi
 
 **Gold floor (examples):** [PSL-110](https://nervustechnologies.atlassian.net/browse/PSL-110), [GitHub issue #129](https://github.com/raphaelmalims/personalearn/issues/129), [PR #130](https://github.com/raphaelmalims/personalearn/pull/130).
 
-Process rules live in `.cursor/rules/sdlc-ecosystem.mdc` and `.cursor/rules/git-workflow.mdc`.
+Process rules live in `.cursor/rules/sdlc.mdc`.
 
 ---
 
@@ -43,7 +43,7 @@ Labels on create: `needs-triage`, `type-feature`.
 
 ## Jira ticket description
 
-Mirror the GitHub Issue content, plus the ready checklist from `sdlc-ecosystem.mdc`:
+Mirror the GitHub Issue content, plus this ready checklist:
 
 ```markdown
 ## Ready checklist

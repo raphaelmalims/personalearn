@@ -1,153 +1,53 @@
 ---
 name: sdlc-pr-lifecycle
 description: >-
-  Run the PersonaLearn delivery loop from Jira ticket through branch, PR, labels,
-  review comments, Jira sync, merge, and Slack notification. Use when implementing
-  PSL-N, opening or reviewing a PR, syncing labels between Jira and GitHub, posting
-  cross-system comments, or merging ticketed work.
+  Delivery loop for a PersonaLearn PSL ticket: branch, open the PR, review, and
+  merge. Use when implementing PSL-N, opening or reviewing a PR, or merging
+  ticketed work. Policy is in `.cursor/rules/sdlc.mdc`.
 ---
 
-# SDLC PR lifecycle (PersonaLearn)
+# SDLC PR lifecycle
 
-Follow `git-workflow.mdc` and `sdlc-ecosystem.mdc` for constraints. This skill is the **procedure**.
+This file is the procedure. Branch names, human approval of commits and merges, labels, and the gates before approve or merge are in `.cursor/rules/sdlc.mdc`. Wording for Issues, Jira, and PR bodies is in `docs/sdlc-writing-standard.md` and the repo templates.
 
-## Writing from templates (required)
+## Start
 
-Before opening an Issue, Jira ticket body, or PR:
+1. Read the Jira ticket: summary, acceptance criteria, labels, sprint, blockers, and the linked spec.
+2. Stop if a blocking prerequisite is not Done, unless the human overrides that stop.
+3. If Team, points, priority, start date, due date, or sprint is empty, fill it before branching.
+4. Fetch `origin/develop`. Create `{feature|fix|chore|docs}/PSL-N-short-description`, or check out the ticket’s branch if it already exists.
+5. Move Jira to **In Progress**. If the start date is empty, set it to today.
+6. Comment on Jira: `PSL-N — branch created: {branch}`.
 
-1. **GitHub Issues** — use fields from `.github/ISSUE_TEMPLATE/bug_report.yml` or `feature_request.yml` (Summary, Severity, **Acceptance criteria**, optional root-cause / notes).
-2. **PR body** — copy structure from `.github/pull_request_template.md` (`## Summary` prose with why/root cause, `## Test plan`, `## Links`, metadata, `## Risks / notes`).
-3. **Do not** substitute one-line summaries or bullet-only PR summaries.
+## Build
 
-**Gold floor:** PSL-110 / [#129](https://github.com/raphaelmalims/personalearn/issues/129) / [#130](https://github.com/raphaelmalims/personalearn/pull/130). Headings reference: [`docs/sdlc-writing-standard.md`](https://github.com/raphaelmalims/personalearn/blob/develop/docs/sdlc-writing-standard.md).
+7. Implement and test. Propose each commit message and wait for the human to approve that commit. Keep the diff to this ticket.
 
-## Pre-flight
+## Open the PR
 
-1. `getJiraIssue(PSL-N)` with fields including `customfield_10001` (Team), `customfield_10016` (points), `customfield_10015` (start), `duedate`, `priority`, `customfield_10020` (sprint) — read summary, ACs, labels, sprint, blockers, linked spec.
-2. Abort if **blocks** prerequisites are not **Done** (unless user overrides).
-3. Confirm ticket is in sprint or explicitly prioritized. If Team, points, priority, start, or due is empty, fill them **before** branching (`editJiraIssue`).
+8. Rebase onto `origin/develop`, push, and open a pull request into `develop`. Put `PSL-N` in the title. Use `.github/pull_request_template.md` for the body.
+9. Set area, type, assignee, milestone, and reviewer as `.cursor/rules/sdlc.mdc` requires. Copy any missing labels and the assignee back onto Jira.
+10. Move Jira to **Review**.
+11. Comment on Jira with `PSL-N`, the PR URL, the Vercel preview URL, labels, assignee, and milestone.
+12. Post to Slack `#personalearn-dev`: `PSL-N — PR opened: {url} — {one line}`.
 
-## Branch and start
+## Review
 
-4. Fetch `origin/develop`; branch `{feature|fix|chore|docs}/PSL-N-short-description`.
-5. `transitionJiraIssue` → **In Progress**. Set **Start date** (`customfield_10015`) to today if still empty.
-6. `addCommentToJiraIssue`:
+13. Wait until CI is green and the Vercel preview is healthy.
+14. Run the Test plan and tick only the steps you actually ran. Walk every acceptance criterion and tick each met box on the GitHub Issue and on Jira.
+15. Do not approve, and do not ask for a merge, while a met criterion or a Test plan step is still unchecked. The rule is the gate.
+16. Post a GitHub review that names `PSL-N`, the verdict, and that labels, assignee, milestone, the Test plan, and the issue checkboxes were checked.
+17. Mirror that verdict on Jira with the PR URL. Follow-up work becomes its own triaged ticket.
 
-```text
-PSL-N — branch created: {branch-name}
-```
+## Merge
 
-## Implement
+18. Stop. Ask the human to approve the merge.
+19. After that approval, squash-merge into `develop` and delete the branch.
+20. Close the GitHub Issue as completed. Move Jira to **Done**. Comment `PSL-N — merged to develop: {url}` and the Issue URL.
+21. Slack `#personalearn-dev`: `PSL-N — merged: {url} — {one line}`.
 
-7. Code and test. Commit **only when the user asks** (see user commit rule). When committing, prefer **multiple focused commits** aligned to ACs or coherent green slices — not one mega-commit at ticket end (see `git-workflow.mdc`). Squash merge still yields one commit on `develop`.
-8. Keep diff scoped to one ticket.
+Shipping `develop` to `main` is a later merge commit. Ask the human first. Do not squash that promotion.
 
-## Open PR
+## Intake
 
-9. Rebase onto `origin/develop` before push.
-10. Push branch; open PR targeting `develop` via `gh pr create` (title includes `PSL-N`). PR body must follow `.github/pull_request_template.md` (see **Writing from templates** above).
-11. Apply GitHub labels and metadata matching Jira:
-
-```bash
-gh pr edit <number> --add-label area-<x>,type-<y>
-gh pr edit <number> --add-assignee nervustech
-gh pr edit <number> --milestone "Sprint 6"   # current sprint, or Backlog
-gh pr edit <number> --add-reviewer <collaborator>  # skip if solo-dev / self
-```
-
-12. Sync labels + assignee on Jira if missing (`editJiraIssue`).
-13. `transitionJiraIssue` → **Review**.
-14. Jira comment:
-
-```text
-PSL-N — PR opened: {pr-url}
-Preview: {vercel-preview-url}
-Labels: area-<x>, type-<y>
-Assignee: nervustech
-Milestone: {sprint or Backlog}
-```
-
-15. Post to Slack `#personalearn-dev` (`C0BDURJTXR8`):
-
-```text
-PSL-N — PR opened: {pr-url} — {one-line summary}
-```
-
-## Review (before merge)
-
-16. Babysit CI until green (`gh pr checks`).
-17. **Verify labels + metadata + Test plan** — Jira ticket and PR must have the same `area-*` + `type-*`. PR must have **assignee**, **sprint milestone** (or Backlog), and a **requested reviewer** (or a posted solo-dev review comment). Run the PR **Test plan** (lint/test/build/manual/preview as listed). Edit the PR body so every item is `[x]`, or `[ ]` with **N/A — {reason}**. Do **not** Approve or ask to merge while any item is still an unchecked `[ ]`.
-18. **Acceptance criteria gate (hard)** — walk every AC on the linked GitHub Issue (and Jira if it lists ACs). For each AC that is met, tick its checkbox on the **issue body** (`[ ]` → `[x]`). Mirror ticks on Jira when the ticket uses AC checkboxes. An AC walk in the review comment alone is **not** enough — leaving met boxes unchecked is a miss. Do **not** Approve or ask to merge while any claimed-met AC is still unchecked on the issue.
-19. Post GitHub review (`gh pr review` or review comment). Body must include:
-
-```text
-PSL-N — {Approve | Request changes | Comment}
-
-Labels: area-<x>, type-<y> — match Jira
-Assignee + milestone confirmed
-Test plan: all items [x] (or N/A with reason)
-Issue ACs: walked + met boxes ticked on GitHub Issue (and Jira if applicable)
-
-{findings}
-```
-
-20. Mirror verdict on Jira:
-
-```text
-PSL-N — PR reviewed: {Approve | Changes requested}
-{pr-url}
-{brief findings}
-Labels confirmed: area-<x>, type-<y>
-Assignee + milestone confirmed
-Test plan checked
-Issue ACs walked + checkboxes updated
-```
-
-21. If review surfaces follow-up debt, add `type-tech-debt` on a **new** triaged ticket — do not expand scope on the current PR.
-
-## Merge (human gate)
-
-22. **Stop** — ask user for merge approval unless they already requested merge. Abort merge if any Test plan item is still `[ ]` without an N/A reason, or if any claimed-met Issue AC checkbox is still unchecked.
-23. `gh pr merge --squash --delete-branch`.
-24. Close the linked GitHub Issue: `gh issue close <n> --reason completed`.
-25. `transitionJiraIssue` → **Done**.
-26. Jira comment:
-
-```text
-PSL-N — merged to develop: {pr-url}
-GitHub Issue closed: {issue-url}
-```
-
-27. Slack:
-
-```text
-PSL-N — merged: {pr-url} — {one-line summary}
-```
-
-## GitHub Issue intake (bugs / feature requests)
-
-When triaging a GitHub Issue before a Jira ticket exists:
-
-1. Apply `needs-triage` + best-guess `type-*` (+ `area-*` when known). Assign `nervustech`. Set milestone to the current sprint or `Backlog`.
-2. Use `triage-issue` skill to find duplicates and create/link `PSL-N`.
-3. Copy `area-*` + `type-*` + assignee to the Jira ticket. On `createJiraIssue`, always pass `additional_fields` for **Team (Gunners)**, **priority**, **story points**, **start date**, **due date**, and **Sprint** (numeric id) when the work is scheduled. Remove `needs-triage` from the issue when triaged.
-4. Reply on the issue with `PSL-N` link, labels, assignee, and milestone applied.
-
-## Checklist
-
-```
-- [ ] Jira pre-flight (ACs, blocks, labels, assignee, team, priority, points, dates, sprint)
-- [ ] Branch + In Progress + Jira comment
-- [ ] PR open with PSL-N in title
-- [ ] area-* + type-* on PR and Jira (synced); assignee + milestone
-- [ ] Reviewer requested (or solo-dev review comment)
-- [ ] Jira → Review + PR/preview comment
-- [ ] CI green
-- [ ] GitHub review with verdict + label/assignee/milestone check
-- [ ] PR Test plan boxes checked (`[x]` or N/A + reason)
-- [ ] Issue ACs walked; met AC checkboxes ticked on GitHub Issue (and Jira if present)
-- [ ] Matching Jira review comment
-- [ ] User approved merge
-- [ ] GitHub Issue closed as completed
-- [ ] Done + Jira merge comment + Slack
-```
+An Issue that has no `PSL-N` yet gets `needs-triage`, a best-guess type, assignee `nervustech`, and the current sprint milestone or Backlog. Use the `triage-issue` skill to link the ticket, copy labels and assignee onto Jira, remove `needs-triage`, and reply on the Issue with the `PSL-N` link.
