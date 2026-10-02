@@ -5,7 +5,7 @@ alwaysApply: false
 
 # SDLC (PersonaLearn)
 
-Follow the `sdlc-pr-lifecycle` skill for the procedure. Fill Issues, Jira bodies, and PRs from the repo templates. Headings and gold-floor examples are in `docs/sdlc-writing-standard.md`.
+Follow the `sdlc-pr-lifecycle` skill for the procedure. Fill Issues and Jira bodies from the repo templates. PR bodies follow the `writing-prs` skill. Issue and Jira headings are in `docs/sdlc-writing-standard.md`.
 
 ## Systems
 
@@ -41,14 +41,14 @@ The agent proposes; the human approves. Do not commit, push, or merge unless the
 
 ## Pull request and release
 
-PRs target `develop`. Rebase onto `origin/develop` first. The title includes `PSL-N`. Leave each Test plan box `[ ]` until that step has been run.
+PRs target `develop`. Rebase onto `origin/develop` first. The title includes `PSL-N`. The Test plan lists only steps that were run.
 
 One area and one type on the ticket and the PR: `area-auth`, `area-dashboard`, `area-classes`, `area-ai-rag`, `area-infra`, `area-docs`, and `type-feature`, `type-bug`, `type-chore`, `type-tech-debt`. Not GitHub’s `bug` or `enhancement`. Assignee `nervustech` if unset. Milestone is the current sprint, or `Backlog`. Request a reviewer other than the author when one exists.
 
 Before approve or merge:
 
 - Walk every acceptance criterion on the GitHub Issue and on Jira, and tick each met box on both. A review comment does not replace those checkboxes.
-- Every Test plan item is `[x]`, or `[ ]` with an N/A reason.
+- Every listed Test plan step is `[x]`.
 - CI is green.
 - The Vercel preview is healthy.
 

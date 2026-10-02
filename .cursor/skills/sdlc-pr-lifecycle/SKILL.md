@@ -8,7 +8,7 @@ description: >-
 
 # SDLC PR lifecycle
 
-This file is the procedure. Branch names, human approval of commits and merges, labels, and the gates before approve or merge are in `.cursor/rules/sdlc.mdc`. Wording for Issues, Jira, and PR bodies is in `docs/sdlc-writing-standard.md` and the repo templates.
+This file is the procedure. Branch names, human approval of commits and merges, labels, and the gates before approve or merge are in `.cursor/rules/sdlc.mdc`. Issue and Jira wording is in `docs/sdlc-writing-standard.md`. PR bodies follow the `writing-prs` skill.
 
 ## Start
 
@@ -25,7 +25,7 @@ This file is the procedure. Branch names, human approval of commits and merges, 
 
 ## Open the PR
 
-8. Rebase onto `origin/develop`, push, and open a pull request into `develop`. Put `PSL-N` in the title. Use `.github/pull_request_template.md` for the body.
+8. Rebase onto `origin/develop`, push, and open a pull request into `develop`. Put `PSL-N` in the title. Write the body with the `writing-prs` skill.
 9. Set area, type, assignee, milestone, and reviewer as `.cursor/rules/sdlc.mdc` requires. Copy any missing labels and the assignee back onto Jira.
 10. Move Jira to **Review**.
 11. Comment on Jira with `PSL-N`, the PR URL, the Vercel preview URL, labels, assignee, and milestone.
