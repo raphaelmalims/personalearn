@@ -1,8 +1,8 @@
 # SDLC writing standard (PersonaLearn)
 
-Canonical headings for GitHub Issues, Jira tickets, and PRs. **Do not invent thinner formats** — fill from [`.github/ISSUE_TEMPLATE/`](../.github/ISSUE_TEMPLATE/) and [`.github/pull_request_template.md`](../.github/pull_request_template.md).
+Canonical headings for GitHub Issues and Jira tickets. Fill those from [`.github/ISSUE_TEMPLATE/`](../.github/ISSUE_TEMPLATE/). PR bodies follow the `writing-prs` skill.
 
-**Gold floor (examples):** [PSL-110](https://nervustechnologies.atlassian.net/browse/PSL-110), [GitHub issue #129](https://github.com/raphaelmalims/personalearn/issues/129), [PR #130](https://github.com/raphaelmalims/personalearn/pull/130).
+**Issue examples:** [PSL-110](https://nervustechnologies.atlassian.net/browse/PSL-110), [GitHub issue #129](https://github.com/raphaelmalims/personalearn/issues/129).
 
 Process rules live in `.cursor/rules/sdlc.mdc`.
 
@@ -73,14 +73,4 @@ Copy **Severity** (bugs) into Jira **priority**. Keep the same `area-*` + `type-
 
 ## Pull request body
 
-Use [`.github/pull_request_template.md`](../.github/pull_request_template.md):
-
-| Section | Notes |
-|--------|--------|
-| **Summary** | Prose: what + why + root cause for fixes |
-| **Test plan** | Checkboxes; all `[x]` or N/A before merge |
-| **Links** | Jira `PSL-N` + GitHub Issue `#` |
-| **Labels / metadata** | area-*, type-*, assignee, milestone, reviewer |
-| **Risks / notes** | Optional follow-ups |
-
-See [PR #130](https://github.com/raphaelmalims/personalearn/pull/130) for tone and depth.
+PR bodies follow the `writing-prs` skill: Summary, Test plan, one closing line. No metadata or risks sections.
