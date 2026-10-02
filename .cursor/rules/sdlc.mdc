@@ -1,0 +1,59 @@
+---
+description: Use when branching, committing, opening a PR or touching a PSL ticket
+alwaysApply: false
+---
+
+# SDLC (PersonaLearn)
+
+Follow the `sdlc-pr-lifecycle` skill for the procedure. Fill Issues, Jira bodies, and PRs from the repo templates. Headings and gold-floor examples are in `docs/sdlc-writing-standard.md`.
+
+## Systems
+
+| System | Owns |
+|--------|------|
+| **Jira (PSL)** | Tickets, sprint, status, blockers |
+| **Confluence (PLEARN)** | Specs, ADRs, release notes, retros |
+| **GitHub** | Code, branches, PRs, CI, release tags |
+| **Slack (#personalearn-dev)** | Notifications only |
+
+Notion is outside this chain. Confluence pages use the native blueprints (Product requirements, Decision documentation, Status update, Retrospective). Hub: https://nervustechnologies.atlassian.net/wiki/spaces/PLEARN/overview
+
+Issue → `PSL-N` → spec → branch/PR → Slack. A feature or bug needs the Issue (`needs-triage`, best-guess `type-*`, assignee, milestone) before a ticket, a branch, or implementation.
+
+## Branch and commit
+
+Never implement on `develop` or `main`. Fetch `origin/develop` and branch from it, or from the merged prerequisite. Reuse an existing ticket branch.
+
+| Work | Branch prefix | Commit prefix |
+|------|---------------|---------------|
+| Feature | `feature/` | `feat:` |
+| Bug | `fix/` | `fix:` |
+| Chore | `chore/` | `chore:` |
+| Docs | `docs/` | `docs:` |
+
+Branch: `{prefix}/PSL-{n}-{short-kebab-description}`. Subject: `{prefix} … (PSL-N)`. Stage only that ticket’s files. Never commit secrets.
+
+One ticket, one branch, one PR. Dependent tickets merge to `develop` in order; the next branch then rebases.
+
+## The human approves commits and merges
+
+The agent proposes; the human approves. Do not commit, push, or merge unless the human asked. Propose one focused slice and wait. A green build is not a commit, and an open pull request is not a merge.
+
+## Pull request and release
+
+PRs target `develop`. Rebase onto `origin/develop` first. The title includes `PSL-N`. Leave each Test plan box `[ ]` until that step has been run.
+
+One area and one type on the ticket and the PR: `area-auth`, `area-dashboard`, `area-classes`, `area-ai-rag`, `area-infra`, `area-docs`, and `type-feature`, `type-bug`, `type-chore`, `type-tech-debt`. Not GitHub’s `bug` or `enhancement`. Assignee `nervustech` if unset. Milestone is the current sprint, or `Backlog`. Request a reviewer other than the author when one exists.
+
+Before approve or merge:
+
+- Walk every acceptance criterion on the GitHub Issue and on Jira, and tick each met box on both. A review comment does not replace those checkboxes.
+- Every Test plan item is `[x]`, or `[ ]` with an N/A reason.
+- CI is green.
+- The Vercel preview is healthy.
+
+Squash-merge into `develop` and delete the branch. Do not self-approve. Close the linked Issue as completed.
+
+Promote `develop` to `main` with a merge commit, then tag `v0.x.0`.
+
+Also ask before scope past the ticket, before an untriaged Jira ticket, and before a branch with no GitHub Issue.
