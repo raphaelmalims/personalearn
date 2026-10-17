@@ -3,12 +3,12 @@ description: Report broken behavior. The team will create a Jira ticket (PSL-N) 
 title: "[Bug] "
 labels: ["needs-triage", "type-bug"]
 assignees:
-  - nervustech
+  - raphaelmalims
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for reporting. We'll triage this and create a **Jira ticket (`PSL-N`)** for tracking.
+        Thanks for reporting. We'll triage this and create a **Jira ticket (`PSL-N`)** for tracking. This form assigns `raphaelmalims`.
         For urgent production issues, contact the team directly.
 
         **Do not paste secrets** (passwords, API keys, `.env` values). Describe the problem, the context, and short acceptance criteria. Do not restate labels, priority, assignee, milestone, sprint, points, or dates.

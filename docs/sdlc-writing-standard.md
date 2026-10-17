@@ -22,7 +22,7 @@ Use the **Bug report** issue form. Required sections map to these headings in th
 | **Acceptance criteria** | `- [ ]` checklist |
 | **Likely cause / notes** | Optional investigation / related tickets |
 
-Labels on create: `needs-triage`, `type-bug`. Triage adds one `area-*`, milestone, and links `PSL-N`.
+Labels on create: `needs-triage`, `type-bug`. Assignee on create: `raphaelmalims`. Milestone is the current sprint, or `Backlog`. Triage adds one `area-*` and links `PSL-N`.
 
 ---
 
@@ -37,7 +37,7 @@ Labels on create: `needs-triage`, `type-bug`. Triage adds one `area-*`, mileston
 | **Scope notes** | In scope vs later |
 | **Out of scope / notes** | Optional exclusions |
 
-Labels on create: `needs-triage`, `type-feature`.
+Labels on create: `needs-triage`, `type-feature`. Assignee on create: `raphaelmalims`.
 
 ---
 

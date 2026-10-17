@@ -59,7 +59,11 @@ The agent proposes; the human approves. Do not commit, push, or merge unless the
 
 PRs target `develop`. A hotfix targets `main`; see Hotfix. Rebase onto the base branch first. The title includes `PSL-N`. The Test plan lists only steps that were run.
 
-One area and one type on the ticket and the PR: `area-auth`, `area-dashboard`, `area-classes`, `area-ai-rag`, `area-infra`, `area-docs`, and `type-feature`, `type-bug`, `type-chore`, `type-tech-debt`. Not GitHub’s `bug` or `enhancement`. Assignee `nervustech` if unset. Milestone is the current sprint, or `Backlog`. Request a reviewer other than the author when one exists.
+One area and one type on the ticket and the PR: `area-auth`, `area-dashboard`, `area-classes`, `area-ai-rag`, `area-infra`, `area-docs`, and `type-feature`, `type-bug`, `type-chore`, `type-tech-debt`. Not GitHub’s `bug` or `enhancement`.
+
+Default assignee is `raphaelmalims`. Set the assignee, the milestone (current sprint, otherwise `Backlog`), and the labels in the same step that creates the issue or pull request, on the Cursor creation path that already sets labels. Do not follow up with `gh pr edit` or `gh api` from the in-VM `cursor[bot]` (`ghs_`) token. That call returns 403 `Resource not accessible by integration`. If a field still cannot be set at creation, say so in the final report and leave it for the reviewer. Do not retry with `gh`.
+
+Request a reviewer other than the author when another reviewer exists. If the only candidate is the author, skip the request. GitHub cannot self-review.
 
 Before approve or merge:
 

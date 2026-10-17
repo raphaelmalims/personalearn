@@ -3,12 +3,12 @@ description: Suggest a new capability or improvement. Ideas are triaged into the
 title: "[Feature] "
 labels: ["needs-triage", "type-feature"]
 assignees:
-  - nervustech
+  - raphaelmalims
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for the suggestion. We'll review fit against the roadmap and create a **Jira story (`PSL-N`)** if we commit to building it.
+        Thanks for the suggestion. We'll review fit against the roadmap and create a **Jira story (`PSL-N`)** if we commit to building it. This form assigns `raphaelmalims`.
 
         Feature requests are **not implemented directly from GitHub Issues** — Jira is the system of record. Describe the problem, the context, and short acceptance criteria. Do not restate labels, priority, assignee, milestone, sprint, points, or dates.
 

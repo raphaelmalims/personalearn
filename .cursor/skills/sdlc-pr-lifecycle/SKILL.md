@@ -27,8 +27,8 @@ Write an Issue or Jira description as the problem, the context, short acceptance
 
 ## Open the PR
 
-8. Rebase onto `origin/develop`, push, and open a pull request into `develop`. Put `PSL-N` in the title. Write the body with the `writing-prs` skill.
-9. Set area, type, assignee, milestone, and reviewer as `.cursor/rules/sdlc.mdc` requires. Copy any missing labels and the assignee back onto Jira.
+8. Rebase onto `origin/develop`, push, and open a pull request into `develop`. Put `PSL-N` in the title. Write the body with the `writing-prs` skill. In that same creation step, set assignee `raphaelmalims` when unset, the milestone (current sprint, otherwise `Backlog`), and the area and type labels, on the Cursor creation path that sets labels. Do not follow up with `gh pr edit` or `gh api` from the in-VM `cursor[bot]` (`ghs_`) token. It returns 403 `Resource not accessible by integration`. If a field cannot be set at creation, name it in the final report for the reviewer. Do not retry with `gh`.
+9. Copy any missing labels and the assignee onto Jira. Request a reviewer other than the author only when another reviewer exists. If the only candidate is the author, skip the request.
 10. Move Jira to **Review**.
 11. Comment on Jira with `PSL-N`, the PR URL, the Vercel preview URL, labels, assignee, and milestone.
 12. Post to Slack `#personalearn-dev`: `PSL-N — PR opened: {url} — {one line}`.
@@ -55,10 +55,10 @@ Shipping `develop` to `main` is a later merge commit. Ask the human first. Do no
 Use this path, in place of steps 4 and 8, only when production is broken or at risk (a P1) and the fix should not wait behind unreleased work on `develop`. Otherwise use the steps above. Policy is in `.cursor/rules/sdlc.mdc`.
 
 1. Fetch `origin/main`. Branch `hotfix/PSL-N-slug` from `main`.
-2. Open the pull request into `main`. A merge to `main` deploys Vercel production, so run preview QA before asking for a merge.
+2. Open the pull request into `main`, and set assignee, milestone, and labels in that same creation step (step 8). A merge to `main` deploys Vercel production, so run preview QA before asking for a merge.
 3. Stop. A human approves the merge.
 4. After the merge, open a back-merge pull request from `main` into `develop`, or cherry-pick the fix onto a branch from `develop`.
 
 ## Intake
 
-An Issue that has no `PSL-N` yet gets `needs-triage`, a best-guess type, assignee `nervustech`, and the current sprint milestone or Backlog. Use the `triage-issue` skill to link the ticket, copy labels and assignee onto Jira, remove `needs-triage`, and reply on the Issue with the `PSL-N` link.
+An Issue that has no `PSL-N` yet is created with `needs-triage`, a best-guess type, assignee `raphaelmalims`, and the current sprint milestone or `Backlog`, in that same creation step on the Cursor path. Do not set those afterward with `gh`. Use the `triage-issue` skill to link the ticket, copy labels and assignee onto Jira, remove `needs-triage`, and reply on the Issue with the `PSL-N` link.
