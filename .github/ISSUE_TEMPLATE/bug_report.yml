@@ -11,9 +11,7 @@ body:
         Thanks for reporting. We'll triage this and create a **Jira ticket (`PSL-N`)** for tracking.
         For urgent production issues, contact the team directly.
 
-        **Do not paste secrets** (passwords, API keys, `.env` values).
-
-        On create this issue is assigned to **nervustech**, labelled `needs-triage` + `type-bug` (not GitHub's default `bug` label), and should get a **milestone** (current sprint or Backlog) at triage. Triage adds exactly one **`area-*`** label (`area-auth`, `area-dashboard`, `area-classes`, `area-ai-rag`, `area-infra`, or `area-docs`).
+        **Do not paste secrets** (passwords, API keys, `.env` values). Describe the problem, the context, and short acceptance criteria. Do not restate labels, priority, assignee, milestone, sprint, points, or dates.
 
         **Gold bar:** See [docs/sdlc-writing-standard.md](https://github.com/raphaelmalims/personalearn/blob/develop/docs/sdlc-writing-standard.md) and [issue #129](https://github.com/raphaelmalims/personalearn/issues/129).
 
@@ -75,7 +73,7 @@ body:
     id: severity
     attributes:
       label: Severity
-      description: P0 = app unusable; P1 = major workflow blocked; P2 = annoyance (maps to Jira priority at triage)
+      description: P0 = app unusable; P1 = major workflow blocked; P2 = annoyance. Triage copies this to the Jira priority field. Do not restate it in the description.
       options:
         - P0 — Critical (cannot use the app)
         - P1 — Major (important workflow broken)

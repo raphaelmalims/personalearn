@@ -12,6 +12,8 @@ This file is the procedure. Branch names, human approval of commits and merges, 
 
 ## Start
 
+Write an Issue or Jira description as the problem, the context, short acceptance criteria, and links that are not already linked. Leave labels, priority, assignee, milestone, sprint, points, and dates in their fields. Leave the PR test plan in the pull request and the merge gates in `.cursor/rules/sdlc.mdc`.
+
 1. Read the Jira ticket: summary, acceptance criteria, labels, sprint, blockers, and the linked spec.
 2. Stop if a blocking prerequisite is not Done, unless the human overrides that stop.
 3. If Team, points, priority, start date, due date, or sprint is empty, fill it before branching.
@@ -47,6 +49,15 @@ This file is the procedure. Branch names, human approval of commits and merges, 
 21. Slack `#personalearn-dev`: `PSL-N — merged: {url} — {one line}`.
 
 Shipping `develop` to `main` is a later merge commit. Ask the human first. Do not squash that promotion.
+
+## Hotfix
+
+Use this path, in place of steps 4 and 8, only when production is broken or at risk (a P1) and the fix should not wait behind unreleased work on `develop`. Otherwise use the steps above. Policy is in `.cursor/rules/sdlc.mdc`.
+
+1. Fetch `origin/main`. Branch `hotfix/PSL-N-slug` from `main`.
+2. Open the pull request into `main`. A merge to `main` deploys Vercel production, so run preview QA before asking for a merge.
+3. Stop. A human approves the merge.
+4. After the merge, open a back-merge pull request from `main` into `develop`, or cherry-pick the fix onto a branch from `develop`.
 
 ## Intake
 
