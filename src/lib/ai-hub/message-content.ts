@@ -1,4 +1,5 @@
 import { isReasoningUIPart, isTextUIPart, type UIMessage } from "ai";
+import { normalizeStoredEffort } from "@/lib/ai/chat-settings";
 import { stripResourceTypeTitlePrefix } from "@/lib/resources/format";
 import {
   isEvalSessionArtifact,
@@ -30,6 +31,43 @@ export function getMessageReasoning(message: Pick<UIMessage, "parts">): string {
     .filter(isReasoningUIPart)
     .map((part) => part.text)
     .join("");
+}
+
+export function getMessageReasoningMs(message: { metadata?: unknown }): number | null {
+  const value = readMetadata(message).reasoningMs;
+  return typeof value === "number" && Number.isFinite(value) && value >= 0
+    ? value
+    : null;
+}
+
+export function getMessageAnswerMeta(message: { metadata?: unknown }): {
+  modelId: string | null;
+  thinking: "enabled" | "disabled" | null;
+  effort: string | null;
+  reasoningMs: number | null;
+} {
+  const metadata = readMetadata(message);
+  const thinking =
+    metadata.thinking === "enabled" || metadata.thinking === "disabled"
+      ? metadata.thinking
+      : null;
+  return {
+    modelId: typeof metadata.modelId === "string" ? metadata.modelId : null,
+    thinking,
+    effort: readStoredEffort(metadata.effort),
+    reasoningMs: getMessageReasoningMs(message),
+  };
+}
+
+function readStoredEffort(value: unknown): string | null {
+  if (typeof value !== "string" || value.length === 0) return null;
+  return normalizeStoredEffort(value) ?? value;
+}
+
+function readMetadata(message: { metadata?: unknown }): Record<string, unknown> {
+  const metadata = message.metadata;
+  if (!metadata || typeof metadata !== "object") return {};
+  return metadata as Record<string, unknown>;
 }
 
 export function getVisibleDrafts(
@@ -203,13 +241,22 @@ export function toUIMessageFromRow(row: {
   role: ConversationMessageRole;
   content: string;
   tool_calls?: unknown | null;
+  reasoning?: string | null;
+  reasoning_ms?: number | null;
+  answer_model?: string | null;
+  answer_thinking?: string | null;
+  answer_effort?: string | null;
 }): UIMessage {
   const role = row.role === "user" ? "user" : "assistant";
+  const metadata = answerMetadata(row);
 
   const savedDrafts = extractSavedDrafts(row.tool_calls);
   const savedSessions = extractSavedEvalSessions(row.tool_calls);
   if (role === "assistant" && (savedDrafts.length > 0 || savedSessions.length > 0)) {
-    const parts = rebuiltPartsWithDrafts(row.content, savedDrafts);
+    const parts = withReasoningPart(
+      rebuiltPartsWithDrafts(row.content, savedDrafts),
+      row.reasoning
+    );
     for (const session of savedSessions) {
       parts.push(createEvalSessionPart(session));
     }
@@ -217,14 +264,45 @@ export function toUIMessageFromRow(row: {
       id: row.id,
       role,
       parts,
+      ...(metadata ? { metadata } : {}),
     };
   }
 
   return {
     id: row.id,
     role,
-    parts: [{ type: "text", text: row.content }],
+    parts: withReasoningPart([{ type: "text", text: row.content }], row.reasoning),
+    ...(metadata ? { metadata } : {}),
   };
+}
+
+function answerMetadata(row: {
+  reasoning_ms?: number | null;
+  answer_model?: string | null;
+  answer_thinking?: string | null;
+  answer_effort?: string | null;
+}): Record<string, unknown> | undefined {
+  const metadata: Record<string, unknown> = {};
+  if (typeof row.reasoning_ms === "number" && row.reasoning_ms >= 0) {
+    metadata.reasoningMs = row.reasoning_ms;
+  }
+  if (row.answer_model) metadata.modelId = row.answer_model;
+  if (row.answer_thinking === "enabled" || row.answer_thinking === "disabled") {
+    metadata.thinking = row.answer_thinking;
+  }
+  if (row.answer_effort) {
+    metadata.effort = normalizeStoredEffort(row.answer_effort) ?? row.answer_effort;
+  }
+  return Object.keys(metadata).length > 0 ? metadata : undefined;
+}
+
+function withReasoningPart(
+  parts: UIMessage["parts"],
+  reasoning: string | null | undefined
+): UIMessage["parts"] {
+  const text = reasoning?.trim();
+  if (!text) return parts;
+  return [{ type: "reasoning", text, state: "done" }, ...parts];
 }
 
 function extractSavedDrafts(toolCalls: unknown): VisibleDraft[] {

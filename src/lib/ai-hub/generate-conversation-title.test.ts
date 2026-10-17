@@ -17,6 +17,14 @@ describe("generateAiConversationTitle", () => {
     );
 
     expect(title).toBe("Week 3 fractions planning");
+    const { generateText } = await import("ai");
+    expect(generateText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        providerOptions: {
+          deepseek: { thinking: { type: "disabled" } },
+        },
+      })
+    );
   });
 
   it("falls back to the first message when generation fails", async () => {

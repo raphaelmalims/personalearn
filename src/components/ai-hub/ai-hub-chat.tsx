@@ -16,6 +16,8 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useMemo, useRef, useState, type FocusEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import { ChatMessage } from "@/components/ai-hub/chat-message";
+import { ChatModelPicker } from "@/components/ai-hub/chat-model-picker";
+import { useHubChatSettings } from "@/components/ai-hub/use-hub-chat-settings";
 import { HubEvalSessionHost } from "@/components/ai-hub/hub-eval-session-host";
 import { HubResourceSessionHost } from "@/components/ai-hub/hub-resource-session-host";
 import {
@@ -36,6 +38,10 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Dialog } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { presets } from "@/lib/motion";
+import {
+  chatSettingsStorageKey,
+  writeStoredChatChoice,
+} from "@/lib/ai/chat-settings";
 import type { ConversationRow } from "@/lib/ai-hub/conversations";
 import { generateConversationTitle } from "@/lib/ai-hub/conversation-title";
 import {
@@ -62,6 +68,7 @@ import {
   getVisibleDrafts,
   getVisibleEvalSessions,
 } from "@/lib/ai-hub/message-content";
+import { shouldShowThinkingBubble } from "@/lib/ai-hub/thinking-indicator";
 import {
   conversationsQueryKey,
   useConversations,
@@ -237,6 +244,17 @@ export function AiHubChat() {
     data: conversations = [],
     isLoading: conversationsLoading,
   } = useConversations(activeClass?.id);
+  const selectedConversation =
+    conversations.find((row) => row.id === selectedConversationId) ?? null;
+  const {
+    settings: chatSettings,
+    settingsRef: chatSettingsRef,
+    onChange: onChatSettingsChange,
+  } = useHubChatSettings({
+    classId: activeClass?.id,
+    conversationId: selectedConversationId,
+    conversation: selectedConversation,
+  });
   useResources(activeClass?.id);
 
   function handleMobileBackToResourceList() {
@@ -286,6 +304,9 @@ export function AiHubChat() {
           title: options.title ?? "New conversation",
           created_at: now,
           updated_at: now,
+          chat_model: chatSettingsRef.current.modelId,
+          chat_thinking: chatSettingsRef.current.thinking,
+          chat_reasoning_effort: chatSettingsRef.current.effort,
         };
         return [created, ...list];
       }
@@ -302,6 +323,8 @@ export function AiHubChat() {
         body: () => ({
           classId: activeClassIdRef.current,
           conversationId: conversationIdRef.current,
+          chatThinking: chatSettingsRef.current.thinking,
+          chatReasoningEffort: chatSettingsRef.current.effort,
         }),
         fetch: async (input, init) => {
           const rawBody = typeof init?.body === "string" ? init.body : "";
@@ -326,6 +349,16 @@ export function AiHubChat() {
           ) {
             conversationIdRef.current = conversationId;
             setSelectedConversationIdRef.current(conversationId);
+            if (activeClassIdRef.current) {
+              writeStoredChatChoice(
+                window.sessionStorage,
+                chatSettingsStorageKey(activeClassIdRef.current, conversationId),
+                {
+                  thinking: chatSettingsRef.current.thinking,
+                  effort: chatSettingsRef.current.effort,
+                }
+              );
+            }
             patchConversationListRef.current(conversationId, {
               createIfMissing: true,
               title: generateConversationTitle(
@@ -337,7 +370,7 @@ export function AiHubChat() {
           return response;
         },
       }),
-    [activeClass?.id, queryClient]
+    [chatSettingsRef]
   );
 
   const {
@@ -825,16 +858,22 @@ export function AiHubChat() {
     (Boolean(draft.trim()) || pendingAttachments.length > 0) && !isBusy;
 
   const lastMessage = messages[messages.length - 1];
+  const streamingAssistant =
+    isGenerating && lastMessage?.role === "assistant" ? lastMessage : undefined;
+  const revealStreamingAnswer = Boolean(
+    streamingAssistant && !shouldShowThinkingBubble(true, streamingAssistant)
+  );
 
-  // While generating, hide the partial streaming assistant message so the
-  // response appears complete when done — not token-by-token.
+  // Keep the waveform pill until the first reasoning or answer token. After
+  // that, the assistant message (and its Thinking panel) is on screen.
   const visibleMessages =
-    isGenerating && lastMessage?.role === "assistant"
+    streamingAssistant && !revealStreamingAnswer
       ? messages.slice(0, -1)
       : messages;
-
-  // Show the thinking bubble for the entire duration of generation.
-  const showThinkingBubble = isGenerating;
+  const showThinkingBubble = shouldShowThinkingBubble(
+    isGenerating,
+    streamingAssistant
+  );
 
   if (!activeClass) {
     return (
@@ -958,6 +997,9 @@ export function AiHubChat() {
                         message={message}
                         canEdit={!isBusy && message.role === "user"}
                         onEdit={handleEditMessage}
+                        isStreaming={
+                          isGenerating && message.id === streamingAssistant?.id
+                        }
                       />
                     ))}
                     {showThinkingBubble ? <ThinkingBubble /> : null}
@@ -1068,10 +1110,11 @@ export function AiHubChat() {
                 />
                 <div
                   className={cn(
-                    "flex min-h-11 w-full items-end gap-1 rounded-full border border-input bg-background p-1 shadow-xs transition-colors",
+                    "w-full rounded-3xl border border-input bg-background p-1 shadow-xs transition-colors",
                     "focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30"
                   )}
                 >
+                <div className="flex min-h-11 w-full items-end gap-1">
                   <Button
                     type="button"
                     variant="ghost"
@@ -1128,6 +1171,14 @@ export function AiHubChat() {
                       <span className="sr-only">Send message</span>
                     </Button>
                   )}
+                </div>
+                <div className="flex justify-end px-1 pb-0.5">
+                  <ChatModelPicker
+                    settings={chatSettings}
+                    disabled={isBusy}
+                    onChange={onChatSettingsChange}
+                  />
+                </div>
                 </div>
               </form>
               <p className="mt-2 px-1 text-center text-[11px] text-muted-foreground">
