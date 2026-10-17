@@ -147,7 +147,7 @@ Branch by **Jira ticket and user value**, not by test type (unit vs E2E).
 
 **When to split into multiple branches:** only when scope is too large to review (e.g. test infra in PSL-29, then E2E-in-CI as a follow-up chore). Never split by test layer alone.
 
-See also [`.cursor/rules/git-workflow.mdc`](../.cursor/rules/git-workflow.mdc) for branch naming and commit prefixes.
+See also [`.cursor/rules/sdlc.mdc`](../.cursor/rules/sdlc.mdc) for branch naming and commit prefixes.
 
 ## Manual checklist (not automated)
 

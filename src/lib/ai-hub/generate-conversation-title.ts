@@ -1,5 +1,6 @@
 import { generateText } from "ai";
 import { generateConversationTitle } from "@/lib/ai-hub/conversation-title";
+import { getChatProvider, getDeepSeekProviderOptions } from "@/lib/ai/env";
 import { getChatModel } from "@/lib/ai/llm";
 
 export async function generateAiConversationTitle(
@@ -18,6 +19,9 @@ export async function generateAiConversationTitle(
 
     const { text } = await generateText({
       model: getChatModel(),
+      ...(getChatProvider() === "deepseek"
+        ? { providerOptions: getDeepSeekProviderOptions({ thinking: "disabled" }) }
+        : {}),
       system:
         "Summarize a teacher's chat thread in 3–6 words. Reply with ONLY the title — no quotes, no punctuation at the end.",
       prompt: context,

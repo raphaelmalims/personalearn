@@ -7,8 +7,10 @@ const mockGetConversationWithMessages = vi.fn();
 const mockCreateConversation = vi.fn();
 const mockAppendConversationMessages = vi.fn();
 const mockTruncateConversationFromIndex = vi.fn();
+const mockUpdateConversationChatSettings = vi.fn();
 const mockStreamText = vi.fn();
 const mockToUIMessageStreamResponse = vi.fn();
+const mockGetChatModelForSettings = vi.fn();
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: vi.fn(async () => ({})),
@@ -33,6 +35,8 @@ vi.mock("@/lib/ai-hub/conversations", async () => {
       mockRequireConversationAccess(...args),
     truncateConversationFromIndex: (...args: unknown[]) =>
       mockTruncateConversationFromIndex(...args),
+    updateConversationChatSettings: (...args: unknown[]) =>
+      mockUpdateConversationChatSettings(...args),
   };
 });
 
@@ -55,6 +59,9 @@ vi.mock("@/lib/ai-hub/generate-conversation-title", () => ({
 
 vi.mock("@/lib/ai/llm", () => ({
   getChatModel: vi.fn(() => ({ modelId: "mock" })),
+  getActiveChatModelId: vi.fn(() => "deepseek-flash"),
+  getChatModelForSettings: (settings: unknown) =>
+    mockGetChatModelForSettings(settings),
 }));
 
 vi.mock("@/lib/ai/env", async () => {
@@ -97,6 +104,8 @@ describe("POST /api/ai-hub/chat", () => {
     mockGetConversationWithMessages.mockResolvedValue({ messages: [] });
     mockAppendConversationMessages.mockResolvedValue([]);
     mockTruncateConversationFromIndex.mockResolvedValue(undefined);
+    mockUpdateConversationChatSettings.mockResolvedValue(undefined);
+    mockGetChatModelForSettings.mockReturnValue({ modelId: "mock" });
     mockToUIMessageStreamResponse.mockReturnValue(
       new Response("stream", {
         status: 200,
@@ -157,6 +166,59 @@ describe("POST /api/ai-hub/chat", () => {
         expect.objectContaining({ role: "user", content: "Hello" }),
       ])
     );
+    expect(mockStreamText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        providerOptions: {
+          deepseek: {
+            thinking: { type: "enabled" },
+            reasoningEffort: "low",
+          },
+        },
+      })
+    );
+  });
+
+  it("logs provider stream errors and still returns the generic message", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    mockRequireConversationAccess.mockResolvedValue({
+      id: conversationId,
+      class_id: classId,
+    });
+
+    await POST(
+      new Request("http://localhost/api/ai-hub/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          classId,
+          conversationId,
+          messages: [
+            {
+              id: "user-1",
+              role: "user",
+              parts: [{ type: "text", text: "Hello" }],
+            },
+          ],
+        }),
+      })
+    );
+
+    const streamOptions = mockToUIMessageStreamResponse.mock.calls[0]?.[0] as {
+      onError: (error: unknown) => string;
+    };
+    const teacherMessage = streamOptions.onError(
+      Object.assign(new Error("model not found"), {
+        statusCode: 400,
+        data: { error: { code: "model_not_found" } },
+      })
+    );
+
+    expect(teacherMessage).toBe(
+      "The assistant could not respond. Please try again."
+    );
+    expect(String(errorSpy.mock.calls[0]?.[0])).toContain("deepseek-flash");
+    expect(String(errorSpy.mock.calls[0]?.[0])).not.toContain("Hello");
+    errorSpy.mockRestore();
   });
 
   it("truncates the conversation when editing a prior message", async () => {
@@ -298,5 +360,108 @@ describe("POST /api/ai-hub/chat", () => {
     expect(response.status).toBe(500);
     expect(payload.error).toMatch(/DEEPSEEK_API_KEY/);
     expect(mockStreamText).not.toHaveBeenCalled();
+  });
+
+  it("falls back to env defaults when the picker payload is invalid", async () => {
+    mockRequireConversationAccess.mockResolvedValue({
+      id: conversationId,
+      class_id: classId,
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/ai-hub/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          classId,
+          conversationId,
+          chatModel: "grok-3-mini",
+          chatThinking: "sometimes",
+          chatReasoningEffort: "ultra",
+          messages: [
+            {
+              id: "user-1",
+              role: "user",
+              parts: [{ type: "text", text: "Hello" }],
+            },
+          ],
+        }),
+      })
+    );
+
+    expect(response.status).toBe(200);
+    expect(mockStreamText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        onEnd: expect.any(Function),
+        providerOptions: {
+          deepseek: {
+            thinking: { type: "enabled" },
+            reasoningEffort: "low",
+          },
+        },
+      })
+    );
+    const streamArgs = mockStreamText.mock.calls.at(-1)?.[0] as {
+      onFinish?: unknown;
+    };
+    expect(streamArgs.onFinish).toBeUndefined();
+    expect(mockGetChatModelForSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        provider: "deepseek",
+        modelId: "deepseek-flash",
+      })
+    );
+    expect(mockUpdateConversationChatSettings).toHaveBeenCalledWith(
+      {},
+      conversationId,
+      {
+        chat_model: "deepseek-flash",
+        chat_thinking: "enabled",
+        chat_reasoning_effort: "low",
+      }
+    );
+  });
+
+  it("maps a stored medium effort to high on the DeepSeek request", async () => {
+    mockRequireConversationAccess.mockResolvedValue({
+      id: conversationId,
+      class_id: classId,
+    });
+
+    await POST(
+      new Request("http://localhost/api/ai-hub/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          classId,
+          conversationId,
+          chatThinking: "enabled",
+          chatReasoningEffort: "medium",
+          messages: [
+            {
+              id: "user-1",
+              role: "user",
+              parts: [{ type: "text", text: "Hello" }],
+            },
+          ],
+        }),
+      })
+    );
+
+    expect(mockGetChatModelForSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        provider: "deepseek",
+        modelId: "deepseek-flash",
+        thinking: "enabled",
+        reasoningEffort: "high",
+      })
+    );
+    expect(mockUpdateConversationChatSettings).toHaveBeenCalledWith(
+      {},
+      conversationId,
+      expect.objectContaining({
+        chat_reasoning_effort: "high",
+      })
+    );
   });
 });

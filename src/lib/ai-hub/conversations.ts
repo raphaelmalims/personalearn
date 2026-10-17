@@ -16,6 +16,9 @@ export type ConversationRow = {
   title: string;
   created_at: string;
   updated_at: string;
+  chat_model?: string | null;
+  chat_thinking?: string | null;
+  chat_reasoning_effort?: string | null;
 };
 
 export type ConversationMessageRow = {
@@ -24,6 +27,11 @@ export type ConversationMessageRow = {
   role: "user" | "assistant" | "tool";
   content: string;
   tool_calls: unknown | null;
+  reasoning: string | null;
+  reasoning_ms: number | null;
+  answer_model?: string | null;
+  answer_thinking?: string | null;
+  answer_effort?: string | null;
   created_at: string;
 };
 
@@ -93,6 +101,11 @@ export async function getConversationWithMessages(
       role: row.role,
       content: row.content,
       tool_calls: row.tool_calls,
+      reasoning: row.reasoning,
+      reasoning_ms: row.reasoning_ms,
+      answer_model: row.answer_model,
+      answer_thinking: row.answer_thinking,
+      answer_effort: row.answer_effort,
     })
   );
 
@@ -101,7 +114,14 @@ export async function getConversationWithMessages(
 
 export async function createConversation(
   supabase: SupabaseClient,
-  input: { classId: string; teacherId: string; title: string }
+  input: {
+    classId: string;
+    teacherId: string;
+    title: string;
+    chatModel?: string | null;
+    chatThinking?: string | null;
+    chatReasoningEffort?: string | null;
+  }
 ): Promise<ConversationRow> {
   const { data, error } = await supabase
     .from("conversations")
@@ -109,6 +129,13 @@ export async function createConversation(
       class_id: input.classId,
       teacher_id: input.teacherId,
       title: input.title,
+      ...(input.chatModel !== undefined ? { chat_model: input.chatModel } : {}),
+      ...(input.chatThinking !== undefined
+        ? { chat_thinking: input.chatThinking }
+        : {}),
+      ...(input.chatReasoningEffort !== undefined
+        ? { chat_reasoning_effort: input.chatReasoningEffort }
+        : {}),
     })
     .select("*")
     .single();
@@ -131,6 +158,30 @@ export async function touchConversation(
 
   if (error) {
     throw new Error(`Conversation update failed: ${error.message}`);
+  }
+}
+
+export async function updateConversationChatSettings(
+  supabase: SupabaseClient,
+  conversationId: string,
+  settings: {
+    chat_model: string;
+    chat_thinking: string;
+    chat_reasoning_effort: string;
+  }
+): Promise<void> {
+  const { error } = await supabase
+    .from("conversations")
+    .update({
+      chat_model: settings.chat_model,
+      chat_thinking: settings.chat_thinking,
+      chat_reasoning_effort: settings.chat_reasoning_effort,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", conversationId);
+
+  if (error) {
+    throw new Error(`Conversation settings update failed: ${error.message}`);
   }
 }
 
@@ -230,6 +281,11 @@ export async function appendConversationMessages(
     role: "user" | "assistant" | "tool";
     content: string;
     tool_calls?: unknown | null;
+    reasoning?: string | null;
+    reasoning_ms?: number | null;
+    answer_model?: string | null;
+    answer_thinking?: string | null;
+    answer_effort?: string | null;
   }>
 ): Promise<ConversationMessageRow[]> {
   if (messages.length === 0) {
@@ -242,6 +298,19 @@ export async function appendConversationMessages(
     role: message.role,
     content: message.content,
     tool_calls: message.tool_calls ?? null,
+    ...(message.reasoning !== undefined ? { reasoning: message.reasoning } : {}),
+    ...(message.reasoning_ms !== undefined
+      ? { reasoning_ms: message.reasoning_ms }
+      : {}),
+    ...(message.answer_model !== undefined
+      ? { answer_model: message.answer_model }
+      : {}),
+    ...(message.answer_thinking !== undefined
+      ? { answer_thinking: message.answer_thinking }
+      : {}),
+    ...(message.answer_effort !== undefined
+      ? { answer_effort: message.answer_effort }
+      : {}),
   }));
 
   const { data, error } = await supabase
