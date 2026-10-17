@@ -11,7 +11,6 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import {
-  CHAT_MODEL_OPTIONS,
   PICKER_EFFORTS,
   effortLabel,
   type ChatEffortChoice,
@@ -137,7 +136,6 @@ export function ChatModelPicker({
 
   function choose(next: Partial<ChatSettingsChoice>) {
     onChange({
-      modelId: next.modelId ?? settings.modelId,
       thinking: next.thinking ?? settings.thinking,
       effort: next.effort ?? settings.effort,
     });
@@ -150,7 +148,7 @@ export function ChatModelPicker({
             ref={panelRef}
             id={menuId}
             role="menu"
-            aria-label="Model and thinking"
+            aria-label="Thinking"
             style={{
               left: coords.left,
               width: coords.width,
@@ -160,20 +158,6 @@ export function ChatModelPicker({
             }}
             className="fixed z-50 rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-lg"
           >
-            <MenuLabel>Model</MenuLabel>
-            {CHAT_MODEL_OPTIONS.map((option) => (
-              <MenuRadio
-                key={option.id}
-                checked={settings.modelId === option.id}
-                onClick={() => {
-                  choose({ modelId: option.id });
-                  closeMenu();
-                }}
-              >
-                {option.label}
-              </MenuRadio>
-            ))}
-
             <MenuLabel>Thinking</MenuLabel>
             <MenuRadio
               checked={!thinkingOn}

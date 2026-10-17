@@ -1,6 +1,5 @@
 import {
   getChatModelId,
-  getChatProvider,
   getChatReasoningEffort,
   getChatThinking,
   type ChatProvider,
@@ -11,26 +10,12 @@ import {
 export const XAI_CHAT_MODEL_ID = "grok-3-mini";
 export const DEEPSEEK_CHAT_MODEL_ID = "deepseek-flash";
 
-export const CHAT_MODEL_OPTIONS = [
-  {
-    id: DEEPSEEK_CHAT_MODEL_ID,
-    label: "DeepSeek Flash",
-    provider: "deepseek",
-  },
-  {
-    id: XAI_CHAT_MODEL_ID,
-    label: "Grok 3 Mini",
-    provider: "xai",
-  },
-] as const;
-
 export const PICKER_EFFORTS = ["low", "high"] as const;
 
 export type PickerEffort = (typeof PICKER_EFFORTS)[number];
 export type ChatEffortChoice = PickerEffort | "max";
 
 export type ChatSettingsInput = {
-  modelId?: unknown;
   thinking?: unknown;
   effort?: unknown;
 };
@@ -51,7 +36,6 @@ export type ResolvedChatSettings = {
 };
 
 export type ChatSettingsChoice = {
-  modelId: string;
   thinking: ChatThinking;
   effort: ChatEffortChoice;
 };
@@ -80,18 +64,18 @@ export const FALLBACK_CHAT_SETTINGS: ResolvedChatSettings = {
 
 export function envChatSettingsDefaults(): ChatSettingsDefaults {
   return {
-    modelId: getChatProvider() === "xai" ? XAI_CHAT_MODEL_ID : getChatModelId(),
+    modelId: getChatModelId(),
     thinking: getChatThinking(),
     effort: getChatReasoningEffort(),
   };
 }
 
-/** Validate a composer choice. Unknown values fall back to env defaults. */
+/** Validate a composer choice. The model is always the DeepSeek env default. */
 export function resolveChatSettings(
   input: ChatSettingsInput | null | undefined,
   defaults: ChatSettingsDefaults = envChatSettingsDefaults()
 ): ResolvedChatSettings {
-  const model = resolveModel(input?.modelId, defaults.modelId);
+  const model = describeDeepSeekModel(defaults.modelId);
   const thinking = resolveThinking(input?.thinking, defaults.thinking);
   const effort = resolveEffortChoice(input?.effort, defaults.effort);
   return {
@@ -121,10 +105,6 @@ export function chatSettingsColumns(settings: ResolvedChatSettings) {
     chat_thinking: settings.thinking,
     chat_reasoning_effort: settings.effort,
   };
-}
-
-export function modelLabel(modelId: string): string {
-  return CHAT_MODEL_OPTIONS.find((option) => option.id === modelId)?.label ?? modelId;
 }
 
 export function effortLabel(effort: string | null | undefined): string | null {
@@ -167,16 +147,12 @@ export function readStoredChatChoice(
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<ChatSettingsChoice>;
     if (!parsed || typeof parsed !== "object") return null;
-    if (typeof parsed.modelId !== "string" || parsed.modelId.length === 0) {
-      return null;
-    }
     if (parsed.thinking !== "enabled" && parsed.thinking !== "disabled") {
       return null;
     }
     const effort = normalizeStoredEffort(parsed.effort);
     if (!effort) return null;
     return {
-      modelId: parsed.modelId,
       thinking: parsed.thinking,
       effort,
     };
@@ -193,24 +169,18 @@ export function writeStoredChatChoice(
   storage.setItem(
     key,
     JSON.stringify({
-      modelId: choice.modelId,
       thinking: choice.thinking,
       effort: choice.effort,
     })
   );
 }
 
-function resolveModel(value: unknown, fallbackId: string) {
-  const known = CHAT_MODEL_OPTIONS.find((option) => option.id === value);
-  if (known) return known;
-  return describeModel(fallbackId);
-}
-
-function describeModel(modelId: string) {
-  const known = CHAT_MODEL_OPTIONS.find((option) => option.id === modelId);
-  if (known) return known;
-  const provider: ChatProvider = modelId.startsWith("grok") ? "xai" : "deepseek";
-  return { id: modelId, label: modelId, provider };
+function describeDeepSeekModel(modelId: string) {
+  return {
+    id: modelId,
+    label: modelId === DEEPSEEK_CHAT_MODEL_ID ? "DeepSeek Flash" : modelId,
+    provider: "deepseek" as const,
+  };
 }
 
 function resolveThinking(value: unknown, fallback: ChatThinking): ChatThinking {

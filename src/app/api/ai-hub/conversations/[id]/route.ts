@@ -21,14 +21,12 @@ type RouteContext = {
 const patchSchema = z
   .object({
     fromMessageIndex: z.number().int().min(0).optional(),
-    chatModel: z.string().max(80).optional(),
     chatThinking: z.string().max(20).optional(),
     chatReasoningEffort: z.string().max(20).optional(),
   })
   .refine(
     (value) =>
       value.fromMessageIndex !== undefined ||
-      value.chatModel !== undefined ||
       value.chatThinking !== undefined ||
       value.chatReasoningEffort !== undefined,
     { message: "Invalid request body" }
@@ -117,13 +115,11 @@ export async function PATCH(request: Request, context: RouteContext) {
     }
 
     const hasChatChoice =
-      parsed.data.chatModel !== undefined ||
       parsed.data.chatThinking !== undefined ||
       parsed.data.chatReasoningEffort !== undefined;
 
     if (hasChatChoice) {
       const settings = resolveRequestChatSettings({
-        modelId: parsed.data.chatModel ?? conversation.chat_model,
         thinking: parsed.data.chatThinking ?? conversation.chat_thinking,
         effort: parsed.data.chatReasoningEffort ?? conversation.chat_reasoning_effort,
       });

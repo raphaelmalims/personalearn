@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import {
-  CHAT_MODEL_OPTIONS,
   PICKER_EFFORTS,
   resolveRequestChatSettings,
 } from "@/lib/ai/chat-settings";
@@ -21,7 +20,6 @@ export async function GET() {
 
     return NextResponse.json({
       settings: resolveRequestChatSettings(null),
-      models: CHAT_MODEL_OPTIONS,
       efforts: PICKER_EFFORTS,
     });
   } catch (error) {

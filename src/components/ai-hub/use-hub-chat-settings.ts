@@ -3,7 +3,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import {
-  CHAT_MODEL_OPTIONS,
   FALLBACK_CHAT_SETTINGS,
   chatSettingsStorageKey,
   readStoredChatChoice,
@@ -54,7 +53,6 @@ export function useHubChatSettings(input: {
     const fromDb =
       dbModel || dbThinking || dbEffort
         ? {
-            modelId: dbModel ?? "",
             thinking: dbThinking ?? "",
             effort: dbEffort ?? "",
           }
@@ -78,7 +76,6 @@ export function useHubChatSettings(input: {
       effort: defaults.effort,
     });
     const stored: ChatSettingsChoice = {
-      modelId: resolved.modelId,
       thinking: resolved.thinking,
       effort: resolved.effort,
     };
@@ -99,7 +96,7 @@ export function useHubChatSettings(input: {
           row.id === input.conversationId
             ? {
                 ...row,
-                chat_model: stored.modelId,
+                chat_model: resolved.modelId,
                 chat_thinking: stored.thinking,
                 chat_reasoning_effort: stored.effort,
               }
@@ -111,7 +108,6 @@ export function useHubChatSettings(input: {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        chatModel: stored.modelId,
         chatThinking: stored.thinking,
         chatReasoningEffort: stored.effort,
       }),
@@ -121,7 +117,6 @@ export function useHubChatSettings(input: {
   return {
     settings,
     settingsRef,
-    models: CHAT_MODEL_OPTIONS,
     onChange,
   };
 }

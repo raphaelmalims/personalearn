@@ -323,7 +323,6 @@ export function AiHubChat() {
         body: () => ({
           classId: activeClassIdRef.current,
           conversationId: conversationIdRef.current,
-          chatModel: chatSettingsRef.current.modelId,
           chatThinking: chatSettingsRef.current.thinking,
           chatReasoningEffort: chatSettingsRef.current.effort,
         }),
@@ -355,7 +354,6 @@ export function AiHubChat() {
                 window.sessionStorage,
                 chatSettingsStorageKey(activeClassIdRef.current, conversationId),
                 {
-                  modelId: chatSettingsRef.current.modelId,
                   thinking: chatSettingsRef.current.thinking,
                   effort: chatSettingsRef.current.effort,
                 }

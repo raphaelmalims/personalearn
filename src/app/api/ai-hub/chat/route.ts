@@ -59,7 +59,6 @@ const bodySchema = z.object({
   trigger: z.string().optional(),
   messageId: z.string().optional(),
   truncateFromMessageIndex: z.number().int().min(0).optional(),
-  chatModel: z.string().max(80).optional(),
   chatThinking: z.string().max(20).optional(),
   chatReasoningEffort: z.string().max(20).optional(),
 });
@@ -79,7 +78,6 @@ export async function POST(request: Request) {
     const user = await requireTeacherClass(supabase, classId);
     assertChatConfigured();
     const settings = resolveRequestChatSettings({
-      modelId: parsed.data.chatModel,
       thinking: parsed.data.chatThinking,
       effort: parsed.data.chatReasoningEffort,
     });

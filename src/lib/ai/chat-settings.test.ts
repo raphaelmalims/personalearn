@@ -38,7 +38,7 @@ describe("resolveChatSettings", () => {
 
   it("maps a stored medium effort to high without a schema change", () => {
     const settings = resolveChatSettings(
-      { modelId: "deepseek-flash", thinking: "disabled", effort: "medium" },
+      { thinking: "disabled", effort: "medium" },
       defaults
     );
 
@@ -57,40 +57,56 @@ describe("resolveChatSettings", () => {
     });
   });
 
-  it("accepts the xAI chat model and does not send DeepSeek thinking", () => {
+  it("ignores a requested model and stays on the DeepSeek default", () => {
     const settings = resolveChatSettings(
-      { modelId: "grok-3-mini", thinking: "enabled", effort: "high" },
+      { thinking: "enabled", effort: "high" },
       defaults
     );
 
-    expect(settings.provider).toBe("xai");
-    expect(settings.label).toBe("Grok 3 Mini");
-    expect(requestThinking(settings)).toBe("disabled");
+    expect(settings.modelId).toBe("deepseek-flash");
+    expect(settings.provider).toBe("deepseek");
+    expect(requestThinking(settings)).toBe("enabled");
   });
 
   it("falls back to the supplied defaults on bad input", () => {
     const settings = resolveChatSettings(
-      { modelId: "gpt-4", thinking: "sometimes", effort: "ultra" },
-      { modelId: "grok-3-mini", thinking: "disabled", effort: "max" }
+      { thinking: "sometimes", effort: "ultra" },
+      { modelId: "deepseek-v4-flash", thinking: "disabled", effort: "max" }
     );
 
     expect(settings).toMatchObject({
-      modelId: "grok-3-mini",
-      provider: "xai",
+      modelId: "deepseek-v4-flash",
+      provider: "deepseek",
       thinking: "disabled",
       effort: "max",
       apiEffort: "max",
     });
   });
 
+  it("uses the DeepSeek env model even when the provider env is xAI", () => {
+    setEnv("CHAT_PROVIDER", "xai");
+    setEnv("CHAT_MODEL", undefined);
+
+    const settings = resolveRequestChatSettings({
+      thinking: "enabled",
+      effort: "low",
+    });
+
+    expect(settings).toMatchObject({
+      modelId: "deepseek-flash",
+      provider: "deepseek",
+      thinking: "enabled",
+      effort: "low",
+    });
+  });
+
   it("falls back to env defaults when the request omits a choice", () => {
-    setEnv("CHAT_PROVIDER", "deepseek");
+    setEnv("CHAT_PROVIDER", "xai");
     setEnv("CHAT_MODEL", "deepseek-v4-flash");
     setEnv("CHAT_THINKING", "disabled");
     setEnv("CHAT_REASONING_EFFORT", "high");
 
     const settings = resolveRequestChatSettings({
-      modelId: "not-a-model",
       thinking: "yes",
       effort: "",
     });
@@ -114,7 +130,6 @@ describe("resolveChatSettings", () => {
     };
     const key = chatSettingsStorageKey("class-1", null);
     const choice: ChatSettingsChoice = {
-      modelId: "deepseek-flash",
       thinking: "enabled",
       effort: "high",
     };

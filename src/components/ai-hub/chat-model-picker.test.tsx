@@ -19,6 +19,8 @@ const defaults = {
   effort: "low" as const,
 };
 
+const lowChoice = { thinking: "enabled" as const, effort: "low" as const };
+
 function Harness({
   initial,
   onChange,
@@ -61,13 +63,9 @@ describe("placeChatMenu", () => {
 });
 
 describe("ChatModelPicker", () => {
-  it("shows effort on the pill and keeps the model name in the menu", async () => {
+  it("shows effort on the pill and no model names in the menu", async () => {
     const user = userEvent.setup();
-    render(
-      <Harness
-        initial={{ modelId: "deepseek-flash", thinking: "enabled", effort: "low" }}
-      />
-    );
+    render(<Harness initial={lowChoice} />);
     const button = screen.getByRole("button", { name: "Low" });
     expect(button).toHaveAttribute("aria-expanded", "false");
     expect(button).toHaveAttribute("title", "Thinking · Low");
@@ -76,17 +74,21 @@ describe("ChatModelPicker", () => {
     expect(button.querySelector("svg")).toBeNull();
 
     await user.click(button);
-    const menu = screen.getByRole("menu", { name: "Model and thinking" });
+    const menu = screen.getByRole("menu", { name: "Thinking" });
     expect(menu.parentElement).toBe(document.body);
     expect(menu.className).toContain("fixed");
     expect(menu.className).toContain("z-50");
-    expect(screen.getByRole("menuitemradio", { name: "DeepSeek Flash" })).toBeVisible();
+    expect(screen.queryByRole("menuitemradio", { name: "DeepSeek Flash" })).toBeNull();
+    expect(screen.queryByRole("menuitemradio", { name: "Grok 3 Mini" })).toBeNull();
+    expect(screen.getByRole("menuitemradio", { name: "Off" })).toBeVisible();
+    expect(screen.getByRole("menuitemradio", { name: "Low" })).toBeVisible();
+    expect(screen.getByRole("menuitemradio", { name: "High" })).toBeVisible();
   });
 
   it("shows Off when thinking is disabled", () => {
     render(
       <Harness
-        initial={{ modelId: "deepseek-flash", thinking: "disabled", effort: "high" }}
+        initial={{ thinking: "disabled", effort: "high" }}
       />
     );
     const button = screen.getByRole("button", { name: "Off" });
@@ -97,9 +99,7 @@ describe("ChatModelPicker", () => {
   it("closes on Escape and outside click, returning focus to the pill", async () => {
     const user = userEvent.setup();
     render(
-      <Harness
-        initial={{ modelId: "deepseek-flash", thinking: "enabled", effort: "high" }}
-      />
+      <Harness initial={{ thinking: "enabled", effort: "high" }} />
     );
     const button = screen.getByRole("button", { name: "High" });
     await user.click(button);
@@ -115,38 +115,25 @@ describe("ChatModelPicker", () => {
     expect(button).toHaveFocus();
   });
 
-  it("changes model, thinking, and effort without putting the model on the pill", async () => {
+  it("changes thinking and effort without a model choice", async () => {
     const user = userEvent.setup();
     const onChange = viChange();
-    render(
-      <Harness
-        initial={{ modelId: "deepseek-flash", thinking: "enabled", effort: "low" }}
-        onChange={onChange.fn}
-      />
-    );
-
-    await user.click(screen.getByRole("button", { name: "Low" }));
-    await user.click(screen.getByRole("menuitemradio", { name: "Grok 3 Mini" }));
-    expect(onChange.calls[0]).toEqual({
-      modelId: "grok-3-mini",
-      thinking: "enabled",
-      effort: "low",
-    });
-    expect(screen.getByRole("button", { name: "Low" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Grok/ })).toBeNull();
+    render(<Harness initial={lowChoice} onChange={onChange.fn} />);
 
     await user.click(screen.getByRole("button", { name: "Low" }));
     expect(screen.queryByRole("menuitemradio", { name: "Medium" })).toBeNull();
-    expect(screen.getByRole("menuitemradio", { name: "Off" })).toBeVisible();
-    expect(screen.getByRole("menuitemradio", { name: "High" })).toBeVisible();
+    expect(screen.queryByRole("menuitemradio", { name: /Grok|DeepSeek/ })).toBeNull();
     await user.click(screen.getByRole("menuitemradio", { name: "Off" }));
     expect(screen.queryByRole("menu")).toBeNull();
+    expect(onChange.calls[0]).toEqual({
+      thinking: "disabled",
+      effort: "low",
+    });
     expect(screen.getByRole("button", { name: "Off" })).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Off" }));
     await user.click(screen.getByRole("menuitemradio", { name: "High" }));
     expect(onChange.calls.at(-1)).toEqual({
-      modelId: "grok-3-mini",
       thinking: "enabled",
       effort: "high",
     });
@@ -158,7 +145,6 @@ describe("ChatModelPicker", () => {
     render(
       <Harness
         initial={{
-          modelId: "deepseek-flash",
           thinking: "enabled",
           effort: "medium",
         }}

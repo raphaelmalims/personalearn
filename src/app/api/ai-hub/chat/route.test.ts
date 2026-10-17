@@ -375,7 +375,7 @@ describe("POST /api/ai-hub/chat", () => {
         body: JSON.stringify({
           classId,
           conversationId,
-          chatModel: "gpt-4",
+          chatModel: "grok-3-mini",
           chatThinking: "sometimes",
           chatReasoningEffort: "ultra",
           messages: [
@@ -405,6 +405,12 @@ describe("POST /api/ai-hub/chat", () => {
       onFinish?: unknown;
     };
     expect(streamArgs.onFinish).toBeUndefined();
+    expect(mockGetChatModelForSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        provider: "deepseek",
+        modelId: "deepseek-flash",
+      })
+    );
     expect(mockUpdateConversationChatSettings).toHaveBeenCalledWith(
       {},
       conversationId,
@@ -429,7 +435,6 @@ describe("POST /api/ai-hub/chat", () => {
         body: JSON.stringify({
           classId,
           conversationId,
-          chatModel: "deepseek-flash",
           chatThinking: "enabled",
           chatReasoningEffort: "medium",
           messages: [
