@@ -32,19 +32,27 @@ describe("ThoughtProcess", () => {
     expect(button).toHaveTextContent("Low");
     expect(button).not.toHaveTextContent("DeepSeek");
     expect(button.className).toContain("focus-visible:ring-ring");
+    expect(button.querySelector("svg")).toBeTruthy();
     expect(container.querySelector(".border")).toBeNull();
     const panelId = button.getAttribute("aria-controls");
     const panel = document.getElementById(panelId!);
     expect(panel).toHaveAttribute("inert");
     expect(panel).toHaveAttribute("aria-hidden", "true");
-    expect(panel).toHaveClass("hidden");
+    expect(panel).not.toHaveClass("hidden");
     expect(panel).toHaveClass("max-h-40");
-    expect(panel?.className).not.toContain("border");
+    expect(panel?.className).toContain("text-sm");
+    expect(panel?.className).toContain("leading-relaxed");
+    const shell = container.querySelector("[data-state='closed']");
+    expect(shell).toHaveClass("grid-rows-[0fr]", "opacity-0");
+    expect(shell?.className).toContain("motion-reduce:transition-none");
+    expect(container.querySelector(".border-l-2")?.className).toContain("border-primary");
 
     await user.click(button);
     expect(button).toHaveAttribute("aria-expanded", "true");
+    expect(button.innerHTML).toContain("rotate-90");
     expect(panel).not.toHaveAttribute("inert");
     expect(screen.getByText(reasoning)).toBeVisible();
+    expect(container.querySelector("[data-state='open']")).toHaveClass("grid-rows-[1fr]");
 
     button.focus();
     await user.keyboard("{Enter}");
@@ -59,12 +67,12 @@ describe("ThoughtProcess", () => {
     expect(button).not.toHaveTextContent("Thought for");
   });
 
-  it("streams Thinking… with the reasoning visible, then collapses", () => {
+  it("streams Thinking with the reasoning visible, then collapses", () => {
     const { rerender } = render(
       <ThoughtProcess reasoning={reasoning} isStreaming hasResponseContent={false} />
     );
 
-    const button = screen.getByRole("button", { name: "Thinking…" });
+    const button = screen.getByRole("button", { name: "Thinking" });
     expect(button).toHaveAttribute("aria-expanded", "true");
     expect(button.innerHTML).toContain("motion-reduce:animate-none");
     expect(screen.getByText(reasoning)).toBeVisible();

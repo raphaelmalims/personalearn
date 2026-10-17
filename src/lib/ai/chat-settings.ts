@@ -24,7 +24,7 @@ export const CHAT_MODEL_OPTIONS = [
   },
 ] as const;
 
-export const PICKER_EFFORTS = ["low", "medium", "high"] as const;
+export const PICKER_EFFORTS = ["low", "high"] as const;
 
 export type PickerEffort = (typeof PICKER_EFFORTS)[number];
 export type ChatEffortChoice = PickerEffort | "max";
@@ -58,10 +58,16 @@ export type ChatSettingsChoice = {
 
 const EFFORT_LABELS: Record<ChatEffortChoice, string> = {
   low: "Low",
-  medium: "Medium",
   high: "High",
   max: "Max",
 };
+
+/** Stored "medium" is the same DeepSeek request as high. No schema change. */
+export function normalizeStoredEffort(value: unknown): ChatEffortChoice | null {
+  if (value === "medium" || value === "high") return "high";
+  if (value === "low" || value === "max") return value;
+  return null;
+}
 
 export const FALLBACK_CHAT_SETTINGS: ResolvedChatSettings = {
   modelId: DEEPSEEK_CHAT_MODEL_ID,
@@ -94,7 +100,7 @@ export function resolveChatSettings(
     label: model.label,
     thinking,
     effort,
-    apiEffort: effort === "medium" ? "high" : effort,
+    apiEffort: effort,
   };
 }
 
@@ -122,15 +128,8 @@ export function modelLabel(modelId: string): string {
 }
 
 export function effortLabel(effort: string | null | undefined): string | null {
-  if (
-    effort === "low" ||
-    effort === "medium" ||
-    effort === "high" ||
-    effort === "max"
-  ) {
-    return EFFORT_LABELS[effort];
-  }
-  return null;
+  const normalized = normalizeStoredEffort(effort);
+  return normalized ? EFFORT_LABELS[normalized] : null;
 }
 
 /** Subtle mode note. Effort only — the model id stays in storage, not in the label. */
@@ -174,18 +173,12 @@ export function readStoredChatChoice(
     if (parsed.thinking !== "enabled" && parsed.thinking !== "disabled") {
       return null;
     }
-    if (
-      parsed.effort !== "low" &&
-      parsed.effort !== "medium" &&
-      parsed.effort !== "high" &&
-      parsed.effort !== "max"
-    ) {
-      return null;
-    }
+    const effort = normalizeStoredEffort(parsed.effort);
+    if (!effort) return null;
     return {
       modelId: parsed.modelId,
       thinking: parsed.thinking,
-      effort: parsed.effort,
+      effort,
     };
   } catch {
     return null;
@@ -229,13 +222,5 @@ function resolveEffortChoice(
   value: unknown,
   fallback: ChatReasoningEffort
 ): ChatEffortChoice {
-  if (
-    value === "low" ||
-    value === "medium" ||
-    value === "high" ||
-    value === "max"
-  ) {
-    return value;
-  }
-  return fallback;
+  return normalizeStoredEffort(value) ?? normalizeStoredEffort(fallback) ?? "low";
 }

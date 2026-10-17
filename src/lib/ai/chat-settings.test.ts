@@ -36,7 +36,7 @@ describe("resolveChatSettings", () => {
     else process.env[key] = value;
   }
 
-  it("accepts deepseek-flash with thinking off and medium effort", () => {
+  it("maps a stored medium effort to high without a schema change", () => {
     const settings = resolveChatSettings(
       { modelId: "deepseek-flash", thinking: "disabled", effort: "medium" },
       defaults
@@ -47,13 +47,13 @@ describe("resolveChatSettings", () => {
       provider: "deepseek",
       label: "DeepSeek Flash",
       thinking: "disabled",
-      effort: "medium",
+      effort: "high",
       apiEffort: "high",
     });
     expect(chatSettingsColumns(settings)).toEqual({
       chat_model: "deepseek-flash",
       chat_thinking: "disabled",
-      chat_reasoning_effort: "medium",
+      chat_reasoning_effort: "high",
     });
   });
 
@@ -104,7 +104,7 @@ describe("resolveChatSettings", () => {
     });
   });
 
-  it("persists a choice in storage and reads it back", () => {
+  it("persists a choice in storage and reads medium as high", () => {
     const storage = new Map<string, string>();
     const memory = {
       getItem: (key: string) => storage.get(key) ?? null,
@@ -116,13 +116,17 @@ describe("resolveChatSettings", () => {
     const choice: ChatSettingsChoice = {
       modelId: "deepseek-flash",
       thinking: "enabled",
-      effort: "medium",
+      effort: "high",
     };
 
     writeStoredChatChoice(memory, key, choice);
     expect(readStoredChatChoice(memory, key)).toEqual(choice);
     expect(readStoredChatChoice(memory, chatSettingsStorageKey("class-1", "conv-2"))).toBeNull();
-    writeStoredChatChoice(memory, key, choice);
+    storage.set(
+      key,
+      JSON.stringify({ ...choice, effort: "medium" })
+    );
+    expect(readStoredChatChoice(memory, key)).toEqual(choice);
     storage.set(key, "{");
     expect(readStoredChatChoice(memory, key)).toBeNull();
   });
@@ -134,7 +138,7 @@ describe("resolveChatSettings", () => {
         thinking: "enabled",
         effort: "medium",
       })
-    ).toEqual({ label: "Medium", title: "Thinking · Medium" });
+    ).toEqual({ label: "High", title: "Thinking · High" });
     expect(
       formatAnsweredWith({
         modelId: "grok-3-mini",

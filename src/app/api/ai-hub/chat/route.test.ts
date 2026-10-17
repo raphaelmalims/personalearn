@@ -416,7 +416,7 @@ describe("POST /api/ai-hub/chat", () => {
     );
   });
 
-  it("stores medium effort and sends DeepSeek high", async () => {
+  it("maps a stored medium effort to high on the DeepSeek request", async () => {
     mockRequireConversationAccess.mockResolvedValue({
       id: conversationId,
       class_id: classId,
@@ -455,7 +455,7 @@ describe("POST /api/ai-hub/chat", () => {
       {},
       conversationId,
       expect.objectContaining({
-        chat_reasoning_effort: "medium",
+        chat_reasoning_effort: "high",
       })
     );
   });

@@ -63,14 +63,11 @@ export function useHubChatSettings(input: {
     setOverride(fromDb ?? fromSession);
   }, [input.classId, input.conversationId, dbModel, dbThinking, dbEffort]);
 
-  const settings = resolveChatSettings(
-    override,
-    {
-      modelId: defaults.modelId,
-      thinking: defaults.thinking,
-      effort: defaults.effort === "medium" ? "high" : defaults.effort,
-    }
-  );
+  const settings = resolveChatSettings(override, {
+    modelId: defaults.modelId,
+    thinking: defaults.thinking,
+    effort: defaults.effort,
+  });
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
 
@@ -78,7 +75,7 @@ export function useHubChatSettings(input: {
     const resolved = resolveChatSettings(choice, {
       modelId: defaults.modelId,
       thinking: defaults.thinking,
-      effort: defaults.effort === "medium" ? "high" : defaults.effort,
+      effort: defaults.effort,
     });
     const stored: ChatSettingsChoice = {
       modelId: resolved.modelId,

@@ -1,4 +1,5 @@
 import { isReasoningUIPart, isTextUIPart, type UIMessage } from "ai";
+import { normalizeStoredEffort } from "@/lib/ai/chat-settings";
 import { stripResourceTypeTitlePrefix } from "@/lib/resources/format";
 import {
   isEvalSessionArtifact,
@@ -53,9 +54,14 @@ export function getMessageAnswerMeta(message: { metadata?: unknown }): {
   return {
     modelId: typeof metadata.modelId === "string" ? metadata.modelId : null,
     thinking,
-    effort: typeof metadata.effort === "string" ? metadata.effort : null,
+    effort: readStoredEffort(metadata.effort),
     reasoningMs: getMessageReasoningMs(message),
   };
+}
+
+function readStoredEffort(value: unknown): string | null {
+  if (typeof value !== "string" || value.length === 0) return null;
+  return normalizeStoredEffort(value) ?? value;
 }
 
 function readMetadata(message: { metadata?: unknown }): Record<string, unknown> {
@@ -284,7 +290,9 @@ function answerMetadata(row: {
   if (row.answer_thinking === "enabled" || row.answer_thinking === "disabled") {
     metadata.thinking = row.answer_thinking;
   }
-  if (row.answer_effort) metadata.effort = row.answer_effort;
+  if (row.answer_effort) {
+    metadata.effort = normalizeStoredEffort(row.answer_effort) ?? row.answer_effort;
+  }
   return Object.keys(metadata).length > 0 ? metadata : undefined;
 }
 

@@ -23,7 +23,7 @@ function Harness({
   initial,
   onChange,
 }: {
-  initial: ChatSettingsChoice;
+  initial: ChatSettingsChoice | (Omit<ChatSettingsChoice, "effort"> & { effort: "medium" });
   onChange?: (choice: ChatSettingsChoice) => void;
 }) {
   const [choice, setChoice] = useState(initial);
@@ -98,10 +98,10 @@ describe("ChatModelPicker", () => {
     const user = userEvent.setup();
     render(
       <Harness
-        initial={{ modelId: "deepseek-flash", thinking: "enabled", effort: "medium" }}
+        initial={{ modelId: "deepseek-flash", thinking: "enabled", effort: "high" }}
       />
     );
-    const button = screen.getByRole("button", { name: "Medium" });
+    const button = screen.getByRole("button", { name: "High" });
     await user.click(button);
     expect(screen.getByRole("menu")).toBeVisible();
 
@@ -136,18 +136,42 @@ describe("ChatModelPicker", () => {
     expect(screen.queryByRole("button", { name: /Grok/ })).toBeNull();
 
     await user.click(screen.getByRole("button", { name: "Low" }));
+    expect(screen.queryByRole("menuitemradio", { name: "Medium" })).toBeNull();
+    expect(screen.getByRole("menuitemradio", { name: "Off" })).toBeVisible();
+    expect(screen.getByRole("menuitemradio", { name: "High" })).toBeVisible();
     await user.click(screen.getByRole("menuitemradio", { name: "Off" }));
-    expect(screen.queryByText("Effort")).toBeNull();
+    expect(screen.queryByRole("menu")).toBeNull();
     expect(screen.getByRole("button", { name: "Off" })).toBeInTheDocument();
 
-    await user.click(screen.getByRole("menuitemradio", { name: "On" }));
-    await user.click(screen.getByRole("menuitemradio", { name: "Medium" }));
+    await user.click(screen.getByRole("button", { name: "Off" }));
+    await user.click(screen.getByRole("menuitemradio", { name: "High" }));
     expect(onChange.calls.at(-1)).toEqual({
       modelId: "grok-3-mini",
       thinking: "enabled",
-      effort: "medium",
+      effort: "high",
     });
-    expect(screen.getByRole("button", { name: "Medium" })).toHaveFocus();
+    expect(screen.getByRole("button", { name: "High" })).toHaveFocus();
+  });
+
+  it("shows High when a stored medium effort is read", async () => {
+    const user = userEvent.setup();
+    render(
+      <Harness
+        initial={{
+          modelId: "deepseek-flash",
+          thinking: "enabled",
+          effort: "medium",
+        }}
+      />
+    );
+    const button = screen.getByRole("button", { name: "High" });
+    expect(screen.queryByRole("button", { name: "Medium" })).toBeNull();
+    await user.click(button);
+    expect(screen.queryByRole("menuitemradio", { name: "Medium" })).toBeNull();
+    expect(screen.getByRole("menuitemradio", { name: "High" })).toHaveAttribute(
+      "aria-checked",
+      "true"
+    );
   });
 });
 

@@ -244,7 +244,7 @@ describe("toUIMessageFromRow reasoning", () => {
     expect(getMessageAnswerMeta(uiMessage)).toEqual({
       modelId: "deepseek-flash",
       thinking: "enabled",
-      effort: "medium",
+      effort: "high",
       reasoningMs: null,
     });
   });

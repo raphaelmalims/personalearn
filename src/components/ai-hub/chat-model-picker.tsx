@@ -18,7 +18,6 @@ import {
   type ChatSettingsChoice,
   type ResolvedChatSettings,
 } from "@/lib/ai/chat-settings";
-import type { ChatThinking } from "@/lib/ai/env";
 import { cn } from "@/lib/utils";
 
 type ChatModelPickerProps = {
@@ -177,35 +176,26 @@ export function ChatModelPicker({
 
             <MenuLabel>Thinking</MenuLabel>
             <MenuRadio
-              checked={thinkingOn}
-              onClick={() => choose({ thinking: "enabled" satisfies ChatThinking })}
-            >
-              On
-            </MenuRadio>
-            <MenuRadio
               checked={!thinkingOn}
-              onClick={() => choose({ thinking: "disabled" })}
+              onClick={() => {
+                choose({ thinking: "disabled" });
+                closeMenu();
+              }}
             >
               Off
             </MenuRadio>
-
-            {thinkingOn ? (
-              <>
-                <MenuLabel>Effort</MenuLabel>
-                {efforts.map((effort) => (
-                  <MenuRadio
-                    key={effort}
-                    checked={settings.effort === effort}
-                    onClick={() => {
-                      choose({ effort });
-                      closeMenu();
-                    }}
-                  >
-                    {effortLabel(effort)}
-                  </MenuRadio>
-                ))}
-              </>
-            ) : null}
+            {efforts.map((effort) => (
+              <MenuRadio
+                key={effort}
+                checked={thinkingOn && settings.effort === effort}
+                onClick={() => {
+                  choose({ thinking: "enabled", effort });
+                  closeMenu();
+                }}
+              >
+                {effortLabel(effort)}
+              </MenuRadio>
+            ))}
           </div>,
           document.body
         )
