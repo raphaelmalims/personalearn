@@ -22,7 +22,7 @@ Issue → `PSL-N` → spec → branch/PR → Slack. A feature or bug needs the I
 
 ## Branch and commit
 
-Never implement on `develop` or `main`. Fetch `origin/develop` and branch from it, or from the merged prerequisite. Reuse an existing ticket branch.
+Never implement on `develop` or `main`. Fetch `origin/develop` and branch from it, or from the merged prerequisite. A hotfix branches from `main` instead; see Hotfix. Reuse an existing ticket branch.
 
 | Work | Branch prefix | Commit prefix |
 |------|---------------|---------------|
@@ -35,15 +35,35 @@ Branch: `{prefix}/PSL-{n}-{short-kebab-description}`. Subject: `{prefix} … (PS
 
 One ticket, one branch, one PR. Dependent tickets merge to `develop` in order; the next branch then rebases.
 
+## Hotfix
+
+Use `hotfix/PSL-<n>-<slug>` only when production is broken or at risk (a P1) and the fix should not wait behind unreleased work on `develop`. Branch it from `main`. Everything else stays `feature/` or `fix/` into `develop`.
+
+The pull request targets `main`. A human approves the merge. A merge to `main` deploys Vercel production, so preview QA is required before merging.
+
+After the merge, open a back-merge pull request from `main` into `develop`, or cherry-pick the fix, so `develop` keeps it.
+
+## Ticket descriptions
+
+Do not repeat metadata that already has its own field: labels, priority, assignee, milestone, sprint, points, dates.
+
+A description holds the problem, the context, short acceptance criteria, and links that are not already linked.
+
+The PR test plan lives in `.github/pull_request_template.md`. Merge gates live in this file, not in every ticket.
+
 ## The human approves commits and merges
 
 The agent proposes; the human approves. Do not commit, push, or merge unless the human asked. Propose one focused slice and wait. A green build is not a commit, and an open pull request is not a merge.
 
 ## Pull request and release
 
-PRs target `develop`. Rebase onto `origin/develop` first. The title includes `PSL-N`. The Test plan lists only steps that were run.
+PRs target `develop`. A hotfix targets `main`; see Hotfix. Rebase onto the base branch first. The title includes `PSL-N`. The Test plan lists only steps that were run.
 
-One area and one type on the ticket and the PR: `area-auth`, `area-dashboard`, `area-classes`, `area-ai-rag`, `area-infra`, `area-docs`, and `type-feature`, `type-bug`, `type-chore`, `type-tech-debt`. Not GitHub’s `bug` or `enhancement`. Assignee `nervustech` if unset. Milestone is the current sprint, or `Backlog`. Request a reviewer other than the author when one exists.
+One area and one type on the ticket and the PR: `area-auth`, `area-dashboard`, `area-classes`, `area-ai-rag`, `area-infra`, `area-docs`, and `type-feature`, `type-bug`, `type-chore`, `type-tech-debt`. Not GitHub’s `bug` or `enhancement`.
+
+Default assignee is `raphaelmalims`. Set the assignee, the milestone (current sprint, otherwise `Backlog`), and the labels in the same step that creates the issue or pull request, on the Cursor creation path that already sets labels. Do not follow up with `gh pr edit` or `gh api` from the in-VM `cursor[bot]` (`ghs_`) token. That call returns 403 `Resource not accessible by integration`. If a field still cannot be set at creation, say so in the final report and leave it for the reviewer. Do not retry with `gh`.
+
+Request a reviewer other than the author when another reviewer exists. If the only candidate is the author, skip the request. GitHub cannot self-review.
 
 Before approve or merge:
 
@@ -52,7 +72,7 @@ Before approve or merge:
 - CI is green.
 - The Vercel preview is healthy.
 
-Squash-merge into `develop` and delete the branch. Do not self-approve. Close the linked Issue as completed.
+Squash-merge into `develop` and delete the branch. A hotfix merges to `main` first; see Hotfix. Do not self-approve. Close the linked Issue as completed.
 
 Promote `develop` to `main` with a merge commit, then tag `v0.x.0`.
 
