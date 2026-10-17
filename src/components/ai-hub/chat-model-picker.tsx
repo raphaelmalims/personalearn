@@ -1,7 +1,15 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { createPortal } from "react-dom";
 import {
   CHAT_MODEL_OPTIONS,
   PICKER_EFFORTS,
@@ -19,27 +27,106 @@ type ChatModelPickerProps = {
   onChange: (choice: ChatSettingsChoice) => void;
 };
 
+type MenuBox = { top: number; bottom: number; left: number; right: number };
+type Viewport = { width: number; height: number };
+
+export function placeChatMenu(box: MenuBox, viewport: Viewport) {
+  const width = Math.min(256, Math.max(160, viewport.width - 16));
+  const gap = 8;
+  const spaceAbove = box.top;
+  const spaceBelow = viewport.height - box.bottom;
+  const openUp = spaceAbove >= 180 || spaceAbove >= spaceBelow;
+  const left = Math.max(8, Math.min(box.right - width, viewport.width - width - 8));
+  if (openUp) {
+    return {
+      openUp,
+      width,
+      left,
+      bottom: viewport.height - box.top + gap,
+    };
+  }
+  return {
+    openUp,
+    width,
+    left,
+    top: box.bottom + gap,
+  };
+}
+
 export function ChatModelPicker({
   settings,
   disabled = false,
   onChange,
 }: ChatModelPickerProps) {
   const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
+  const [coords, setCoords] = useState<ReturnType<typeof placeChatMenu> | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const movedFocusRef = useRef(false);
   const menuId = useId();
   const thinkingOn = settings.thinking === "enabled";
   const efforts: ChatEffortChoice[] =
     settings.effort === "max" ? [...PICKER_EFFORTS, "max"] : [...PICKER_EFFORTS];
+  const pillLabel = thinkingOn ? (effortLabel(settings.effort) ?? "On") : "Off";
+
+  const closeMenu = useCallback(() => {
+    setOpen(false);
+    buttonRef.current?.focus();
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open || !buttonRef.current) {
+      setCoords(null);
+      return;
+    }
+    function place() {
+      const rect = buttonRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setCoords(
+        placeChatMenu(rect, {
+          width: window.innerWidth,
+          height: window.innerHeight,
+        })
+      );
+    }
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      movedFocusRef.current = false;
+      return;
+    }
+    if (!panelRef.current || movedFocusRef.current) return;
+    movedFocusRef.current = true;
+    panelRef.current
+      ?.querySelector<HTMLElement>("[role='menuitemradio']")
+      ?.focus();
+  }, [open, coords]);
 
   useEffect(() => {
     if (!open) return;
     function onPointerDown(event: MouseEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) {
-        setOpen(false);
+      const target = event.target as Node;
+      if (
+        buttonRef.current?.contains(target) ||
+        panelRef.current?.contains(target)
+      ) {
+        return;
       }
+      closeMenu();
     }
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeMenu();
+      }
     }
     document.addEventListener("mousedown", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
@@ -47,7 +134,7 @@ export function ChatModelPicker({
       document.removeEventListener("mousedown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [open]);
+  }, [open, closeMenu]);
 
   function choose(next: Partial<ChatSettingsChoice>) {
     onChange({
@@ -57,83 +144,89 @@ export function ChatModelPicker({
     });
   }
 
-  const title = thinkingOn
-    ? `${settings.label} · Thinking · ${effortLabel(settings.effort) ?? "Low"}`
-    : `${settings.label} · Thinking off`;
+  const menu =
+    open && coords && typeof document !== "undefined"
+      ? createPortal(
+          <div
+            ref={panelRef}
+            id={menuId}
+            role="menu"
+            aria-label="Model and thinking"
+            style={{
+              left: coords.left,
+              width: coords.width,
+              ...(coords.openUp
+                ? { bottom: coords.bottom, top: "auto" }
+                : { top: coords.top, bottom: "auto" }),
+            }}
+            className="fixed z-50 rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-lg"
+          >
+            <MenuLabel>Model</MenuLabel>
+            {CHAT_MODEL_OPTIONS.map((option) => (
+              <MenuRadio
+                key={option.id}
+                checked={settings.modelId === option.id}
+                onClick={() => {
+                  choose({ modelId: option.id });
+                  closeMenu();
+                }}
+              >
+                {option.label}
+              </MenuRadio>
+            ))}
+
+            <MenuLabel>Thinking</MenuLabel>
+            <MenuRadio
+              checked={thinkingOn}
+              onClick={() => choose({ thinking: "enabled" satisfies ChatThinking })}
+            >
+              On
+            </MenuRadio>
+            <MenuRadio
+              checked={!thinkingOn}
+              onClick={() => choose({ thinking: "disabled" })}
+            >
+              Off
+            </MenuRadio>
+
+            {thinkingOn ? (
+              <>
+                <MenuLabel>Effort</MenuLabel>
+                {efforts.map((effort) => (
+                  <MenuRadio
+                    key={effort}
+                    checked={settings.effort === effort}
+                    onClick={() => {
+                      choose({ effort });
+                      closeMenu();
+                    }}
+                  >
+                    {effortLabel(effort)}
+                  </MenuRadio>
+                ))}
+              </>
+            ) : null}
+          </div>,
+          document.body
+        )
+      : null;
 
   return (
-    <div ref={rootRef} className="relative">
+    <div className="relative">
       <button
+        ref={buttonRef}
         type="button"
         disabled={disabled}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={menuId}
-        title={title}
+        title={thinkingOn ? `Thinking · ${pillLabel}` : "Thinking off"}
         onClick={() => setOpen((value) => !value)}
-        className="inline-flex h-8 max-w-[11rem] items-center gap-1 rounded-full px-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 sm:max-w-none"
+        className="inline-flex h-8 items-center rounded-full px-2.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
       >
-        <span className="truncate">{settings.label}</span>
-        {thinkingOn ? (
-          <Sparkles className="h-3 w-3 shrink-0" aria-hidden />
-        ) : null}
-        <span className="sr-only">{thinkingOn ? "Thinking on" : "Thinking off"}</span>
+        {pillLabel}
       </button>
-
-      {open ? (
-        <div
-          id={menuId}
-          role="menu"
-          aria-label="Model and thinking"
-          className="absolute right-0 bottom-full z-50 mb-2 w-[min(16rem,calc(100vw-2rem))] rounded-xl border border-border bg-popover p-1 text-popover-foreground shadow-lg"
-        >
-          <MenuLabel>Model</MenuLabel>
-          {CHAT_MODEL_OPTIONS.map((option) => (
-            <MenuRadio
-              key={option.id}
-              checked={settings.modelId === option.id}
-              onClick={() => {
-                choose({ modelId: option.id });
-                setOpen(false);
-              }}
-            >
-              {option.label}
-            </MenuRadio>
-          ))}
-
-          <MenuLabel>Thinking</MenuLabel>
-          <MenuRadio
-            checked={thinkingOn}
-            onClick={() => choose({ thinking: "enabled" satisfies ChatThinking })}
-          >
-            On
-          </MenuRadio>
-          <MenuRadio
-            checked={!thinkingOn}
-            onClick={() => choose({ thinking: "disabled" })}
-          >
-            Off
-          </MenuRadio>
-
-          {thinkingOn ? (
-            <>
-              <MenuLabel>Effort</MenuLabel>
-              {efforts.map((effort) => (
-                <MenuRadio
-                  key={effort}
-                  checked={settings.effort === effort}
-                  onClick={() => {
-                    choose({ effort });
-                    setOpen(false);
-                  }}
-                >
-                  {effortLabel(effort)}
-                </MenuRadio>
-              ))}
-            </>
-          ) : null}
-        </div>
-      ) : null}
+      {menu}
     </div>
   );
 }

@@ -133,19 +133,23 @@ export function effortLabel(effort: string | null | undefined): string | null {
   return null;
 }
 
+/** Subtle mode note. Effort only — the model id stays in storage, not in the label. */
 export function formatAnsweredWith(meta: {
   modelId: string | null;
   thinking: string | null;
   effort: string | null;
 }): { label: string; title: string } | null {
-  if (!meta.modelId) return null;
-  const name = modelLabel(meta.modelId);
   if (meta.thinking === "enabled") {
     const effort = effortLabel(meta.effort);
-    const mode = effort ? `Thinking · ${effort}` : "Thinking";
-    return { label: name, title: `${name} · ${mode}` };
+    return {
+      label: effort ?? "On",
+      title: effort ? `Thinking · ${effort}` : "Thinking",
+    };
   }
-  return { label: name, title: `${name} · Thinking off` };
+  if (meta.thinking === "disabled") {
+    return { label: "Off", title: "Thinking off" };
+  }
+  return null;
 }
 
 export function chatSettingsStorageKey(

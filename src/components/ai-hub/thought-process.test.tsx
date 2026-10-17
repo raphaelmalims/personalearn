@@ -22,14 +22,15 @@ describe("ThoughtProcess", () => {
       <ThoughtProcess
         reasoning={reasoning}
         reasoningMs={3200}
-        answerLabel="DeepSeek Flash"
-        answerTitle="DeepSeek Flash · Thinking · Low"
+        answerLabel="Low"
+        answerTitle="Thinking · Low"
       />
     );
 
     const button = screen.getByRole("button", { name: /Thought for 3s/ });
     expect(button).toHaveAttribute("aria-expanded", "false");
-    expect(button).toHaveTextContent("DeepSeek Flash");
+    expect(button).toHaveTextContent("Low");
+    expect(button).not.toHaveTextContent("DeepSeek");
     expect(button.className).toContain("focus-visible:ring-ring");
     expect(container.querySelector(".border")).toBeNull();
     const panelId = button.getAttribute("aria-controls");

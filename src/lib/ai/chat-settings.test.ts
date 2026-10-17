@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   chatSettingsColumns,
   chatSettingsStorageKey,
+  formatAnsweredWith,
   readStoredChatChoice,
   requestThinking,
   resolveChatSettings,
@@ -124,5 +125,29 @@ describe("resolveChatSettings", () => {
     writeStoredChatChoice(memory, key, choice);
     storage.set(key, "{");
     expect(readStoredChatChoice(memory, key)).toBeNull();
+  });
+
+  it("shows effort on a reply without the model name", () => {
+    expect(
+      formatAnsweredWith({
+        modelId: "deepseek-flash",
+        thinking: "enabled",
+        effort: "medium",
+      })
+    ).toEqual({ label: "Medium", title: "Thinking · Medium" });
+    expect(
+      formatAnsweredWith({
+        modelId: "grok-3-mini",
+        thinking: "disabled",
+        effort: null,
+      })
+    ).toEqual({ label: "Off", title: "Thinking off" });
+    expect(
+      formatAnsweredWith({
+        modelId: "deepseek-flash",
+        thinking: null,
+        effort: "low",
+      })
+    ).toBeNull();
   });
 });
