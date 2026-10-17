@@ -113,9 +113,16 @@ function applyReasoningContent(
     const fromPrompt = source ? reasoningText(source.content) : "";
     const existing =
       typeof message.reasoning_content === "string" ? message.reasoning_content : "";
+    const text = (fromPrompt || existing).trim();
+    if (!text) {
+      if (!("reasoning_content" in message)) return message;
+      const copy = { ...message };
+      delete copy.reasoning_content;
+      return copy;
+    }
     return {
       ...message,
-      reasoning_content: fromPrompt || existing,
+      reasoning_content: text,
     };
   });
 }

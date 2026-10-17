@@ -3,6 +3,7 @@ import type { UIMessage } from "ai";
 import {
   getAssistantDisplayBlocks,
   getAssistantPersistContent,
+  getMessageAnswerMeta,
   getMessageReasoning,
   getMessageReasoningMs,
   getVisibleDrafts,
@@ -226,6 +227,26 @@ describe("toUIMessageFromRow reasoning", () => {
     });
     expect(getMessageReasoning(uiMessage)).toBe("");
     expect(getMessageReasoningMs(uiMessage)).toBeNull();
+  });
+
+  it("restores the model and thinking mode that produced the reply", () => {
+    const uiMessage = toUIMessageFromRow({
+      id: "m-model",
+      role: "assistant",
+      content: "Here is the plan.",
+      reasoning: null,
+      reasoning_ms: null,
+      answer_model: "deepseek-flash",
+      answer_thinking: "enabled",
+      answer_effort: "medium",
+    });
+
+    expect(getMessageAnswerMeta(uiMessage)).toEqual({
+      modelId: "deepseek-flash",
+      thinking: "enabled",
+      effort: "medium",
+      reasoningMs: null,
+    });
   });
 });
 

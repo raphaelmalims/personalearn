@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronRight, Sparkles } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -9,6 +9,8 @@ type ThoughtProcessProps = {
   isStreaming?: boolean;
   hasResponseContent?: boolean;
   reasoningMs?: number | null;
+  answerLabel?: string | null;
+  answerTitle?: string | null;
 };
 
 export function formatThoughtDuration(ms: number): string {
@@ -16,11 +18,18 @@ export function formatThoughtDuration(ms: number): string {
   return `Thought for ${seconds}s`;
 }
 
+export function formatThoughtLabel(reasoningMs: number | null | undefined): string {
+  if (reasoningMs == null || !Number.isFinite(reasoningMs)) return "Thought";
+  return formatThoughtDuration(reasoningMs);
+}
+
 export function ThoughtProcess({
   reasoning,
   isStreaming = false,
   hasResponseContent = false,
   reasoningMs = null,
+  answerLabel = null,
+  answerTitle = null,
 }: ThoughtProcessProps) {
   const text = reasoning.trim();
   const isActivelyThinking = isStreaming && !hasResponseContent && text.length > 0;
@@ -37,15 +46,14 @@ export function ThoughtProcess({
   }, [reasoningMs]);
 
   useEffect(() => {
-    if (!isActivelyThinking) return;
-    if (startedAtRef.current == null) {
-      startedAtRef.current = Date.now();
+    if (isActivelyThinking) {
+      if (startedAtRef.current == null) {
+        startedAtRef.current = Date.now();
+      }
+      setIsOpen(true);
+      return;
     }
-    setIsOpen(true);
-  }, [isActivelyThinking]);
-
-  useEffect(() => {
-    if (isActivelyThinking || startedAtRef.current == null) return;
+    if (startedAtRef.current == null) return;
     setMeasuredMs((current) => current ?? Date.now() - startedAtRef.current!);
     setIsOpen(false);
     startedAtRef.current = null;
@@ -62,57 +70,55 @@ export function ThoughtProcess({
     return null;
   }
 
-  const durationMs = measuredMs ?? reasoningMs;
   const header = isActivelyThinking
     ? "Thinking…"
-    : formatThoughtDuration(durationMs ?? 1000);
+    : formatThoughtLabel(measuredMs ?? reasoningMs);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border/70 bg-muted/40 text-xs">
+    <div className="text-xs text-muted-foreground">
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="flex min-h-11 w-full items-center justify-between gap-2 px-3 py-2 text-left font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        className="inline-flex max-w-full items-center gap-1 rounded-md py-1 text-left text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         aria-expanded={isOpen}
         aria-controls={panelId}
       >
-        <span className="flex items-center gap-1.5">
-          <Sparkles
-            className={cn(
-              "h-3.5 w-3.5 shrink-0 text-primary",
-              isActivelyThinking && "animate-pulse motion-reduce:animate-none"
-            )}
-          />
-          <span>{header}</span>
-        </span>
-        <span className="flex items-center gap-1 text-[0.7rem] text-muted-foreground/80">
-          <span>{isOpen ? "Hide" : "Show"}</span>
-          {isOpen ? (
-            <ChevronDown className="h-3.5 w-3.5" />
-          ) : (
-            <ChevronRight className="h-3.5 w-3.5" />
+        <span
+          className={cn(
+            isActivelyThinking && "animate-pulse motion-reduce:animate-none"
           )}
+        >
+          {header}
         </span>
+        {isActivelyThinking ? null : (
+          <ChevronRight
+            className={cn(
+              "h-3.5 w-3.5 shrink-0 transition-transform motion-reduce:transition-none",
+              isOpen && "rotate-90"
+            )}
+            aria-hidden
+          />
+        )}
+        {!isActivelyThinking && answerLabel ? (
+          <span className="truncate text-muted-foreground" title={answerTitle ?? undefined}>
+            · {answerLabel}
+          </span>
+        ) : null}
       </button>
 
       <div
         id={panelId}
+        ref={scrollRef}
         role="region"
         aria-label="Thinking"
         aria-hidden={!isOpen}
+        inert={isOpen ? undefined : true}
         className={cn(
-          "grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none",
-          isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+          "max-h-40 overflow-y-auto pr-1 text-xs leading-relaxed whitespace-pre-wrap text-muted-foreground",
+          isOpen ? "mt-1" : "hidden"
         )}
       >
-        <div className="overflow-hidden">
-          <div
-            ref={scrollRef}
-            className="max-h-60 overflow-y-auto border-t border-border/60 bg-background/50 px-3 py-2.5 font-mono text-[0.8rem] leading-relaxed whitespace-pre-wrap text-muted-foreground"
-          >
-            {text}
-          </div>
-        </div>
+        {text}
       </div>
     </div>
   );

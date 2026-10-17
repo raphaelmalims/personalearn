@@ -6,6 +6,7 @@ import {
   getLatestUserMessageText,
   requireConversationAccess,
   truncateConversationFromIndex,
+  updateConversationChatSettings,
   updateConversationTitle,
 } from "@/lib/ai-hub/conversations";
 import { createAgentTools } from "@/lib/ai-hub/agent-tools";
@@ -23,12 +24,14 @@ import {
   getVisibleDrafts,
   getVisibleEvalSessions,
 } from "@/lib/ai-hub/message-content";
-import { getActiveChatModelId, getChatModel } from "@/lib/ai/llm";
+import {
+  chatSettingsColumns,
+  requestThinking,
+  resolveRequestChatSettings,
+} from "@/lib/ai/chat-settings";
+import { getChatModelForSettings } from "@/lib/ai/llm";
 import {
   assertChatConfigured,
-  getChatProvider,
-  getChatReasoningEffort,
-  getChatThinking,
   getDeepSeekProviderOptions,
 } from "@/lib/ai/env";
 import {
@@ -56,6 +59,9 @@ const bodySchema = z.object({
   trigger: z.string().optional(),
   messageId: z.string().optional(),
   truncateFromMessageIndex: z.number().int().min(0).optional(),
+  chatModel: z.string().max(80).optional(),
+  chatThinking: z.string().max(20).optional(),
+  chatReasoningEffort: z.string().max(20).optional(),
 });
 
 export async function POST(request: Request) {
@@ -72,6 +78,12 @@ export async function POST(request: Request) {
     const messages = await materializeAttachmentText(parsed.data.messages);
     const user = await requireTeacherClass(supabase, classId);
     assertChatConfigured();
+    const settings = resolveRequestChatSettings({
+      modelId: parsed.data.chatModel,
+      thinking: parsed.data.chatThinking,
+      effort: parsed.data.chatReasoningEffort,
+    });
+    const thinking = requestThinking(settings);
     const classContext = await getClassContext(supabase, classId);
     const systemPrompt = buildClassAssistantSystemPrompt(classContext);
 
@@ -96,6 +108,12 @@ export async function POST(request: Request) {
           truncateFromMessageIndex
         );
       }
+
+      await updateConversationChatSettings(
+        supabase,
+        activeConversationId,
+        chatSettingsColumns(settings)
+      );
     } else {
       const latestUserMessage = [...messages]
         .reverse()
@@ -107,6 +125,9 @@ export async function POST(request: Request) {
         classId,
         teacherId: user.id,
         title: generateConversationTitle(titleSource),
+        chatModel: settings.modelId,
+        chatThinking: settings.thinking,
+        chatReasoningEffort: settings.effort,
       });
       activeConversationId = conversation.id;
     }
@@ -136,32 +157,41 @@ export async function POST(request: Request) {
       conversationId: activeConversationId,
     });
 
-    const provider = getChatProvider();
-    const thinking = provider === "deepseek" ? getChatThinking() : "disabled";
-    const effort = getChatReasoningEffort();
-    const modelId = getActiveChatModelId(provider);
+    const effort = settings.apiEffort;
+    const modelId = settings.modelId;
     const timer = createChatReplyTimer();
 
     const result = streamText({
-      model: getChatModel(),
+      model: getChatModelForSettings({
+        provider: settings.provider,
+        modelId,
+        thinking,
+        reasoningEffort: effort,
+      }),
       system: systemPrompt,
       messages: await convertToModelMessages(messages),
       tools,
       stopWhen: stepCountIs(5),
       experimental_transform: smoothStream({ delayInMs: null, chunking: "word" }),
-      ...(provider === "deepseek"
-        ? { providerOptions: getDeepSeekProviderOptions() }
+      ...(settings.provider === "deepseek"
+        ? {
+            providerOptions: getDeepSeekProviderOptions({
+              thinking,
+              reasoningEffort: effort,
+            }),
+          }
         : {}),
       onChunk: ({ chunk }) => {
         timer.noteChunk(chunk);
       },
-      onFinish: ({ usage }) => {
+      onEnd: ({ usage, steps }) => {
         logChatReply(
           timer.metrics({
             modelId,
             thinking,
             effort,
             usage,
+            steps,
           })
         );
       },
@@ -171,13 +201,19 @@ export async function POST(request: Request) {
       headers: {
         "X-Conversation-Id": activeConversationId,
       },
-      ...(provider === "deepseek"
+      ...(settings.provider === "deepseek"
         ? { sendReasoning: thinking === "enabled" }
         : {}),
       messageMetadata: ({ part }) => {
-        if (part.type !== "finish" || thinking !== "enabled") return undefined;
-        const reasoningMs = timer.reasoningDurationMs();
-        return reasoningMs == null ? undefined : { reasoningMs };
+        if (part.type !== "finish") return undefined;
+        const reasoningMs =
+          thinking === "enabled" ? timer.reasoningDurationMs() : null;
+        return {
+          ...(reasoningMs == null ? {} : { reasoningMs }),
+          modelId,
+          thinking,
+          effort: thinking === "enabled" ? settings.effort : null,
+        };
       },
       onEnd: async ({ responseMessage, isAborted }) => {
         if (isAborted) {
@@ -220,6 +256,9 @@ export async function POST(request: Request) {
                 : null,
             reasoning: reasoning || null,
             reasoning_ms: reasoning ? timer.reasoningDurationMs() : null,
+            answer_model: modelId,
+            answer_thinking: thinking,
+            answer_effort: thinking === "enabled" ? settings.effort : null,
           },
         ]);
 

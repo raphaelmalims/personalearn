@@ -33,12 +33,35 @@ export function getMessageReasoning(message: Pick<UIMessage, "parts">): string {
 }
 
 export function getMessageReasoningMs(message: { metadata?: unknown }): number | null {
-  const metadata = message.metadata;
-  if (!metadata || typeof metadata !== "object") return null;
-  const value = (metadata as { reasoningMs?: unknown }).reasoningMs;
+  const value = readMetadata(message).reasoningMs;
   return typeof value === "number" && Number.isFinite(value) && value >= 0
     ? value
     : null;
+}
+
+export function getMessageAnswerMeta(message: { metadata?: unknown }): {
+  modelId: string | null;
+  thinking: "enabled" | "disabled" | null;
+  effort: string | null;
+  reasoningMs: number | null;
+} {
+  const metadata = readMetadata(message);
+  const thinking =
+    metadata.thinking === "enabled" || metadata.thinking === "disabled"
+      ? metadata.thinking
+      : null;
+  return {
+    modelId: typeof metadata.modelId === "string" ? metadata.modelId : null,
+    thinking,
+    effort: typeof metadata.effort === "string" ? metadata.effort : null,
+    reasoningMs: getMessageReasoningMs(message),
+  };
+}
+
+function readMetadata(message: { metadata?: unknown }): Record<string, unknown> {
+  const metadata = message.metadata;
+  if (!metadata || typeof metadata !== "object") return {};
+  return metadata as Record<string, unknown>;
 }
 
 export function getVisibleDrafts(
@@ -214,12 +237,12 @@ export function toUIMessageFromRow(row: {
   tool_calls?: unknown | null;
   reasoning?: string | null;
   reasoning_ms?: number | null;
+  answer_model?: string | null;
+  answer_thinking?: string | null;
+  answer_effort?: string | null;
 }): UIMessage {
   const role = row.role === "user" ? "user" : "assistant";
-  const metadata =
-    typeof row.reasoning_ms === "number" && row.reasoning_ms >= 0
-      ? { reasoningMs: row.reasoning_ms }
-      : undefined;
+  const metadata = answerMetadata(row);
 
   const savedDrafts = extractSavedDrafts(row.tool_calls);
   const savedSessions = extractSavedEvalSessions(row.tool_calls);
@@ -245,6 +268,24 @@ export function toUIMessageFromRow(row: {
     parts: withReasoningPart([{ type: "text", text: row.content }], row.reasoning),
     ...(metadata ? { metadata } : {}),
   };
+}
+
+function answerMetadata(row: {
+  reasoning_ms?: number | null;
+  answer_model?: string | null;
+  answer_thinking?: string | null;
+  answer_effort?: string | null;
+}): Record<string, unknown> | undefined {
+  const metadata: Record<string, unknown> = {};
+  if (typeof row.reasoning_ms === "number" && row.reasoning_ms >= 0) {
+    metadata.reasoningMs = row.reasoning_ms;
+  }
+  if (row.answer_model) metadata.modelId = row.answer_model;
+  if (row.answer_thinking === "enabled" || row.answer_thinking === "disabled") {
+    metadata.thinking = row.answer_thinking;
+  }
+  if (row.answer_effort) metadata.effort = row.answer_effort;
+  return Object.keys(metadata).length > 0 ? metadata : undefined;
 }
 
 function withReasoningPart(

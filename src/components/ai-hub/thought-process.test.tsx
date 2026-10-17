@@ -16,39 +16,59 @@ describe("ThoughtProcess", () => {
     expect(screen.queryByRole("button")).toBeNull();
   });
 
-  it("starts collapsed and toggles with click and keyboard", async () => {
+  it("starts collapsed as Thought for Ns and expands in a scroll area", async () => {
     const user = userEvent.setup();
-    render(<ThoughtProcess reasoning={reasoning} reasoningMs={3200} />);
+    const { container } = render(
+      <ThoughtProcess
+        reasoning={reasoning}
+        reasoningMs={3200}
+        answerLabel="DeepSeek Flash"
+        answerTitle="DeepSeek Flash · Thinking · Low"
+      />
+    );
 
     const button = screen.getByRole("button", { name: /Thought for 3s/ });
     expect(button).toHaveAttribute("aria-expanded", "false");
-    const panelId = button.getAttribute("aria-controls");
-    expect(panelId).toBeTruthy();
-    const panel = document.getElementById(panelId!);
-    expect(panel).toHaveClass("grid-rows-[0fr]");
-    expect(panel).toHaveAttribute("aria-hidden", "true");
+    expect(button).toHaveTextContent("DeepSeek Flash");
     expect(button.className).toContain("focus-visible:ring-ring");
-    expect(panel?.className).toContain("motion-reduce:transition-none");
-    expect(panel?.querySelector(".max-h-60")).toBeTruthy();
+    expect(container.querySelector(".border")).toBeNull();
+    const panelId = button.getAttribute("aria-controls");
+    const panel = document.getElementById(panelId!);
+    expect(panel).toHaveAttribute("inert");
+    expect(panel).toHaveAttribute("aria-hidden", "true");
+    expect(panel).toHaveClass("hidden");
+    expect(panel).toHaveClass("max-h-40");
+    expect(panel?.className).not.toContain("border");
 
     await user.click(button);
     expect(button).toHaveAttribute("aria-expanded", "true");
-    expect(panel).toHaveClass("grid-rows-[1fr]");
+    expect(panel).not.toHaveAttribute("inert");
     expect(screen.getByText(reasoning)).toBeVisible();
 
     button.focus();
     await user.keyboard("{Enter}");
     expect(button).toHaveAttribute("aria-expanded", "false");
+    expect(panel).toHaveAttribute("inert");
   });
 
-  it("streams open with Thinking… then collapses to the measured duration", () => {
+  it("says Thought without a duration when reasoning_ms was not stored", () => {
+    render(<ThoughtProcess reasoning={reasoning} reasoningMs={null} />);
+    const button = screen.getByRole("button", { name: "Thought" });
+    expect(button).toHaveAttribute("aria-expanded", "false");
+    expect(button).not.toHaveTextContent("Thought for");
+  });
+
+  it("streams Thinking… with the reasoning visible, then collapses", () => {
     const { rerender } = render(
       <ThoughtProcess reasoning={reasoning} isStreaming hasResponseContent={false} />
     );
 
-    const button = screen.getByRole("button", { name: /Thinking…/ });
+    const button = screen.getByRole("button", { name: "Thinking…" });
     expect(button).toHaveAttribute("aria-expanded", "true");
     expect(button.innerHTML).toContain("motion-reduce:animate-none");
+    expect(screen.getByText(reasoning)).toBeVisible();
+    const panel = document.getElementById(button.getAttribute("aria-controls")!);
+    expect(panel).not.toHaveAttribute("inert");
 
     rerender(
       <ThoughtProcess

@@ -4,6 +4,7 @@ import {
   createChatReplyTimer,
   logChatReply,
   logChatStreamError,
+  reasoningTokensFromSteps,
   reasoningTokensFromUsage,
 } from "./chat-telemetry";
 
@@ -48,6 +49,27 @@ describe("chat telemetry", () => {
     expect(line).not.toMatch(/amina|api[_-]?key|sk-/i);
     expect(timer.reasoningDurationMs()).toBe(800);
     info.mockRestore();
+  });
+
+  it("sums reasoning tokens across steps instead of keeping the last step", () => {
+    let clock = 0;
+    const timer = createChatReplyTimer(() => clock);
+    clock = 10;
+    const metrics = timer.metrics({
+      modelId: "deepseek-flash",
+      thinking: "enabled",
+      effort: "low",
+      usage: {
+        raw: { completion_tokens_details: { reasoning_tokens: 6 } },
+      },
+      steps: [
+        { usage: { raw: { completion_tokens_details: { reasoning_tokens: 4 } } } },
+        { usage: { outputTokenDetails: { reasoningTokens: 6 } } },
+      ],
+    });
+
+    expect(metrics.reasoningTokens).toBe(10);
+    expect(reasoningTokensFromSteps(undefined)).toBeNull();
   });
 
   it("reads mapped reasoning tokens when raw usage is absent", () => {

@@ -133,6 +133,72 @@ describe("patchDeepSeekChatBody", () => {
     );
     expect(assistant?.reasoning_content).toBe("I should call the roster tool.");
   });
+
+  it("omits empty reasoning_content on pre-PR tool turns with no stored reasoning", () => {
+    const legacyPrompt: LanguageModelV4Prompt = [
+      {
+        role: "user",
+        content: [{ type: "text", text: "List my students" }],
+      },
+      {
+        role: "assistant",
+        content: [
+          { type: "text", text: "Checking the roster." },
+          {
+            type: "tool-call",
+            toolCallId: "call-1",
+            toolName: "list_students",
+            input: {},
+          },
+        ],
+      },
+      {
+        role: "tool",
+        content: [
+          {
+            type: "tool-result",
+            toolCallId: "call-1",
+            toolName: "list_students",
+            output: { type: "text", value: "Amina" },
+          },
+        ],
+      },
+      {
+        role: "user",
+        content: [{ type: "text", text: "Thanks" }],
+      },
+    ];
+
+    const body = patchDeepSeekChatBody(
+      {
+        model: "deepseek-flash",
+        messages: [
+          { role: "user", content: "List my students" },
+          {
+            role: "assistant",
+            content: "Checking the roster.",
+            tool_calls: [{ id: "call-1", type: "function" }],
+            reasoning_content: "",
+          },
+          { role: "tool", tool_call_id: "call-1", content: "Amina" },
+          { role: "user", content: "Thanks" },
+        ],
+      },
+      {
+        settings: { thinking: "enabled", reasoningEffort: "low" },
+        prompt: legacyPrompt,
+      }
+    );
+
+    expect(body.thinking).toEqual({ type: "enabled" });
+    expect(body.reasoning_effort).toBe("low");
+    const assistant = (body.messages as Array<Record<string, unknown>>).find(
+      (message) => message.role === "assistant"
+    );
+    expect(assistant?.tool_calls).toEqual([{ id: "call-1", type: "function" }]);
+    expect(assistant).not.toHaveProperty("reasoning_content");
+    expect(JSON.stringify(body)).not.toContain('"reasoning_content":""');
+  });
 });
 
 describe("deepseek outgoing request", () => {

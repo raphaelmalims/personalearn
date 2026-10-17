@@ -78,6 +78,22 @@ export function reasoningTokensFromUsage(usage: UsageLike | undefined): number |
   return typeof mapped === "number" ? mapped : null;
 }
 
+/** Sum reasoning tokens from every tool step. The last step's raw usage is not the total. */
+export function reasoningTokensFromSteps(
+  steps: Array<{ usage?: UsageLike }> | undefined
+): number | null {
+  if (!steps?.length) return null;
+  let total = 0;
+  let seen = false;
+  for (const step of steps) {
+    const value = reasoningTokensFromUsage(step.usage);
+    if (value == null) continue;
+    total += value;
+    seen = true;
+  }
+  return seen ? total : null;
+}
+
 export function createChatReplyTimer(now: () => number = Date.now) {
   const startedAt = now();
   let firstReasoningAt: number | null = null;
@@ -103,6 +119,7 @@ export function createChatReplyTimer(now: () => number = Date.now) {
       thinking: ChatThinking;
       effort: ChatReasoningEffort | null;
       usage?: UsageLike;
+      steps?: Array<{ usage?: UsageLike }>;
       at?: number;
     }): ChatReplyMetrics {
       const at = input.at ?? now();
@@ -110,7 +127,9 @@ export function createChatReplyTimer(now: () => number = Date.now) {
         modelId: input.modelId,
         thinking: input.thinking,
         effort: input.thinking === "enabled" ? input.effort : null,
-        reasoningTokens: reasoningTokensFromUsage(input.usage),
+        reasoningTokens:
+          reasoningTokensFromSteps(input.steps) ??
+          reasoningTokensFromUsage(input.usage),
         promptTokens: numberOrNull(input.usage?.inputTokens),
         completionTokens: numberOrNull(input.usage?.outputTokens),
         timeToFirstReasoningMs: delta(startedAt, firstReasoningAt),

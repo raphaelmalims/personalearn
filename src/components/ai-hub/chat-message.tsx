@@ -3,8 +3,10 @@
 import { isFileUIPart, type UIMessage } from "ai";
 import { FileText, ClipboardCheck, Paperclip, Pencil } from "lucide-react";
 import { MarkdownContent } from "@/components/markdown/markdown-content";
+import { formatAnsweredWith } from "@/lib/ai/chat-settings";
 import {
   getAssistantDisplayBlocks,
+  getMessageAnswerMeta,
   getMessageReasoning,
   getMessageReasoningMs,
   getMessageText,
@@ -37,6 +39,7 @@ export function ChatMessage({
   const rawText = getMessageText(message);
   const text = isUser ? rawText : stripDatabaseIdsFromTeacherText(rawText);
   const reasoning = isUser ? "" : getMessageReasoning(message);
+  const answer = isUser ? null : formatAnsweredWith(getMessageAnswerMeta(message));
   const drafts = getVisibleDrafts(message);
   const displayBlocks = isUser ? [] : getAssistantDisplayBlocks(message);
   const fileParts = message.parts.filter(isFileUIPart);
@@ -114,6 +117,8 @@ export function ChatMessage({
                     Boolean(text) || drafts.length > 0 || evalBlocks.length > 0
                   }
                   reasoningMs={getMessageReasoningMs(message)}
+                  answerLabel={answer?.label}
+                  answerTitle={answer?.title}
                 />
               ) : null}
               {displayBlocks.map((block, index) => {
@@ -185,6 +190,11 @@ export function ChatMessage({
                   </div>
                 );
               })}
+              {!reasoning && answer ? (
+                <p className="text-xs text-muted-foreground" title={answer.title}>
+                  {answer.label}
+                </p>
+              ) : null}
             </div>
           )}
         </div>
