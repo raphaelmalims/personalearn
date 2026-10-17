@@ -6,6 +6,7 @@ import { MarkdownContent } from "@/components/markdown/markdown-content";
 import {
   getAssistantDisplayBlocks,
   getMessageReasoning,
+  getMessageReasoningMs,
   getMessageText,
   getVisibleDrafts,
   stripDatabaseIdsFromTeacherText,
@@ -112,6 +113,7 @@ export function ChatMessage({
                   hasResponseContent={
                     Boolean(text) || drafts.length > 0 || evalBlocks.length > 0
                   }
+                  reasoningMs={getMessageReasoningMs(message)}
                 />
               ) : null}
               {displayBlocks.map((block, index) => {

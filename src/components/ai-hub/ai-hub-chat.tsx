@@ -62,6 +62,7 @@ import {
   getVisibleDrafts,
   getVisibleEvalSessions,
 } from "@/lib/ai-hub/message-content";
+import { shouldShowThinkingBubble } from "@/lib/ai-hub/thinking-indicator";
 import {
   conversationsQueryKey,
   useConversations,
@@ -825,16 +826,22 @@ export function AiHubChat() {
     (Boolean(draft.trim()) || pendingAttachments.length > 0) && !isBusy;
 
   const lastMessage = messages[messages.length - 1];
+  const streamingAssistant =
+    isGenerating && lastMessage?.role === "assistant" ? lastMessage : undefined;
+  const revealStreamingAnswer = Boolean(
+    streamingAssistant && !shouldShowThinkingBubble(true, streamingAssistant)
+  );
 
-  // While generating, hide the partial streaming assistant message so the
-  // response appears complete when done — not token-by-token.
+  // Keep the waveform pill until the first reasoning or answer token. After
+  // that, the assistant message (and its Thinking panel) is on screen.
   const visibleMessages =
-    isGenerating && lastMessage?.role === "assistant"
+    streamingAssistant && !revealStreamingAnswer
       ? messages.slice(0, -1)
       : messages;
-
-  // Show the thinking bubble for the entire duration of generation.
-  const showThinkingBubble = isGenerating;
+  const showThinkingBubble = shouldShowThinkingBubble(
+    isGenerating,
+    streamingAssistant
+  );
 
   if (!activeClass) {
     return (
@@ -958,6 +965,9 @@ export function AiHubChat() {
                         message={message}
                         canEdit={!isBusy && message.role === "user"}
                         onEdit={handleEditMessage}
+                        isStreaming={
+                          isGenerating && message.id === streamingAssistant?.id
+                        }
                       />
                     ))}
                     {showThinkingBubble ? <ThinkingBubble /> : null}
