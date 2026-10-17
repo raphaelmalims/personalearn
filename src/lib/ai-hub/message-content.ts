@@ -32,6 +32,15 @@ export function getMessageReasoning(message: Pick<UIMessage, "parts">): string {
     .join("");
 }
 
+export function getMessageReasoningMs(message: { metadata?: unknown }): number | null {
+  const metadata = message.metadata;
+  if (!metadata || typeof metadata !== "object") return null;
+  const value = (metadata as { reasoningMs?: unknown }).reasoningMs;
+  return typeof value === "number" && Number.isFinite(value) && value >= 0
+    ? value
+    : null;
+}
+
 export function getVisibleDrafts(
   message: Pick<UIMessage, "parts">
 ): VisibleDraft[] {
@@ -203,13 +212,22 @@ export function toUIMessageFromRow(row: {
   role: ConversationMessageRole;
   content: string;
   tool_calls?: unknown | null;
+  reasoning?: string | null;
+  reasoning_ms?: number | null;
 }): UIMessage {
   const role = row.role === "user" ? "user" : "assistant";
+  const metadata =
+    typeof row.reasoning_ms === "number" && row.reasoning_ms >= 0
+      ? { reasoningMs: row.reasoning_ms }
+      : undefined;
 
   const savedDrafts = extractSavedDrafts(row.tool_calls);
   const savedSessions = extractSavedEvalSessions(row.tool_calls);
   if (role === "assistant" && (savedDrafts.length > 0 || savedSessions.length > 0)) {
-    const parts = rebuiltPartsWithDrafts(row.content, savedDrafts);
+    const parts = withReasoningPart(
+      rebuiltPartsWithDrafts(row.content, savedDrafts),
+      row.reasoning
+    );
     for (const session of savedSessions) {
       parts.push(createEvalSessionPart(session));
     }
@@ -217,14 +235,25 @@ export function toUIMessageFromRow(row: {
       id: row.id,
       role,
       parts,
+      ...(metadata ? { metadata } : {}),
     };
   }
 
   return {
     id: row.id,
     role,
-    parts: [{ type: "text", text: row.content }],
+    parts: withReasoningPart([{ type: "text", text: row.content }], row.reasoning),
+    ...(metadata ? { metadata } : {}),
   };
+}
+
+function withReasoningPart(
+  parts: UIMessage["parts"],
+  reasoning: string | null | undefined
+): UIMessage["parts"] {
+  const text = reasoning?.trim();
+  if (!text) return parts;
+  return [{ type: "reasoning", text, state: "done" }, ...parts];
 }
 
 function extractSavedDrafts(toolCalls: unknown): VisibleDraft[] {

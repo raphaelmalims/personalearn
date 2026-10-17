@@ -4,6 +4,7 @@ import {
   getAssistantDisplayBlocks,
   getAssistantPersistContent,
   getMessageReasoning,
+  getMessageReasoningMs,
   getVisibleDrafts,
   getVisibleEvalSessions,
   stripDatabaseIdsFromTeacherText,
@@ -190,6 +191,41 @@ describe("getAssistantPersistContent", () => {
         "Saved Assignment. resourceId: 11111111-1111-4111-8111-111111111111"
       )
     ).toBe("Saved Assignment.");
+  });
+});
+
+describe("toUIMessageFromRow reasoning", () => {
+  it("restores reasoning text and duration for display and model replay", async () => {
+    const { convertToModelMessages } = await import("ai");
+    const uiMessage = toUIMessageFromRow({
+      id: "m-reason",
+      role: "assistant",
+      content: "Here is the plan.",
+      reasoning: "Check the scheme of work first.",
+      reasoning_ms: 2400,
+    });
+
+    expect(getMessageReasoning(uiMessage)).toBe("Check the scheme of work first.");
+    expect(getMessageReasoningMs(uiMessage)).toBe(2400);
+
+    const modelMessages = await convertToModelMessages([
+      userMessage("u1", "Plan the lesson"),
+      uiMessage,
+    ]);
+    const assistant = modelMessages.find((message) => message.role === "assistant");
+    expect(JSON.stringify(assistant)).toContain("Check the scheme of work first.");
+  });
+
+  it("omits the reasoning part when nothing was stored", () => {
+    const uiMessage = toUIMessageFromRow({
+      id: "m-plain",
+      role: "assistant",
+      content: "Hello teacher",
+      reasoning: null,
+      reasoning_ms: null,
+    });
+    expect(getMessageReasoning(uiMessage)).toBe("");
+    expect(getMessageReasoningMs(uiMessage)).toBeNull();
   });
 });
 

@@ -55,6 +55,7 @@ vi.mock("@/lib/ai-hub/generate-conversation-title", () => ({
 
 vi.mock("@/lib/ai/llm", () => ({
   getChatModel: vi.fn(() => ({ modelId: "mock" })),
+  getActiveChatModelId: vi.fn(() => "deepseek-flash"),
 }));
 
 vi.mock("@/lib/ai/env", async () => {
@@ -157,6 +158,59 @@ describe("POST /api/ai-hub/chat", () => {
         expect.objectContaining({ role: "user", content: "Hello" }),
       ])
     );
+    expect(mockStreamText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        providerOptions: {
+          deepseek: {
+            thinking: { type: "enabled" },
+            reasoningEffort: "low",
+          },
+        },
+      })
+    );
+  });
+
+  it("logs provider stream errors and still returns the generic message", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    mockRequireConversationAccess.mockResolvedValue({
+      id: conversationId,
+      class_id: classId,
+    });
+
+    await POST(
+      new Request("http://localhost/api/ai-hub/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          classId,
+          conversationId,
+          messages: [
+            {
+              id: "user-1",
+              role: "user",
+              parts: [{ type: "text", text: "Hello" }],
+            },
+          ],
+        }),
+      })
+    );
+
+    const streamOptions = mockToUIMessageStreamResponse.mock.calls[0]?.[0] as {
+      onError: (error: unknown) => string;
+    };
+    const teacherMessage = streamOptions.onError(
+      Object.assign(new Error("model not found"), {
+        statusCode: 400,
+        data: { error: { code: "model_not_found" } },
+      })
+    );
+
+    expect(teacherMessage).toBe(
+      "The assistant could not respond. Please try again."
+    );
+    expect(String(errorSpy.mock.calls[0]?.[0])).toContain("deepseek-flash");
+    expect(String(errorSpy.mock.calls[0]?.[0])).not.toContain("Hello");
+    errorSpy.mockRestore();
   });
 
   it("truncates the conversation when editing a prior message", async () => {

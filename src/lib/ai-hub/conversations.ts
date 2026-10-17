@@ -24,6 +24,8 @@ export type ConversationMessageRow = {
   role: "user" | "assistant" | "tool";
   content: string;
   tool_calls: unknown | null;
+  reasoning: string | null;
+  reasoning_ms: number | null;
   created_at: string;
 };
 
@@ -93,6 +95,8 @@ export async function getConversationWithMessages(
       role: row.role,
       content: row.content,
       tool_calls: row.tool_calls,
+      reasoning: row.reasoning,
+      reasoning_ms: row.reasoning_ms,
     })
   );
 
@@ -230,6 +234,8 @@ export async function appendConversationMessages(
     role: "user" | "assistant" | "tool";
     content: string;
     tool_calls?: unknown | null;
+    reasoning?: string | null;
+    reasoning_ms?: number | null;
   }>
 ): Promise<ConversationMessageRow[]> {
   if (messages.length === 0) {
@@ -242,6 +248,10 @@ export async function appendConversationMessages(
     role: message.role,
     content: message.content,
     tool_calls: message.tool_calls ?? null,
+    ...(message.reasoning !== undefined ? { reasoning: message.reasoning } : {}),
+    ...(message.reasoning_ms !== undefined
+      ? { reasoning_ms: message.reasoning_ms }
+      : {}),
   }));
 
   const { data, error } = await supabase

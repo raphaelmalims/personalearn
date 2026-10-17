@@ -16,9 +16,26 @@ import {
 import { generateConversationTitle } from "@/lib/ai-hub/conversation-title";
 import { generateAiConversationTitle } from "@/lib/ai-hub/generate-conversation-title";
 import { materializeAttachmentText } from "@/lib/ai-hub/chat-attachments-server";
-import { getAssistantPersistContent, getMessageText, getVisibleDrafts, getVisibleEvalSessions } from "@/lib/ai-hub/message-content";
-import { getChatModel } from "@/lib/ai/llm";
-import { assertChatConfigured } from "@/lib/ai/env";
+import {
+  getAssistantPersistContent,
+  getMessageReasoning,
+  getMessageText,
+  getVisibleDrafts,
+  getVisibleEvalSessions,
+} from "@/lib/ai-hub/message-content";
+import { getActiveChatModelId, getChatModel } from "@/lib/ai/llm";
+import {
+  assertChatConfigured,
+  getChatProvider,
+  getChatReasoningEffort,
+  getChatThinking,
+  getDeepSeekProviderOptions,
+} from "@/lib/ai/env";
+import {
+  createChatReplyTimer,
+  logChatReply,
+  logChatStreamError,
+} from "@/lib/ai/chat-telemetry";
 import { requireTeacherClass } from "@/lib/auth/require-teacher-class";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -119,6 +136,12 @@ export async function POST(request: Request) {
       conversationId: activeConversationId,
     });
 
+    const provider = getChatProvider();
+    const thinking = provider === "deepseek" ? getChatThinking() : "disabled";
+    const effort = getChatReasoningEffort();
+    const modelId = getActiveChatModelId(provider);
+    const timer = createChatReplyTimer();
+
     const result = streamText({
       model: getChatModel(),
       system: systemPrompt,
@@ -126,11 +149,35 @@ export async function POST(request: Request) {
       tools,
       stopWhen: stepCountIs(5),
       experimental_transform: smoothStream({ delayInMs: null, chunking: "word" }),
+      ...(provider === "deepseek"
+        ? { providerOptions: getDeepSeekProviderOptions() }
+        : {}),
+      onChunk: ({ chunk }) => {
+        timer.noteChunk(chunk);
+      },
+      onFinish: ({ usage }) => {
+        logChatReply(
+          timer.metrics({
+            modelId,
+            thinking,
+            effort,
+            usage,
+          })
+        );
+      },
     });
 
     return result.toUIMessageStreamResponse({
       headers: {
         "X-Conversation-Id": activeConversationId,
+      },
+      ...(provider === "deepseek"
+        ? { sendReasoning: thinking === "enabled" }
+        : {}),
+      messageMetadata: ({ part }) => {
+        if (part.type !== "finish" || thinking !== "enabled") return undefined;
+        const reasoningMs = timer.reasoningDurationMs();
+        return reasoningMs == null ? undefined : { reasoningMs };
       },
       onEnd: async ({ responseMessage, isAborted }) => {
         if (isAborted) {
@@ -140,7 +187,14 @@ export async function POST(request: Request) {
         const persistContent = getAssistantPersistContent(responseMessage);
         const drafts = getVisibleDrafts(responseMessage);
         const evalSessions = getVisibleEvalSessions(responseMessage);
-        if (!persistContent && drafts.length === 0 && evalSessions.length === 0) {
+        const reasoning =
+          thinking === "enabled" ? getMessageReasoning(responseMessage).trim() : "";
+        if (
+          !persistContent &&
+          drafts.length === 0 &&
+          evalSessions.length === 0 &&
+          !reasoning
+        ) {
           return;
         }
 
@@ -164,6 +218,8 @@ export async function POST(request: Request) {
                     ...(evalSessions.length > 0 ? { evalSessions } : {}),
                   }
                 : null,
+            reasoning: reasoning || null,
+            reasoning_ms: reasoning ? timer.reasoningDurationMs() : null,
           },
         ]);
 
@@ -181,6 +237,7 @@ export async function POST(request: Request) {
         }
       },
       onError: (error) => {
+        logChatStreamError(error, modelId);
         const message = error instanceof Error ? error.message : "";
         if (
           /Missing (DEEPSEEK|XAI)_API_KEY/i.test(message) ||
