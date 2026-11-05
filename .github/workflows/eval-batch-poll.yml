@@ -9,6 +9,13 @@
 #   CRON_SECRET — same value as Vercel env CRON_SECRET
 #
 # Schedules only run from the default branch (`main`) after merge; use workflow_dispatch to test earlier.
+#
+# Production SUPABASE_SERVICE_ROLE_KEY is a single Vercel value shared with Preview.
+# The JWT was issued for personalearn-dev, so personalearn-prod answers
+# UNAUTHORIZED_INVALID_API_KEY and the query never reaches Postgres.
+# The idle poll therefore uses the prod publishable key (already in the
+# client bundle) against eval_batch_poll_probe. When jobs are pending, the
+# app route still has to advance them and a rejected service-role key fails the job.
 
 name: Eval batch poll
 
@@ -26,22 +33,76 @@ jobs:
         env:
           EVAL_APP_URL: ${{ secrets.EVAL_APP_URL_PROD || secrets.EVAL_APP_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          SUPABASE_URL: https://ecwivelanrcjdgkyvbos.supabase.co
         run: |
           set -euo pipefail
-          if [ -z "${EVAL_APP_URL:-}" ] || [ -z "${CRON_SECRET:-}" ]; then
-            echo "Missing secrets: set EVAL_APP_URL_PROD (or EVAL_APP_URL) and CRON_SECRET on this repo."
-            exit 1
-          fi
-          BASE="${EVAL_APP_URL%/}"
-          URL="${BASE}/api/cron/eval-batch-poll"
-          echo "GET ${URL}"
-          HTTP_CODE=$(curl -sS -o /tmp/poll-body.txt -w "%{http_code}" \
-            -H "Authorization: Bearer ${CRON_SECRET}" \
-            -H "Accept: application/json" \
-            "$URL")
-          echo "status=${HTTP_CODE}"
-          head -c 500 /tmp/poll-body.txt || true
-          echo
-          if [ "$HTTP_CODE" != "200" ]; then
-            exit 1
-          fi
+          python3 - << 'PY'
+          import json, os, re, urllib.error, urllib.request
+
+          app = os.environ["EVAL_APP_URL"].rstrip("/")
+          supabase = os.environ["SUPABASE_URL"].rstrip("/")
+          html = urllib.request.urlopen(app, timeout=30).read().decode("utf-8", "replace")
+          srcs = re.findall(r'src="(/_next/static/[^"]+\.js)"', html)
+          key = None
+          for src in srcs:
+              data = urllib.request.urlopen(app + src, timeout=30).read().decode("utf-8", "replace")
+              match = re.search(r"sb_publishable_[A-Za-z0-9_\-]+", data)
+              if match:
+                  key = match.group(0)
+                  break
+          if not key:
+              raise SystemExit("Prod client bundle has no publishable key; keep-alive cannot authenticate.")
+
+          probe_url = f"{supabase}/rest/v1/rpc/eval_batch_poll_probe"
+          print(f"keep-alive query: POST {probe_url}")
+          print("keep-alive sql: select 1; select count(*) from gemini_batch_jobs where state in (submitted, running)")
+          request = urllib.request.Request(
+              probe_url,
+              data=b"{}",
+              method="POST",
+              headers={
+                  "apikey": key,
+                  "Authorization": f"Bearer {key}",
+                  "Content-Type": "application/json",
+                  "Accept": "application/json",
+              },
+          )
+          try:
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  status = response.status
+                  body = response.read().decode()
+          except urllib.error.HTTPError as error:
+              status = error.code
+              body = error.read().decode()
+          print(f"keep-alive status={status}")
+          print(body[:500])
+          if status != 200:
+              raise SystemExit(1)
+          probe = json.loads(body)
+          pending = int(probe.get("pending", 0))
+          print(f"pending={pending}")
+          if pending == 0:
+              print("No submitted or running batch jobs. Postgres keep-alive succeeded.")
+              raise SystemExit(0)
+
+          cron = os.environ.get("CRON_SECRET", "")
+          if not cron:
+              raise SystemExit("Pending batch jobs exist and CRON_SECRET is missing.")
+          poll_url = f"{app}/api/cron/eval-batch-poll"
+          print(f"GET {poll_url}")
+          poll = urllib.request.Request(
+              poll_url,
+              headers={"Authorization": f"Bearer {cron}", "Accept": "application/json"},
+          )
+          try:
+              with urllib.request.urlopen(poll, timeout=60) as response:
+                  poll_status = response.status
+                  poll_body = response.read().decode()
+          except urllib.error.HTTPError as error:
+              poll_status = error.code
+              poll_body = error.read().decode()
+          print(f"status={poll_status}")
+          print(poll_body[:500])
+          if poll_status != 200:
+              raise SystemExit(1)
+          PY
