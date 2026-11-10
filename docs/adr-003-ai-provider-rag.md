@@ -53,6 +53,6 @@ PersonaLearn needs embeddings for RAG, an LLM for co-pilot answers, and a vision
 
 **Status:** Complete (deferred) — PSL-45 may open.
 
-## Mirror in Confluence
+## Mirror in Notion
 
-Duplicate this page under PLEARN → Architecture when publishing sprint docs.
+Duplicate this page in Notion when publishing sprint docs. Specs live in Notion.
