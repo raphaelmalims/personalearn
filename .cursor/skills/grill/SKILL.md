@@ -22,7 +22,7 @@ Look up facts yourself in the repo and docs. Do not dispatch a sub-agent. Do not
 
 When the frontier is empty, or after two rounds, restate the decisions in a few sentences and wait for confirmation.
 
-If the confirmed idea should become work, draft one GitHub Issue with checkbox acceptance criteria, using `docs/sdlc-writing-standard.md`. Intake stays the existing path: GitHub Issue, then `triage-issue` to link Jira `PSL-N`. Do not open another tracker or write ticket files.
+If the confirmed idea should become work, draft one GitHub Issue with checkbox acceptance criteria, using `docs/sdlc-writing-standard.md`. Intake stays the existing path: GitHub Issue, then `triage-issue` to link Linear `PSL-N`. Do not open another tracker or write ticket files.
 
 If the idea is bigger than one reviewable change, add the slice list in that same draft:
 

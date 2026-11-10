@@ -6,4 +6,6 @@
 
 <!-- Only steps you ran, with the result. No boxes for steps that do not apply. -->
 
-Closes #__ · PSL-__
+Closes #__ · Fixes PSL-__
+
+<!-- Linear link. Use `Links: none yet` when there is no Linear issue. Do not invent a key. -->
