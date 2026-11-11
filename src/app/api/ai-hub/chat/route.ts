@@ -50,6 +50,8 @@ import {
 } from "ai";
 import { z } from "zod";
 import { mapApiError } from "@/lib/ai-hub/api-errors";
+import { isExplainerRequest } from "@/lib/explainers/intent";
+import { replyWithExplainer } from "@/lib/explainers/chat-reply";
 
 const bodySchema = z.object({
   classId: z.string().uuid(),
@@ -145,6 +147,16 @@ export async function POST(request: Request) {
           content: latestUserText,
         },
       ]);
+    }
+
+    if (latestUserText && isExplainerRequest(latestUserText)) {
+      return replyWithExplainer({
+        supabase,
+        classId,
+        conversationId: activeConversationId,
+        message: latestUserText,
+        grade: classContext.grade_level,
+      });
     }
 
     const tools = createAgentTools({

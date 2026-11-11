@@ -74,6 +74,12 @@ vi.mock("@/lib/ai/env", async () => {
   };
 });
 
+const mockReplyWithExplainer = vi.fn();
+
+vi.mock("@/lib/explainers/chat-reply", () => ({
+  replyWithExplainer: (...args: unknown[]) => mockReplyWithExplainer(...args),
+}));
+
 const mockCreateAgentTools = vi.fn(() => ({
   search_class_resources: { description: "search" },
   generate_learning_resource: { description: "generate" },
@@ -461,6 +467,49 @@ describe("POST /api/ai-hub/chat", () => {
       conversationId,
       expect.objectContaining({
         chat_reasoning_effort: "high",
+      })
+    );
+  });
+
+  it("returns the explainer in chat and does not call the hub model", async () => {
+    mockRequireConversationAccess.mockResolvedValue({
+      id: conversationId,
+      class_id: classId,
+    });
+    mockReplyWithExplainer.mockResolvedValue(
+      new Response("explainer", {
+        status: 200,
+        headers: { "X-Conversation-Id": conversationId },
+      })
+    );
+
+    const response = await POST(
+      new Request("http://localhost/api/ai-hub/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          classId,
+          conversationId,
+          messages: [
+            {
+              id: "user-1",
+              role: "user",
+              parts: [{ type: "text", text: "Show me the water cycle" }],
+            },
+          ],
+        }),
+      })
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("X-Conversation-Id")).toBe(conversationId);
+    expect(mockStreamText).not.toHaveBeenCalled();
+    expect(mockReplyWithExplainer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        classId,
+        conversationId,
+        message: "Show me the water cycle",
+        grade: 7,
       })
     );
   });

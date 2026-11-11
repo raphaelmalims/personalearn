@@ -5,6 +5,10 @@ import {
   isEvalSessionArtifact,
   type EvalSessionArtifact,
 } from "@/lib/ai-hub/eval-session";
+import {
+  isExplainerArtifact,
+  type ExplainerArtifact,
+} from "@/lib/explainers/artifact";
 
 export type ConversationMessageRole = "user" | "assistant" | "tool";
 
@@ -81,7 +85,8 @@ export function getVisibleDrafts(
 export type AssistantDisplayBlock =
   | { type: "text"; text: string }
   | { type: "draft"; draft: VisibleDraft }
-  | { type: "eval_session"; session: EvalSessionArtifact };
+  | { type: "eval_session"; session: EvalSessionArtifact }
+  | { type: "explainer"; artifact: ExplainerArtifact };
 
 export function getAssistantDisplayBlocks(
   message: Pick<UIMessage, "parts">
@@ -106,6 +111,12 @@ export function getAssistantDisplayBlocks(
     const session = evalSessionFromPart(part);
     if (session) {
       blocks.push({ type: "eval_session", session });
+      continue;
+    }
+
+    const artifact = explainerFromPart(part);
+    if (artifact) {
+      blocks.push({ type: "explainer", artifact });
     }
   }
 
@@ -157,6 +168,9 @@ export function getAssistantPersistContent(
       if (block.type === "text") return block.text;
       if (block.type === "draft") {
         return `## ${block.draft.title}\n\n${block.draft.content}`;
+      }
+      if (block.type === "explainer") {
+        return `Explainer · ${block.artifact.title}`;
       }
       return evalSessionPersistLine(block.session);
     })
@@ -252,13 +266,22 @@ export function toUIMessageFromRow(row: {
 
   const savedDrafts = extractSavedDrafts(row.tool_calls);
   const savedSessions = extractSavedEvalSessions(row.tool_calls);
-  if (role === "assistant" && (savedDrafts.length > 0 || savedSessions.length > 0)) {
+  const savedExplainer = extractSavedExplainer(row.tool_calls);
+  if (
+    role === "assistant" &&
+    (savedDrafts.length > 0 || savedSessions.length > 0 || savedExplainer)
+  ) {
     const parts = withReasoningPart(
-      rebuiltPartsWithDrafts(row.content, savedDrafts),
+      savedDrafts.length > 0
+        ? rebuiltPartsWithDrafts(row.content, savedDrafts)
+        : [{ type: "text" as const, text: row.content }],
       row.reasoning
     );
     for (const session of savedSessions) {
       parts.push(createEvalSessionPart(session));
+    }
+    if (savedExplainer) {
+      parts.push(createExplainerPart(savedExplainer));
     }
     return {
       id: row.id,
@@ -361,6 +384,36 @@ function rebuiltPartsWithDrafts(
   }
 
   return parts;
+}
+
+function explainerFromPart(part: UIMessage["parts"][number]): ExplainerArtifact | null {
+  const record = part as Record<string, unknown>;
+  if (record.type === "data-explainer" && isExplainerArtifact(record.data)) {
+    return record.data;
+  }
+  return null;
+}
+
+export function getVisibleExplainers(
+  message: Pick<UIMessage, "parts">
+): ExplainerArtifact[] {
+  return getAssistantDisplayBlocks(message)
+    .filter((block) => block.type === "explainer")
+    .map((block) => block.artifact);
+}
+
+function extractSavedExplainer(toolCalls: unknown): ExplainerArtifact | null {
+  if (!toolCalls || typeof toolCalls !== "object") return null;
+  const record = toolCalls as Record<string, unknown>;
+  return isExplainerArtifact(record.explainer) ? record.explainer : null;
+}
+
+function createExplainerPart(artifact: ExplainerArtifact): UIMessage["parts"][number] {
+  return {
+    type: "data-explainer",
+    id: "explainer",
+    data: artifact,
+  } as UIMessage["parts"][number];
 }
 
 function extractSavedEvalSessions(toolCalls: unknown): EvalSessionArtifact[] {
