@@ -24,6 +24,8 @@ import {
 } from "@/lib/evaluation/create-assessment-from-resource";
 import type { GradableResourceType } from "@/lib/evaluation/gradable";
 import { STUDENT_INTERESTS_MAX_LENGTH, normalizeStudentInterests } from "@/lib/students/interests";
+import { VISUAL_BLOCKS } from "@/lib/explainers/blocks";
+import { executeVisualise } from "@/lib/explainers/visual-tool";
 
 export const RESOURCE_TYPES = [
   "scheme_of_work",
@@ -501,7 +503,7 @@ Style: clear, age-appropriate diagram or illustration suitable for printing or p
     }
     if (/quota|rate.?limit|RESOURCE_EXHAUSTED|billing/i.test(message)) {
       return userSafeError(
-        "Google image quota exceeded for this API key. Wait for the free-tier reset, or enable billing in Google AI Studio, then try again."
+        "The image tool is unavailable because the Google image quota is used up. Say that in one line. Do not offer to retry it, and do not say video is impossible."
       );
     }
     return userSafeError(
@@ -1056,9 +1058,44 @@ export function createAgentTools(deps: AgentToolDeps) {
       }),
       execute: async (input) => executeGenerateLearningResource(deps, input),
     }),
+    visualise: tool({
+      description:
+        "Show a topic with a reusable block: process-flow, labelled-diagram, number-line, comparison, or timeline. Call this when the teacher asks to explain, show, diagram, or visualise a topic. You pick the block. The tool fills a schema-checked spec from CBC materials and the chat renders it. Use number-line for integers. Use process-flow for the water cycle. Do not call generate_teaching_image when a block fits. If fit is false, say the returned line once and explain in text. Do not promise an image or say video is impossible.",
+      inputSchema: z.object({
+        block: z.enum(VISUAL_BLOCKS).describe("The block that fits the topic"),
+        topic: z.string().min(1).max(80).describe("Topic title, such as Introduction to Integers"),
+        grade: z
+          .number()
+          .int()
+          .min(1)
+          .max(9)
+          .optional()
+          .describe("Grade when the teacher names one. Otherwise omit and the class grade is used."),
+        language: z
+          .string()
+          .min(2)
+          .max(16)
+          .optional()
+          .describe("en or sw. Omit for English."),
+        note: z
+          .string()
+          .max(160)
+          .optional()
+          .describe("Optional emphasis, such as a local example. Omit when the teacher did not ask for one."),
+      }),
+      execute: async (input) =>
+        executeVisualise(
+          {
+            supabase: deps.supabase,
+            classId: deps.classId,
+            grade: deps.classContext.grade_level,
+          },
+          input
+        ),
+    }),
     generate_teaching_image: tool({
       description:
-        "Generate a non-gradable teaching-aid image draft (diagram/illustration). Persists bytes server-side and returns draftId. Never saves automatically — call save_resource with draftId after teacher confirmation. Not attached to assessments.",
+        "Generate a teaching-aid picture only when no visualise block fits. Do not use this for a process, labelled parts, a number line, a comparison, or a timeline. If the result says the image tool is unavailable, say that in one line and do not offer to retry.",
       inputSchema: z.object({
         title: z.string().min(1).describe("Title for the teaching aid"),
         prompt: z

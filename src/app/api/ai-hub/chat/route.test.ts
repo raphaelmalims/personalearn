@@ -471,17 +471,11 @@ describe("POST /api/ai-hub/chat", () => {
     );
   });
 
-  it("returns the explainer in chat and does not call the hub model", async () => {
+  it("lets the hub model see a show-me request instead of a water-cycle shortcut", async () => {
     mockRequireConversationAccess.mockResolvedValue({
       id: conversationId,
       class_id: classId,
     });
-    mockReplyWithExplainer.mockResolvedValue(
-      new Response("explainer", {
-        status: 200,
-        headers: { "X-Conversation-Id": conversationId },
-      })
-    );
 
     const response = await POST(
       new Request("http://localhost/api/ai-hub/chat", {
@@ -502,15 +496,8 @@ describe("POST /api/ai-hub/chat", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(response.headers.get("X-Conversation-Id")).toBe(conversationId);
-    expect(mockStreamText).not.toHaveBeenCalled();
-    expect(mockReplyWithExplainer).toHaveBeenCalledWith(
-      expect.objectContaining({
-        classId,
-        conversationId,
-        message: "Show me the water cycle",
-        grade: 7,
-      })
-    );
+    expect(mockReplyWithExplainer).not.toHaveBeenCalled();
+    expect(mockStreamText).toHaveBeenCalled();
+    expect(mockCreateAgentTools).toHaveBeenCalled();
   });
 });

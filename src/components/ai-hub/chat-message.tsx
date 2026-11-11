@@ -15,6 +15,7 @@ import {
 } from "@/lib/ai-hub/message-content";
 import { ThoughtProcess } from "@/components/ai-hub/thought-process";
 import { ExplainerStage } from "@/components/explainers/explainer-stage";
+import { VisualStage } from "@/components/explainers/visual-stage";
 import {
   formatResourceType,
   isResourceType,
@@ -46,6 +47,9 @@ export function ChatMessage({
   const fileParts = message.parts.filter(isFileUIPart);
   const evalBlocks = displayBlocks.filter((block) => block.type === "eval_session");
   const explainerBlocks = displayBlocks.filter((block) => block.type === "explainer");
+  const visualBlocks = displayBlocks.filter(
+    (block) => block.type === "visual" || block.type === "visual-fallback"
+  );
   const classId = useActiveClassStore((s) => s.activeClass?.id);
   const openBatch = useHubEvalSessionStore((s) => s.openBatch);
 
@@ -55,6 +59,7 @@ export function ChatMessage({
     drafts.length === 0 &&
     evalBlocks.length === 0 &&
     explainerBlocks.length === 0 &&
+    visualBlocks.length === 0 &&
     !reasoning
   ) {
     return null;
@@ -120,7 +125,8 @@ export function ChatMessage({
                     Boolean(text) ||
                     drafts.length > 0 ||
                     evalBlocks.length > 0 ||
-                    explainerBlocks.length > 0
+                    explainerBlocks.length > 0 ||
+                    visualBlocks.length > 0
                   }
                   reasoningMs={getMessageReasoningMs(message)}
                   answerLabel={answer?.label}
@@ -149,6 +155,25 @@ export function ChatMessage({
                       playKey={`${message.id}-${index}`}
                       autoPlay={isStreaming}
                     />
+                  );
+                }
+
+                if (block.type === "visual") {
+                  return (
+                    <VisualStage
+                      key={`visual-${index}`}
+                      artifact={block.artifact}
+                      playKey={`${message.id}-${index}`}
+                      autoPlay={isStreaming}
+                    />
+                  );
+                }
+
+                if (block.type === "visual-fallback") {
+                  return (
+                    <p key={`visual-fallback-${index}`} className="text-sm text-muted-foreground">
+                      {block.fallback.line}
+                    </p>
                   );
                 }
 
