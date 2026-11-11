@@ -33,6 +33,24 @@ const artifact: VisualArtifact = {
   },
 };
 
+const waterDiagram: VisualArtifact = {
+  ...artifact,
+  block: "labelled-diagram",
+  topic: "water cycle",
+  grade: 4,
+  spec: {
+    block: "labelled-diagram",
+    title: "The water cycle",
+    parts: [
+      { id: "evaporation", label: "Evaporation", explanation: "Water rises.", prompt: "Tap the rising vapour." },
+      { id: "condensation", label: "Condensation", explanation: "Clouds form.", prompt: "Tap the cloud." },
+      { id: "precipitation", label: "Precipitation", explanation: "Rain falls.", prompt: "Tap the rain." },
+      { id: "collection", label: "Collection", explanation: "Water gathers.", prompt: "Tap the lake." },
+    ],
+    quiz: { prompt: "Where does rain go?", answer: "Collection" },
+  },
+};
+
 describe("visual stage", () => {
   it("shows a number-line point and the quiz answer", async () => {
     const user = userEvent.setup();
@@ -42,5 +60,11 @@ describe("visual stage", () => {
     await user.click(screen.getByRole("button", { name: "Show answer" }));
     expect(screen.getAllByRole("button", { name: "-3" })).toHaveLength(2);
     expect(screen.getByText("Which point is less than zero?")).toBeInTheDocument();
+  });
+
+  it("uses the labelled-diagram studio for the water cycle", () => {
+    render(<VisualStage artifact={waterDiagram} playKey="water" />);
+    expect(screen.getByRole("button", { name: "Find it" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Name it" })).toBeInTheDocument();
   });
 });

@@ -1,8 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { DiagramStudio } from "@/components/diagrams/diagram-studio";
 import { ExplainerStage } from "@/components/explainers/explainer-stage";
 import { buttonVariants } from "@/components/ui/button-variants";
+import {
+  DIAGRAM_PART_IDS,
+  type DiagramContent,
+  type DiagramPartId,
+} from "@/lib/diagrams/content";
+import type { DiagramAnswer } from "@/lib/diagrams/tally";
 import {
   visualCaptions,
   type VisualArtifact,
@@ -29,6 +36,7 @@ export function VisualStage({
   autoPlay?: boolean;
 }) {
   const spec = artifact.spec;
+  const waterDiagram = spec.block === "labelled-diagram" && isWaterCycleDiagram(spec);
   return (
     <div className="flex flex-col gap-3">
       {spec.block === "process-flow" ? (
@@ -38,12 +46,51 @@ export function VisualStage({
           playKey={playKey}
           autoPlay={autoPlay}
         />
+      ) : waterDiagram ? (
+        <DiagramStudio
+          content={waterDiagram}
+          onAnswer={(answer) => {
+            void recordDiagramAnswer(artifact, answer);
+          }}
+        />
       ) : (
         <BlockFrame spec={spec} language={artifact.language} />
       )}
-      <QuizHook quiz={spec.quiz} />
+      {waterDiagram ? null : <QuizHook quiz={spec.quiz} />}
     </div>
   );
+}
+
+function isWaterCycleDiagram(
+  spec: Extract<VisualSpec, { block: "labelled-diagram" }>
+): DiagramContent | null {
+  if (spec.parts.length !== DIAGRAM_PART_IDS.length) return null;
+  const parts = DIAGRAM_PART_IDS.map((id) => spec.parts.find((part) => part.id === id));
+  if (parts.some((part) => !part)) return null;
+  return {
+    title: spec.title,
+    parts: parts.map((part) => ({
+      id: part!.id as DiagramPartId,
+      label: part!.label,
+      explanation: part!.explanation,
+      prompt: part!.prompt,
+    })),
+  };
+}
+
+function recordDiagramAnswer(artifact: VisualArtifact, answer: DiagramAnswer) {
+  return fetch("/api/diagrams/answers", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      topic: artifact.topic,
+      grade: artifact.grade,
+      language: artifact.language,
+      partId: answer.partId,
+      mode: answer.mode,
+      correct: answer.correct,
+    }),
+  });
 }
 
 function BlockFrame({ spec, language }: { spec: Exclude<VisualSpec, { block: "process-flow" }>; language: string }) {
