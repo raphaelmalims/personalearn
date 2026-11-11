@@ -24,6 +24,18 @@ type MatchRow = {
 const EMPTY_ANSWER =
   "No class resources are indexed yet. Upload materials on the class page, then ask again.";
 
+/** Same context block the Hub sends to the model: numbered passages, title then text. */
+export function formatRagContext(
+  passages: { title: string; content: string }[]
+): string {
+  return passages
+    .map(
+      (passage, index) =>
+        `[${index + 1}] (${passage.title})\n${passage.content}`
+    )
+    .join("\n\n");
+}
+
 export async function queryClassResources(
   supabase: SupabaseClient,
   classId: string,
@@ -85,12 +97,12 @@ export async function queryClassResources(
     (resources ?? []).map((resource) => [resource.id, resource.title as string])
   );
 
-  const context = rows
-    .map((row, index) => {
-      const title = titleById.get(row.resource_id) ?? "Resource";
-      return `[${index + 1}] (${title})\n${row.content}`;
-    })
-    .join("\n\n");
+  const context = formatRagContext(
+    rows.map((row) => ({
+      title: titleById.get(row.resource_id) ?? "Resource",
+      content: row.content,
+    }))
+  );
 
   const { text } = await generateText({
     model: getChatModel(),
