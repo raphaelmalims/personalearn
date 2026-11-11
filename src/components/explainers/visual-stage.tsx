@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { DiagramStudio } from "@/components/diagrams/diagram-studio";
 import { ExplainerStage } from "@/components/explainers/explainer-stage";
 import { buttonVariants } from "@/components/ui/button-variants";
+import type { DiagramAnswer, PartTally } from "@/lib/diagrams/tally";
+import { toWaterCycleDiagram } from "@/lib/diagrams/water-cycle-parts";
 import {
   visualCaptions,
   type VisualArtifact,
@@ -29,6 +32,23 @@ export function VisualStage({
   autoPlay?: boolean;
 }) {
   const spec = artifact.spec;
+  const waterDiagram = toWaterCycleDiagram(artifact.topic, spec);
+  const [tally, setTally] = useState<PartTally[] | null>(null);
+
+  const tallyKey = waterDiagram
+    ? `${artifact.topic}|${artifact.grade}|${artifact.language}`
+    : "";
+  useEffect(() => {
+    if (!tallyKey) return;
+    let cancelled = false;
+    void loadDiagramTally(artifact).then((rows) => {
+      if (!cancelled && rows) setTally(rows);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [tallyKey, artifact]);
+
   return (
     <div className="flex flex-col gap-3">
       {spec.block === "process-flow" ? (
@@ -38,12 +58,68 @@ export function VisualStage({
           playKey={playKey}
           autoPlay={autoPlay}
         />
+      ) : waterDiagram ? (
+        <DiagramStudio
+          content={waterDiagram}
+          onAnswer={(answer) => {
+            void recordDiagramAnswer(artifact, answer).then((rows) => {
+              if (rows) setTally(rows);
+            });
+          }}
+        />
       ) : (
         <BlockFrame spec={spec} language={artifact.language} />
       )}
-      <QuizHook quiz={spec.quiz} />
+      {tally ? <PartTallyList tally={tally} /> : null}
+      {waterDiagram ? null : <QuizHook quiz={spec.quiz} />}
     </div>
   );
+}
+
+function PartTallyList({ tally }: { tally: PartTally[] }) {
+  return (
+    <section className="rounded-xl border border-border bg-surface-1 px-4 py-3">
+      <h2 className="text-sm font-medium text-foreground">Parts learners missed</h2>
+      <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+        {tally.map((row) => (
+          <li key={row.partId}>
+            {row.partId}: {row.incorrect} wrong, {row.correct} right
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+async function loadDiagramTally(artifact: VisualArtifact) {
+  const params = new URLSearchParams({
+    topic: artifact.topic,
+    grade: String(artifact.grade),
+    language: artifact.language,
+  });
+  const response = await fetch(`/api/diagrams/answers?${params}`);
+  if (!response.ok) return null;
+  const body = (await response.json()) as { tally?: PartTally[] };
+  return body.tally ?? null;
+}
+
+function recordDiagramAnswer(artifact: VisualArtifact, answer: DiagramAnswer) {
+  return fetch("/api/diagrams/answers", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      topic: artifact.topic,
+      grade: artifact.grade,
+      language: artifact.language,
+      partId: answer.partId,
+      mode: answer.mode,
+      correct: answer.correct,
+    }),
+  }).then(async (response) => {
+    if (!response.ok) return null;
+    const body = (await response.json()) as { tally?: PartTally[] };
+    return body.tally ?? null;
+  });
 }
 
 function BlockFrame({ spec, language }: { spec: Exclude<VisualSpec, { block: "process-flow" }>; language: string }) {

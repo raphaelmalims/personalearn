@@ -1060,7 +1060,7 @@ export function createAgentTools(deps: AgentToolDeps) {
     }),
     visualise: tool({
       description:
-        "Show a topic with a reusable block: process-flow, labelled-diagram, number-line, comparison, or timeline. Call this when the teacher asks to explain, show, diagram, or visualise a topic. You pick the block. The tool fills a schema-checked spec from CBC materials and the chat renders it. Use number-line for integers. Use process-flow for the water cycle. Do not call generate_teaching_image when a block fits. If fit is false, say the returned line once and explain in text. Do not promise an image or say video is impossible.",
+        "Show a topic with a reusable block: process-flow, labelled-diagram, number-line, comparison, or timeline. Call this when the teacher asks to explain, show, diagram, or visualise a topic. You pick the block. The tool fills a schema-checked spec from CBC materials and the chat renders it. Use number-line for integers. When the teacher asks for a labelled, tappable, or interactive diagram, use labelled-diagram, including the water cycle. Otherwise use process-flow for the water cycle. Do not call generate_teaching_image when a block fits. If fit is false, say the returned line once and explain in text. Do not promise an image or say video is impossible.",
       inputSchema: z.object({
         block: z.enum(VISUAL_BLOCKS).describe("The block that fits the topic"),
         topic: z.string().min(1).max(80).describe("Topic title, such as Introduction to Integers"),
