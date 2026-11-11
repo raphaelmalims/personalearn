@@ -69,16 +69,19 @@ export async function executeVisualise(
       { cache: supabaseVisualCache(deps.supabase) }
     );
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Visual failed";
+    const invalid = /not JSON|did not match the block/i.test(message);
     console.info(
       JSON.stringify({
         event: "visual_request",
-        fit: false,
+        fit: invalid ? false : "error",
         block: input.block,
         topic: canonicalTopic(topic),
-        message: error instanceof Error ? error.message : "Visual failed",
+        message,
       })
     );
-    return { fit: false as const, line: NO_BLOCK_LINE };
+    if (invalid) return { fit: false as const, line: NO_BLOCK_LINE };
+    throw error;
   }
 }
 

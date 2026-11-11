@@ -23,6 +23,22 @@ export function memoryVisualCache(): VisualCacheStore {
   };
 }
 
+function logCacheWrite(key: string, message: string) {
+  console.info(JSON.stringify({ event: "visual_cache_write", key, message }));
+}
+
+export async function writeVisualCache(
+  cache: VisualCacheStore,
+  key: string,
+  entry: VisualCacheEntry
+) {
+  try {
+    await cache.set(key, entry);
+  } catch (error) {
+    logCacheWrite(key, error instanceof Error ? error.message : "Visual cache write failed.");
+  }
+}
+
 type CacheRow = {
   script: unknown;
   model_id: string;
@@ -46,12 +62,16 @@ export function supabaseVisualCache(supabase: SupabaseClient): VisualCacheStore 
       }
     },
     async set(key, entry) {
-      const { error } = await supabase.from("explainer_cache").upsert({
-        cache_key: key,
-        script: entry.spec,
-        model_id: entry.modelId,
-      });
-      if (error) throw new Error("Visual cache write failed.");
+      try {
+        const { error } = await supabase.from("explainer_cache").upsert({
+          cache_key: key,
+          script: entry.spec,
+          model_id: entry.modelId,
+        });
+        if (error) logCacheWrite(key, error.message);
+      } catch (error) {
+        logCacheWrite(key, error instanceof Error ? error.message : "Visual cache write failed.");
+      }
     },
   };
 }

@@ -10,7 +10,7 @@ import {
   type VisualSpec,
 } from "@/lib/explainers/blocks";
 import { canonicalTopic } from "@/lib/explainers/topic-context";
-import type { VisualCacheStore } from "@/lib/explainers/visual-cache";
+import { writeVisualCache, type VisualCacheStore } from "@/lib/explainers/visual-cache";
 import { personalCacheKey } from "@/lib/explainers/request";
 import {
   deepseekFlashCostUsd,
@@ -197,7 +197,7 @@ export async function requestVisual(
     });
     const spec = parseVisualSpec(completion.text, input.block);
     base = { spec, modelId: completion.modelId };
-    await cache.set(key, base);
+    await writeVisualCache(cache, key, base);
     baseMetrics = metricsFromCompletion(completion, at, roundMs(now() - started));
     baseStatus = "miss";
   }
@@ -247,7 +247,7 @@ export async function requestVisual(
     prompt: `Base:\n${JSON.stringify(base.spec)}\n\nNote:\n${emphasis}`,
   });
   const spec = parseVisualSpec(completion.text, input.block);
-  await cache.set(personalKey, { spec, modelId: completion.modelId });
+  await writeVisualCache(cache, personalKey, { spec, modelId: completion.modelId });
   const personalMetrics = metricsFromCompletion(completion, at, roundMs(now() - personalStarted));
   const result = artifact({
     cache: baseStatus === "hit" ? "personalised" : "miss",

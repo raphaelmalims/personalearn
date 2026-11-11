@@ -59,6 +59,37 @@ describe("visual blocks", () => {
     expect(calls).toBe(1);
   });
 
+  it("returns the validated spec when the cache write throws", async () => {
+    const result = await requestVisual(
+      {
+        block: "number-line",
+        topic: "Introduction to Integers",
+        grade: 7,
+        language: "en",
+        context: bundledTopicContext("integers"),
+      },
+      {
+        cache: {
+          async get() {
+            return null;
+          },
+          async set() {
+            throw new Error("Visual cache write failed.");
+          },
+        },
+        complete: async () => ({
+          text: JSON.stringify(numberLine),
+          modelId: "deepseek-flash",
+          promptTokens: 10,
+          completionTokens: 10,
+          cachedPromptTokens: 0,
+        }),
+      }
+    );
+    expect(result.fit).toBe(true);
+    if (result.fit) expect(result.spec.title).toBe("Introduction to Integers");
+  });
+
   it("says no block fits when there is no CBC context", async () => {
     const result = await requestVisual(
       {
