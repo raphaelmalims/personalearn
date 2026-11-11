@@ -1,9 +1,13 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { DiagramStudio } from "@/components/diagrams/diagram-studio";
 import { ExplainerStage } from "@/components/explainers/explainer-stage";
 import { MediaControls } from "@/components/explainers/media-controls";
 import { ScenePlate } from "@/components/explainers/scene-plate";
+import type { DiagramContent } from "@/lib/diagrams/content";
+import type { DiagramAnswer, PartTally } from "@/lib/diagrams/tally";
+import { toWaterCycleDiagram } from "@/lib/diagrams/water-cycle-parts";
 import {
   visualCaptions,
   type VisualArtifact,
@@ -48,7 +52,89 @@ export function VisualStage({
     );
   }
 
+  const water = spec.block === "scene" ? toWaterCycleDiagram(artifact.topic, spec) : null;
+  if (water) return <WaterCycleStage artifact={artifact} content={water} />;
+
   return <StaticFigure spec={spec} language={artifact.language} />;
+}
+
+function WaterCycleStage({
+  artifact,
+  content,
+}: {
+  artifact: VisualArtifact;
+  content: DiagramContent;
+}) {
+  const [tally, setTally] = useState<PartTally[] | null>(null);
+  const tallyKey = `${artifact.topic}|${artifact.grade}|${artifact.language}`;
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadDiagramTally(artifact).then((rows) => {
+      if (!cancelled && rows) setTally(rows);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [tallyKey, artifact]);
+
+  const recorded = tally?.some((row) => row.correct > 0 || row.incorrect > 0) ?? false;
+
+  return (
+    <figure className="overflow-hidden rounded-2xl border border-border bg-surface-1">
+      <figcaption className="px-4 pt-4 text-[15px] font-medium tracking-tight text-foreground">
+        {content.title}
+      </figcaption>
+      <DiagramStudio
+        content={content}
+        onAnswer={(answer) => {
+          void recordDiagramAnswer(artifact, answer).then((rows) => {
+            if (rows) setTally(rows);
+          });
+        }}
+      />
+      {recorded && tally ? (
+        <ul className="px-4 pb-4 text-xs text-muted-foreground">
+          {tally.map((row) => (
+            <li key={row.partId}>
+              {row.partId}: {row.incorrect} wrong, {row.correct} right
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </figure>
+  );
+}
+
+async function loadDiagramTally(artifact: VisualArtifact) {
+  const params = new URLSearchParams({
+    topic: artifact.topic,
+    grade: String(artifact.grade),
+    language: artifact.language,
+  });
+  const response = await fetch(`/api/diagrams/answers?${params}`);
+  if (!response.ok) return null;
+  const body = (await response.json()) as { tally?: PartTally[] };
+  return body.tally ?? null;
+}
+
+function recordDiagramAnswer(artifact: VisualArtifact, answer: DiagramAnswer) {
+  return fetch("/api/diagrams/answers", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      topic: artifact.topic,
+      grade: artifact.grade,
+      language: artifact.language,
+      partId: answer.partId,
+      mode: answer.mode,
+      correct: answer.correct,
+    }),
+  }).then(async (response) => {
+    if (!response.ok) return null;
+    const body = (await response.json()) as { tally?: PartTally[] };
+    return body.tally ?? null;
+  });
 }
 
 function StaticFigure({

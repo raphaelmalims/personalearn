@@ -21,6 +21,7 @@ describe("buildClassAssistantSystemPrompt", () => {
     expect(prompt).toContain("generate_teaching_image");
     expect(prompt).toContain("visualise");
     expect(prompt).toContain("a picture can teach");
+    expect(prompt).toContain("labelled, tappable, or interactive diagram");
     expect(prompt).toContain("do not offer to retry");
     expect(prompt).toContain("list_students");
     expect(prompt).toContain("query_class_performance");
