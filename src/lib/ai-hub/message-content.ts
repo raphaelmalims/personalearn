@@ -5,6 +5,16 @@ import {
   isEvalSessionArtifact,
   type EvalSessionArtifact,
 } from "@/lib/ai-hub/eval-session";
+import {
+  isExplainerArtifact,
+  type ExplainerArtifact,
+} from "@/lib/explainers/artifact";
+import {
+  isVisualArtifact,
+  isVisualFallback,
+  type VisualArtifact,
+  type VisualFallback,
+} from "@/lib/explainers/blocks";
 
 export type ConversationMessageRole = "user" | "assistant" | "tool";
 
@@ -81,7 +91,10 @@ export function getVisibleDrafts(
 export type AssistantDisplayBlock =
   | { type: "text"; text: string }
   | { type: "draft"; draft: VisibleDraft }
-  | { type: "eval_session"; session: EvalSessionArtifact };
+  | { type: "eval_session"; session: EvalSessionArtifact }
+  | { type: "explainer"; artifact: ExplainerArtifact }
+  | { type: "visual"; artifact: VisualArtifact }
+  | { type: "visual-fallback"; fallback: VisualFallback };
 
 export function getAssistantDisplayBlocks(
   message: Pick<UIMessage, "parts">
@@ -106,6 +119,24 @@ export function getAssistantDisplayBlocks(
     const session = evalSessionFromPart(part);
     if (session) {
       blocks.push({ type: "eval_session", session });
+      continue;
+    }
+
+    const artifact = explainerFromPart(part);
+    if (artifact) {
+      blocks.push({ type: "explainer", artifact });
+      continue;
+    }
+
+    const visual = visualFromPart(part);
+    if (visual) {
+      blocks.push({ type: "visual", artifact: visual });
+      continue;
+    }
+
+    const fallback = visualFallbackFromPart(part);
+    if (fallback) {
+      blocks.push({ type: "visual-fallback", fallback });
     }
   }
 
@@ -158,6 +189,11 @@ export function getAssistantPersistContent(
       if (block.type === "draft") {
         return `## ${block.draft.title}\n\n${block.draft.content}`;
       }
+      if (block.type === "explainer") {
+        return `Explainer · ${block.artifact.title}`;
+      }
+      if (block.type === "visual") return "";
+      if (block.type === "visual-fallback") return block.fallback.line;
       return evalSessionPersistLine(block.session);
     })
     .join("\n\n");
@@ -252,13 +288,26 @@ export function toUIMessageFromRow(row: {
 
   const savedDrafts = extractSavedDrafts(row.tool_calls);
   const savedSessions = extractSavedEvalSessions(row.tool_calls);
-  if (role === "assistant" && (savedDrafts.length > 0 || savedSessions.length > 0)) {
+  const savedExplainer = extractSavedExplainer(row.tool_calls);
+  const savedVisual = extractSavedVisual(row.tool_calls);
+  if (
+    role === "assistant" &&
+    (savedDrafts.length > 0 || savedSessions.length > 0 || savedExplainer || savedVisual)
+  ) {
     const parts = withReasoningPart(
-      rebuiltPartsWithDrafts(row.content, savedDrafts),
+      savedDrafts.length > 0
+        ? rebuiltPartsWithDrafts(row.content, savedDrafts)
+        : [{ type: "text" as const, text: row.content }],
       row.reasoning
     );
     for (const session of savedSessions) {
       parts.push(createEvalSessionPart(session));
+    }
+    if (savedExplainer) {
+      parts.push(createExplainerPart(savedExplainer));
+    }
+    if (savedVisual) {
+      parts.push(createVisualPart(savedVisual));
     }
     return {
       id: row.id,
@@ -361,6 +410,89 @@ function rebuiltPartsWithDrafts(
   }
 
   return parts;
+}
+
+function explainerFromPart(part: UIMessage["parts"][number]): ExplainerArtifact | null {
+  const record = part as Record<string, unknown>;
+  if (record.type === "data-explainer" && isExplainerArtifact(record.data)) {
+    return record.data;
+  }
+  return null;
+}
+
+export function getVisibleExplainers(
+  message: Pick<UIMessage, "parts">
+): ExplainerArtifact[] {
+  return getAssistantDisplayBlocks(message)
+    .filter((block) => block.type === "explainer")
+    .map((block) => block.artifact);
+}
+
+function extractSavedExplainer(toolCalls: unknown): ExplainerArtifact | null {
+  if (!toolCalls || typeof toolCalls !== "object") return null;
+  const record = toolCalls as Record<string, unknown>;
+  return isExplainerArtifact(record.explainer) ? record.explainer : null;
+}
+
+function createExplainerPart(artifact: ExplainerArtifact): UIMessage["parts"][number] {
+  return {
+    type: "data-explainer",
+    id: "explainer",
+    data: artifact,
+  } as UIMessage["parts"][number];
+}
+
+function visualFromPart(part: UIMessage["parts"][number]): VisualArtifact | null {
+  const record = part as Record<string, unknown>;
+  if (record.type === "data-visual" && isVisualArtifact(record.data)) return record.data;
+  if (record.type !== "tool-visualise" || record.state !== "output-available") return null;
+  return isVisualArtifact(record.output) ? record.output : null;
+}
+
+function visualFallbackFromPart(part: UIMessage["parts"][number]): VisualFallback | null {
+  const record = part as Record<string, unknown>;
+  if (record.type === "data-visual-fallback" && isVisualFallback(record.data)) return record.data;
+  if (record.type !== "tool-visualise" || record.state !== "output-available") return null;
+  return isVisualFallback(record.output) ? record.output : null;
+}
+
+export function getVisibleVisuals(message: Pick<UIMessage, "parts">): VisualArtifact[] {
+  return getAssistantDisplayBlocks(message)
+    .filter((block) => block.type === "visual")
+    .map((block) => block.artifact);
+}
+
+export function getPersistedVisual(
+  message: Pick<UIMessage, "parts">
+): VisualArtifact | VisualFallback | null {
+  for (const block of getAssistantDisplayBlocks(message)) {
+    if (block.type === "visual") return block.artifact;
+    if (block.type === "visual-fallback") return block.fallback;
+  }
+  return null;
+}
+
+function extractSavedVisual(toolCalls: unknown): VisualArtifact | VisualFallback | null {
+  if (!toolCalls || typeof toolCalls !== "object") return null;
+  const record = toolCalls as Record<string, unknown>;
+  if (isVisualArtifact(record.visual)) return record.visual;
+  if (isVisualFallback(record.visual)) return record.visual;
+  return null;
+}
+
+function createVisualPart(visual: VisualArtifact | VisualFallback): UIMessage["parts"][number] {
+  if (isVisualFallback(visual)) {
+    return {
+      type: "data-visual-fallback",
+      id: "visual-fallback",
+      data: visual,
+    } as UIMessage["parts"][number];
+  }
+  return {
+    type: "data-visual",
+    id: "visual",
+    data: visual,
+  } as UIMessage["parts"][number];
 }
 
 function extractSavedEvalSessions(toolCalls: unknown): EvalSessionArtifact[] {

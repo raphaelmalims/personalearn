@@ -74,6 +74,12 @@ vi.mock("@/lib/ai/env", async () => {
   };
 });
 
+const mockReplyWithExplainer = vi.fn();
+
+vi.mock("@/lib/explainers/chat-reply", () => ({
+  replyWithExplainer: (...args: unknown[]) => mockReplyWithExplainer(...args),
+}));
+
 const mockCreateAgentTools = vi.fn(() => ({
   search_class_resources: { description: "search" },
   generate_learning_resource: { description: "generate" },
@@ -463,5 +469,35 @@ describe("POST /api/ai-hub/chat", () => {
         chat_reasoning_effort: "high",
       })
     );
+  });
+
+  it("lets the hub model see a show-me request instead of a water-cycle shortcut", async () => {
+    mockRequireConversationAccess.mockResolvedValue({
+      id: conversationId,
+      class_id: classId,
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/ai-hub/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          classId,
+          conversationId,
+          messages: [
+            {
+              id: "user-1",
+              role: "user",
+              parts: [{ type: "text", text: "Show me the water cycle" }],
+            },
+          ],
+        }),
+      })
+    );
+
+    expect(response.status).toBe(200);
+    expect(mockReplyWithExplainer).not.toHaveBeenCalled();
+    expect(mockStreamText).toHaveBeenCalled();
+    expect(mockCreateAgentTools).toHaveBeenCalled();
   });
 });

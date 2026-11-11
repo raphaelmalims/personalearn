@@ -23,6 +23,7 @@ import {
   getMessageText,
   getVisibleDrafts,
   getVisibleEvalSessions,
+  getPersistedVisual,
 } from "@/lib/ai-hub/message-content";
 import {
   chatSettingsColumns,
@@ -218,25 +219,30 @@ export async function POST(request: Request) {
           return;
         }
 
-        const persistContent = getAssistantPersistContent(responseMessage);
+        const persistContent = getAssistantPersistContent(responseMessage).trim();
         const drafts = getVisibleDrafts(responseMessage);
         const evalSessions = getVisibleEvalSessions(responseMessage);
+        const visual = getPersistedVisual(responseMessage);
         const reasoning =
           thinking === "enabled" ? getMessageReasoning(responseMessage).trim() : "";
         if (
           !persistContent &&
           drafts.length === 0 &&
           evalSessions.length === 0 &&
+          !visual &&
           !reasoning
         ) {
           return;
         }
 
+        const visualLine =
+          visual && visual.fit ? `Here is ${visual.spec.title}.` : visual?.line;
         await appendConversationMessages(supabase, activeConversationId!, [
           {
             role: "assistant",
             content:
               persistContent ||
+              visualLine ||
               evalSessions
                 .map((session) =>
                   session.assessmentTitle
@@ -246,10 +252,11 @@ export async function POST(request: Request) {
                 .join("\n") ||
               "Done.",
             tool_calls:
-              drafts.length > 0 || evalSessions.length > 0
+              drafts.length > 0 || evalSessions.length > 0 || visual
                 ? {
                     ...(drafts.length > 0 ? { drafts } : {}),
                     ...(evalSessions.length > 0 ? { evalSessions } : {}),
+                    ...(visual ? { visual } : {}),
                   }
                 : null,
             reasoning: reasoning || null,

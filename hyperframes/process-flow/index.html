@@ -219,6 +219,21 @@
           var key = el.getAttribute("data-var-text");
           if (typeof vars[key] === "string" && vars[key]) el.textContent = vars[key];
         });
+        ["step1", "step2", "step3", "step4"].forEach(function (key, index) {
+          var text = vars[key];
+          var step = document.getElementById("step" + (index + 1));
+          if (!step) return;
+          if (typeof text !== "string" || !text) {
+            step.style.display = "none";
+            var arrow = document.getElementById("arrow" + index);
+            if (arrow) arrow.style.display = "none";
+          }
+        });
+        ["cap1", "cap2", "cap3", "cap4"].forEach(function (key, index) {
+          var text = vars[key];
+          var cap = document.getElementById("c" + (index + 1));
+          if (cap && (typeof text !== "string" || !text)) cap.style.display = "none";
+        });
       })();
 
       window.__timelines = window.__timelines || {};

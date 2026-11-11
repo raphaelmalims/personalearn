@@ -97,12 +97,7 @@ export async function queryClassResources(
     (resources ?? []).map((resource) => [resource.id, resource.title as string])
   );
 
-  const context = formatRagContext(
-    rows.map((row) => ({
-      title: titleById.get(row.resource_id) ?? "Resource",
-      content: row.content,
-    }))
-  );
+  const context = formatRagContext(passagesFromRows(rows, titleById));
 
   const { text } = await generateText({
     model: getChatModel(),
@@ -117,4 +112,52 @@ export async function queryClassResources(
   }));
 
   return { answer: text.trim(), sources };
+}
+
+function passagesFromRows(
+  rows: MatchRow[],
+  titleById: Map<string, string>
+) {
+  return rows.map((row) => ({
+    title: titleById.get(row.resource_id) ?? "Resource",
+    content: row.content,
+  }));
+}
+
+/** Class CBC passages for a visual block. No second model call. */
+export async function retrieveClassContext(
+  supabase: SupabaseClient,
+  classId: string,
+  question: string
+): Promise<string | null> {
+  const trimmed = question.trim();
+  if (!trimmed) return null;
+
+  const { count, error: countError } = await supabase
+    .from("resources")
+    .select("id", { count: "exact", head: true })
+    .eq("class_id", classId)
+    .eq("status", "active");
+  if (countError || !count) return null;
+
+  const queryEmbedding = await embedText(trimmed, "query");
+  const { data: matches, error: matchError } = await supabase.rpc("match_resource_chunks", {
+    query_embedding: `[${queryEmbedding.join(",")}]`,
+    match_class_id: classId,
+    match_count: 6,
+  });
+  if (matchError) return null;
+  const rows = (matches ?? []) as MatchRow[];
+  if (rows.length === 0) return null;
+
+  const resourceIds = [...new Set(rows.map((row) => row.resource_id))];
+  const { data: resources, error: resourcesError } = await supabase
+    .from("resources")
+    .select("id, title")
+    .in("id", resourceIds);
+  if (resourcesError) return null;
+  const titleById = new Map(
+    (resources ?? []).map((resource) => [resource.id, resource.title as string])
+  );
+  return formatRagContext(passagesFromRows(rows, titleById));
 }
