@@ -1,0 +1,264 @@
+<!doctype html>
+<html
+  lang="en"
+  data-composition-variables='[{"id":"title","type":"string","label":"Title","default":"The water cycle"},{"id":"step1","type":"string","label":"Step 1","default":"Evaporation"},{"id":"step2","type":"string","label":"Step 2","default":"Condensation"},{"id":"step3","type":"string","label":"Step 3","default":"Precipitation"},{"id":"step4","type":"string","label":"Step 4","default":"Collection"},{"id":"cap1","type":"string","label":"Caption 1","default":"The sun turns water into vapour."},{"id":"cap2","type":"string","label":"Caption 2","default":"Vapour cools and forms clouds."},{"id":"cap3","type":"string","label":"Caption 3","default":"Heavy drops fall as rain."},{"id":"cap4","type":"string","label":"Caption 4","default":"Water collects, then rises again."}]'
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script>
+      (function () {
+        var raw = new URLSearchParams(location.search).get("vars");
+        if (!raw) return;
+        try {
+          var parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === "object") window.__hfVariables = parsed;
+        } catch (error) {
+          /* Keep the template defaults when the query is not JSON. */
+        }
+      })();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <style>
+      :root {
+        --ground: #f4f0e6;
+        --ink: #1c1915;
+        --paper: #fffdf8;
+        --line: #8a8175;
+        --caption: #1c1915;
+        --caption-ink: #f4f0e6;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: var(--ground);
+        font-family: Inter, sans-serif;
+        color: var(--ink);
+      }
+      #root {
+        position: absolute;
+        inset: 0;
+      }
+      #title {
+        position: absolute;
+        left: 192px;
+        top: 96px;
+        width: 1536px;
+        text-align: center;
+        font-size: 72px;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        line-height: 1.1;
+      }
+      .step {
+        position: absolute;
+        top: 300px;
+        width: 320px;
+        height: 280px;
+      }
+      #step1 { left: 200px; }
+      #step2 { left: 600px; }
+      #step3 { left: 1000px; }
+      #step4 { left: 1400px; }
+      .step-body {
+        opacity: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 18px;
+        text-align: center;
+      }
+      .num {
+        width: 88px;
+        height: 88px;
+        border-radius: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 36px;
+        font-weight: 700;
+        color: var(--paper);
+      }
+      #step1 .num { background: #0f6e56; }
+      #step2 .num { background: #1d4e89; }
+      #step3 .num { background: #8a5a12; }
+      #step4 .num { background: #6b3f69; }
+      .label {
+        font-size: 36px;
+        font-weight: 700;
+        line-height: 1.15;
+        max-width: 300px;
+      }
+      .arrow {
+        position: absolute;
+        top: 328px;
+        width: 72px;
+        height: 32px;
+      }
+      #arrow1 { left: 524px; }
+      #arrow2 { left: 924px; }
+      #arrow3 { left: 1324px; }
+      .arrow-body {
+        opacity: 0;
+        width: 72px;
+        height: 32px;
+      }
+      #captions {
+        position: absolute;
+        left: 192px;
+        top: 700px;
+        width: 1536px;
+        height: 140px;
+        z-index: 4;
+      }
+      .caption {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        text-align: center;
+      }
+      .cap-text {
+        opacity: 0;
+        display: inline-block;
+        max-width: 1200px;
+        background: var(--caption);
+        color: var(--caption-ink);
+        font-size: 36px;
+        font-weight: 400;
+        line-height: 1.25;
+        padding: 16px 28px;
+        border-radius: 999px;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="12"
+      data-fps="30"
+      data-width="1920"
+      data-height="1080"
+    >
+      <h1 id="title" class="clip" data-start="0" data-duration="12" data-track-index="0" data-track-kind="graphics">
+        <span data-var-text="title">The water cycle</span>
+      </h1>
+
+      <div id="step1" class="clip step" data-start="1" data-duration="11" data-track-index="1" data-track-kind="graphics">
+        <div class="step-body">
+          <div class="num">1</div>
+          <p class="label" data-var-text="step1">Evaporation</p>
+        </div>
+      </div>
+      <div id="arrow1" class="clip arrow" data-start="3.4" data-duration="8.6" data-track-index="1">
+        <svg class="arrow-body" viewBox="0 0 72 32" aria-hidden="true">
+          <path d="M4 16 H58" stroke="#8a8175" stroke-width="4" fill="none" />
+          <path d="M50 6 L66 16 L50 26" fill="none" stroke="#8a8175" stroke-width="4" />
+        </svg>
+      </div>
+      <div id="step2" class="clip step" data-start="3.4" data-duration="8.6" data-track-index="1">
+        <div class="step-body">
+          <div class="num">2</div>
+          <p class="label" data-var-text="step2">Condensation</p>
+        </div>
+      </div>
+      <div id="arrow2" class="clip arrow" data-start="5.8" data-duration="6.2" data-track-index="1">
+        <svg class="arrow-body" viewBox="0 0 72 32" aria-hidden="true">
+          <path d="M4 16 H58" stroke="#8a8175" stroke-width="4" fill="none" />
+          <path d="M50 6 L66 16 L50 26" fill="none" stroke="#8a8175" stroke-width="4" />
+        </svg>
+      </div>
+      <div id="step3" class="clip step" data-start="5.8" data-duration="6.2" data-track-index="1">
+        <div class="step-body">
+          <div class="num">3</div>
+          <p class="label" data-var-text="step3">Precipitation</p>
+        </div>
+      </div>
+      <div id="arrow3" class="clip arrow" data-start="8.2" data-duration="3.8" data-track-index="1">
+        <svg class="arrow-body" viewBox="0 0 72 32" aria-hidden="true">
+          <path d="M4 16 H58" stroke="#8a8175" stroke-width="4" fill="none" />
+          <path d="M50 6 L66 16 L50 26" fill="none" stroke="#8a8175" stroke-width="4" />
+        </svg>
+      </div>
+      <div id="step4" class="clip step" data-start="8.2" data-duration="3.8" data-track-index="1">
+        <div class="step-body">
+          <div class="num">4</div>
+          <p class="label" data-var-text="step4">Collection</p>
+        </div>
+      </div>
+
+      <div id="captions" data-track-kind="captions" data-track-index="2" data-layout-allow-overlap>
+        <div id="c1" class="clip caption" data-start="1.05" data-duration="2.25">
+          <p class="cap-text" data-var-text="cap1">The sun turns water into vapour.</p>
+        </div>
+        <div id="c2" class="clip caption" data-start="3.45" data-duration="2.25">
+          <p class="cap-text" data-var-text="cap2">Vapour cools and forms clouds.</p>
+        </div>
+        <div id="c3" class="clip caption" data-start="5.85" data-duration="2.25">
+          <p class="cap-text" data-var-text="cap3">Heavy drops fall as rain.</p>
+        </div>
+        <div id="c4" class="clip caption" data-start="8.25" data-duration="3.5">
+          <p class="cap-text" data-var-text="cap4">Water collects, then rises again.</p>
+        </div>
+      </div>
+    </div>
+    <script>
+      (function applyVars() {
+        var vars = window.__hfVariables || {};
+        document.querySelectorAll("[data-var-text]").forEach(function (el) {
+          var key = el.getAttribute("data-var-text");
+          if (typeof vars[key] === "string" && vars[key]) el.textContent = vars[key];
+        });
+      })();
+
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+
+      function enter(selector, at) {
+        tl.fromTo(
+          selector,
+          { opacity: 0, y: 18 },
+          { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" },
+          at
+        );
+      }
+
+      enter("#step1 .step-body", 1);
+      enter("#arrow1 .arrow-body", 3.4);
+      enter("#step2 .step-body", 3.4);
+      enter("#arrow2 .arrow-body", 5.8);
+      enter("#step3 .step-body", 5.8);
+      enter("#arrow3 .arrow-body", 8.2);
+      enter("#step4 .step-body", 8.2);
+
+      function caption(id, start, end) {
+        const text = "#" + id + " .cap-text";
+        tl.fromTo(
+          text,
+          { opacity: 0 },
+          { opacity: 1, duration: 0.18, ease: "power2.out" },
+          start
+        );
+        tl.to(text, { opacity: 0, duration: 0.12, ease: "power2.in" }, end - 0.12);
+        tl.set("#" + id, { opacity: 0, visibility: "hidden" }, end);
+      }
+
+      caption("c1", 1.05, 3.3);
+      caption("c2", 3.45, 5.7);
+      caption("c3", 5.85, 8.1);
+      caption("c4", 8.25, 11.75);
+
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>
