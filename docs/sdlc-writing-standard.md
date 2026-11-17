@@ -22,7 +22,7 @@ Use the **Bug report** issue form. Required sections map to these headings in th
 | **Acceptance criteria** | `- [ ]` checklist |
 | **Likely cause / notes** | Optional investigation / related tickets |
 
-Labels on create: `needs-triage`, `type-bug`. Triage adds one `area-*`, milestone, and links `PSL-N`.
+Labels on create: `needs-triage`, `type-bug`. Assignee on create: `raphaelmalims`. Milestone is the current sprint, or `Backlog`. Triage adds one `area-*` and links `PSL-N`.
 
 ---
 
@@ -37,28 +37,17 @@ Labels on create: `needs-triage`, `type-bug`. Triage adds one `area-*`, mileston
 | **Scope notes** | In scope vs later |
 | **Out of scope / notes** | Optional exclusions |
 
-Labels on create: `needs-triage`, `type-feature`.
+Labels on create: `needs-triage`, `type-feature`. Assignee on create: `raphaelmalims`.
 
 ---
 
 ## Jira ticket description
 
-Mirror the GitHub Issue content, plus this ready checklist:
+Mirror the GitHub Issue: the problem, the context, short acceptance criteria, and a Confluence spec link when that link is not already on the ticket.
 
-```markdown
-## Ready checklist
-- [ ] Confluence spec linked
-- [ ] Acceptance criteria defined
-…
+Do not repeat labels, priority, assignee, milestone, sprint, points, or dates. Those are fields. Do not paste the PR test plan or the merge gates into the ticket. The test plan lives in [`.github/pull_request_template.md`](../.github/pull_request_template.md). Merge gates live in [`.cursor/rules/sdlc.mdc`](../.cursor/rules/sdlc.mdc).
 
-## Acceptance criteria
-- [ ] …
-
-## Spec
-Link to PLEARN Confluence page (Product requirements blueprint)
-```
-
-Copy **Severity** (bugs) into Jira **priority**. Keep the same `area-*` + `type-*` as GitHub.
+Copy **Severity** (bugs) into the Jira **priority** field. Keep the same `area-*` and `type-*` labels as GitHub.
 
 ### Jira comment trail (minimum)
 
