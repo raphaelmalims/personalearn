@@ -89,15 +89,17 @@ describe("ClassSelector", () => {
     const user = userEvent.setup();
     render(<ClassSelector fill />);
 
-    await user.click(screen.getByRole("button", { name: "Maths A" }));
-    expect(screen.getByRole("menuitem", { name: /Maths A/ })).toHaveTextContent("G5 Mathematics · A");
+    await user.click(screen.getByRole("button", { name: "Class: Maths A" }));
+    const activeRow = screen.getByRole("menuitem", { name: /Maths A/ });
+    expect(activeRow).toHaveTextContent("G5 Mathematics · A");
+    expect(activeRow.querySelector(".opacity-100")).toBeTruthy();
     expect(screen.getByRole("menuitem", { name: "New class" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Edit Science B" })).toBeInTheDocument();
 
     await user.click(screen.getByRole("menuitem", { name: "New class" }));
     expect(screen.getByText("Create class dialog")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Maths A" }));
+    await user.click(screen.getByRole("button", { name: "Class: Maths A" }));
     await user.click(screen.getByRole("button", { name: "Edit Science B" }));
     expect(screen.getByText("Edit class dialog")).toBeInTheDocument();
 
@@ -125,7 +127,7 @@ describe("ClassSelector", () => {
     Object.defineProperty(window, "innerWidth", { configurable: true, value: 375 });
 
     render(<ClassSelector fill />);
-    await user.click(screen.getByRole("button", { name: "Maths A" }));
+    await user.click(screen.getByRole("button", { name: "Class: Maths A" }));
 
     const panel = document.querySelector("[data-pl-dropdown-panel]");
     expect(panel).toBeTruthy();

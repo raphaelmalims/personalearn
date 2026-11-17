@@ -34,6 +34,10 @@ describe("DropdownMenu", () => {
     expect(panel?.className).toContain("overflow-y-auto");
     expect(screen.getByRole("menuitem", { name: "Item 12" })).toBeInTheDocument();
 
+    await user.keyboard("{ArrowDown}");
+    expect(screen.getByRole("menuitem", { name: "Item 1" })).toHaveFocus();
+    await user.keyboard("{ArrowDown}");
+    expect(screen.getByRole("menuitem", { name: "Item 2" })).toHaveFocus();
     await user.keyboard("{Escape}");
     expect(document.querySelector("[data-pl-dropdown-panel]")).toBeNull();
 

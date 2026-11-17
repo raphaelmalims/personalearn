@@ -53,10 +53,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <LogoMark className="h-4 w-4" />
         </Link>
 
-        <div className="mt-3">
-          <ClassSelector rail />
-        </div>
-
         {/* Vertically centered nav cube — expands right over content on hover */}
         <div className="relative flex min-h-0 w-full flex-1 items-center">
           <nav
@@ -132,6 +128,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           isHub && "max-md:h-full max-md:min-h-0 max-md:overflow-hidden"
         )}
       >
+        <div className="hidden shrink-0 px-6 pt-4 md:block print:hidden">
+          <ClassSelector />
+        </div>
         {isHub ? null : (
         <header className="sticky top-0 z-30 flex items-center justify-between gap-2 bg-background/80 px-4 py-3 backdrop-blur-xl md:hidden print:hidden">
           <Link
