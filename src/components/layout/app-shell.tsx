@@ -53,6 +53,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <LogoMark className="h-4 w-4" />
         </Link>
 
+        <div className="mt-3">
+          <ClassSelector rail />
+        </div>
+
         {/* Vertically centered nav cube — expands right over content on hover */}
         <div className="relative flex min-h-0 w-full flex-1 items-center">
           <nav
@@ -63,17 +67,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             onMouseEnter={() => setRailExpanded(true)}
             onMouseLeave={() => setRailExpanded(false)}
           >
-            <div
-              className={cn(
-                "mb-1 transition-opacity",
-                railExpanded
-                  ? "opacity-100"
-                  : "pointer-events-none h-0 overflow-hidden opacity-0"
-              )}
-            >
-              <ClassSelector />
-            </div>
-
             {navItems.map(({ href, label, icon: Icon }) => {
               const active = isHubNavActive(pathname);
               return (

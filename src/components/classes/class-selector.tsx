@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, Plus } from "lucide-react";
+import { ChevronDown, GraduationCap, Plus } from "lucide-react";
 import { useClasses } from "@/lib/hooks/use-classes";
 import { useActiveClassStore } from "@/lib/store/active-class";
 import { DropdownMenu, DropdownMenuItem } from "@/components/ui/dropdown-menu";
@@ -16,9 +16,11 @@ type ClassSelectorProps = {
    * so the list cannot grow into the chat.
    */
   fill?: boolean;
+  /** Icon trigger for the narrow desktop rail. Always visible; menu portals. */
+  rail?: boolean;
 };
 
-export function ClassSelector({ fill = false }: ClassSelectorProps) {
+export function ClassSelector({ fill = false, rail = false }: ClassSelectorProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { data: classes, isLoading } = useClasses();
@@ -65,20 +67,30 @@ export function ClassSelector({ fill = false }: ClassSelectorProps) {
     <>
       <DropdownMenu
         align="start"
+        portal
         rootClassName={cn("min-w-0", fill && "w-full")}
-        contentClassName="w-full min-w-0 max-w-full"
+        contentClassName={cn("min-w-0", fill ? "w-full max-w-full" : "max-w-xs")}
         trigger={
           <button
             type="button"
+            aria-label={rail ? `Class: ${label}` : undefined}
+            title={label}
             className={cn(
-              "flex items-center gap-1 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted",
-              fill
-                ? "w-full max-w-full"
-                : "max-w-[12rem] sm:max-w-[16rem]"
+              "flex items-center gap-1 text-xs font-medium text-muted-foreground hover:bg-muted",
+              rail
+                ? "h-11 w-11 justify-center rounded-2xl"
+                : "rounded-full border border-border bg-card px-3 py-1.5",
+              !rail && (fill ? "w-full max-w-full" : "max-w-[12rem] sm:max-w-[16rem]")
             )}
           >
-            <span className="min-w-0 truncate">{label}</span>
-            <ChevronDown className="h-3 w-3 shrink-0" />
+            {rail ? (
+              <GraduationCap className="h-5 w-5 shrink-0" />
+            ) : (
+              <>
+                <span className="min-w-0 truncate">{label}</span>
+                <ChevronDown className="h-3 w-3 shrink-0" />
+              </>
+            )}
           </button>
         }
       >

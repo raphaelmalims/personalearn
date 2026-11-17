@@ -33,7 +33,8 @@ describe("ThemeToggle", () => {
 
     const panel = container.querySelector(".absolute");
     expect(panel?.className).toContain("top-full");
-    expect(screen.getByRole("button", { name: "Light" })).toBeInTheDocument();
+    expect(panel?.className).toContain("overflow-y-auto");
+    expect(screen.getByRole("menuitem", { name: "Light" })).toBeInTheDocument();
   });
 
   it("portals hero menus to document.body so landing clicks reach the options", async () => {
@@ -42,7 +43,7 @@ describe("ThemeToggle", () => {
 
     await user.click(within(container).getByRole("button", { name: "Choose theme" }));
 
-    expect(screen.getByRole("button", { name: "Light" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Light" })).toBeInTheDocument();
     expect(document.body.querySelector("[data-pl-dropdown-panel].fixed")).toBeTruthy();
   });
 });
