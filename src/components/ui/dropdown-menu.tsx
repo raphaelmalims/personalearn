@@ -73,8 +73,13 @@ export function DropdownMenu({
     const openUp =
       side === "top" || (side === "bottom" && spaceBelow < 160 && spaceAbove > spaceBelow);
     const available = Math.max(120, openUp ? spaceAbove : spaceBelow);
+    const maxWidth = Math.max(
+      0,
+      align === "end" ? box.right - margin : window.innerWidth - box.left - margin
+    );
     setCoords({
-      minWidth: box.width,
+      minWidth: Math.min(box.width, maxWidth),
+      maxWidth,
       maxHeight: Math.min(320, available),
       overflowY: "auto",
       ...(openUp
@@ -104,7 +109,7 @@ export function DropdownMenu({
       style={portal ? coords ?? undefined : undefined}
       role="menu"
       className={cn(
-        "z-50 max-h-[min(20rem,70dvh)] w-max overflow-y-auto rounded-md bg-card p-1 shadow-lg",
+        "z-50 max-h-[min(20rem,70dvh)] w-max max-w-[calc(100vw-1rem)] overflow-x-hidden overflow-y-auto rounded-md bg-card p-1 shadow-lg",
         portal
           ? "fixed"
           : cn(

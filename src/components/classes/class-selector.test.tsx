@@ -89,20 +89,50 @@ describe("ClassSelector", () => {
     const user = userEvent.setup();
     render(<ClassSelector fill />);
 
-    await user.click(screen.getByRole("button", { name: /G5 Mathematics/ }));
+    await user.click(screen.getByRole("button", { name: "Maths A" }));
+    expect(screen.getByRole("menuitem", { name: /Maths A/ })).toHaveTextContent("G5 Mathematics · A");
     expect(screen.getByRole("menuitem", { name: "New class" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Edit G6 Science · B" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Edit Science B" })).toBeInTheDocument();
 
     await user.click(screen.getByRole("menuitem", { name: "New class" }));
     expect(screen.getByText("Create class dialog")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /G5 Mathematics/ }));
-    await user.click(screen.getByRole("button", { name: "Edit G6 Science · B" }));
+    await user.click(screen.getByRole("button", { name: "Maths A" }));
+    await user.click(screen.getByRole("button", { name: "Edit Science B" }));
     expect(screen.getByText("Edit class dialog")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("menuitem", { name: "G6 Science · B" }));
+    await user.click(screen.getByRole("menuitem", { name: /Science B/ }));
     expect(setActiveClass).toHaveBeenCalledWith(
       expect.objectContaining({ id: "class-2", subject: "Science" })
     );
+  });
+
+  it("clamps the open menu to the viewport so edit controls stay inside", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
+      width: 320,
+      height: 36,
+      top: 48,
+      bottom: 84,
+      left: 280,
+      right: 600,
+      x: 280,
+      y: 48,
+      toJSON() {
+        return {};
+      },
+    });
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: 375 });
+
+    render(<ClassSelector fill />);
+    await user.click(screen.getByRole("button", { name: "Maths A" }));
+
+    const panel = document.querySelector("[data-pl-dropdown-panel]");
+    expect(panel).toBeTruthy();
+    const maxWidth = Number.parseFloat((panel as HTMLElement).style.maxWidth);
+    expect(maxWidth).toBeLessThanOrEqual(375 - 280);
+    expect(maxWidth).toBeGreaterThan(0);
+    expect(panel?.className).not.toMatch(/(^|\s)w-full(\s|$)/);
+    vi.restoreAllMocks();
   });
 });
