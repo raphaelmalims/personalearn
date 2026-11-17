@@ -37,6 +37,11 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Dialog } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  composerEnterAction,
+  isImeComposing,
+  pointerIsCoarse,
+} from "@/lib/ai-hub/composer-enter";
 import { presets } from "@/lib/motion";
 import {
   chatSettingsStorageKey,
@@ -147,6 +152,7 @@ export function AiHubChat() {
   const lastScrollTopRef = useRef(0);
   const accumulatedScrollRef = useRef(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [coarsePointer, setCoarsePointer] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const draftRef = useRef(draft);
   const prevStatusRef = useRef<string>("ready");
@@ -156,6 +162,21 @@ export function AiHubChat() {
   composerHiddenRef.current = composerHidden;
   composerFocusedRef.current = composerFocused;
   keyboardOpenRef.current = keyboardOpen;
+
+  useEffect(() => {
+    const media = window.matchMedia("(pointer: coarse)");
+    const apply = () => setCoarsePointer(media.matches);
+    apply();
+    media.addEventListener("change", apply);
+    return () => media.removeEventListener("change", apply);
+  }, []);
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [draft]);
 
   useEffect(() => {
     const stored = readClassPanelCollapsedPreference();
@@ -1133,10 +1154,15 @@ export function AiHubChat() {
                     value={draft}
                     onChange={(event) => setDraft(event.target.value)}
                     onKeyDown={(event) => {
-                      if (event.key === "Enter" && !event.shiftKey) {
-                        event.preventDefault();
-                        void handleSubmit(event);
-                      }
+                      const action = composerEnterAction({
+                        key: event.key,
+                        shiftKey: event.shiftKey,
+                        isComposing: isImeComposing(event),
+                        coarsePointer: pointerIsCoarse(),
+                      });
+                      if (action !== "send") return;
+                      event.preventDefault();
+                      void handleSubmit(event);
                     }}
                     placeholder={
                       editingMessageId
@@ -1147,9 +1173,9 @@ export function AiHubChat() {
                     rows={1}
                     maxLength={4000}
                     inputMode="text"
-                    enterKeyHint="send"
+                    enterKeyHint={coarsePointer ? "enter" : "send"}
                     className={cn(
-                      "min-h-9 max-h-32 flex-1 resize-none bg-transparent px-1 py-2 text-sm outline-none",
+                      "max-h-32 min-h-9 flex-1 resize-none overflow-y-auto bg-transparent px-1 py-2 text-sm outline-none",
                       "disabled:cursor-not-allowed disabled:opacity-50"
                     )}
                   />

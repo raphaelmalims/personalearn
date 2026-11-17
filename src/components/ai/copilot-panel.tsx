@@ -1,10 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Bot, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import {
+  composerEnterAction,
+  isImeComposing,
+  pointerIsCoarse,
+} from "@/lib/ai-hub/composer-enter";
+import { cn } from "@/lib/utils";
 import { useActiveClassStore } from "@/lib/store/active-class";
 
 type CopilotResponse = {
@@ -15,9 +20,26 @@ type CopilotResponse = {
 export function CopilotPanel() {
   const activeClass = useActiveClassStore((state) => state.activeClass);
   const [question, setQuestion] = useState("");
+  const [coarsePointer, setCoarsePointer] = useState(false);
+  const questionRef = useRef<HTMLTextAreaElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [response, setResponse] = useState<CopilotResponse | null>(null);
+
+  useEffect(() => {
+    const media = window.matchMedia("(pointer: coarse)");
+    const apply = () => setCoarsePointer(media.matches);
+    apply();
+    media.addEventListener("change", apply);
+    return () => media.removeEventListener("change", apply);
+  }, []);
+
+  useEffect(() => {
+    const el = questionRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [question]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -72,13 +94,30 @@ export function CopilotPanel() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <form onSubmit={handleSubmit} className="flex gap-2">
-            <Input
+          <form onSubmit={handleSubmit} className="flex items-end gap-2">
+            <textarea
+              ref={questionRef}
               value={question}
               onChange={(event) => setQuestion(event.target.value)}
+              onKeyDown={(event) => {
+                const action = composerEnterAction({
+                  key: event.key,
+                  shiftKey: event.shiftKey,
+                  isComposing: isImeComposing(event),
+                  coarsePointer: pointerIsCoarse(),
+                });
+                if (action !== "send") return;
+                event.preventDefault();
+                void handleSubmit(event);
+              }}
               placeholder="Ask about your scheme of work…"
               disabled={loading}
+              rows={1}
               maxLength={2000}
+              enterKeyHint={coarsePointer ? "enter" : "send"}
+              className={cn(
+                "max-h-32 min-h-11 w-full resize-none overflow-y-auto rounded-md border border-input bg-card px-3 py-2 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-50"
+              )}
             />
             <Button type="submit" disabled={loading || !question.trim()}>
               <Send className="h-4 w-4" />
