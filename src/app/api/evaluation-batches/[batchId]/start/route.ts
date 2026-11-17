@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
+import { emitPostHogLog, flushPostHogLogs } from "@/instrumentation";
 import { requireTeacherClass } from "@/lib/auth/require-teacher-class";
 import { requireTeacherEvaluationBatch } from "@/lib/evaluation/batches";
 import { startOrResumeBatchProcessing } from "@/lib/evaluation/poll-batches";
@@ -33,9 +34,29 @@ export async function POST(
     const service = createServiceClient();
     const { job, phase } = await startOrResumeBatchProcessing(service, batch);
 
+    emitPostHogLog({
+      body: "Evaluation batch processing started",
+      severityText: "INFO",
+      attributes: {
+        event: "evaluation_batch_processing_started",
+        processing_phase: phase,
+      },
+    });
+    after(flushPostHogLogs);
+
     return NextResponse.json({ batchId, jobId: job.id, phase });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Request failed";
-    return NextResponse.json({ error: message }, { status: authStatus(message) });
+    const status = authStatus(message);
+    emitPostHogLog({
+      body: "Evaluation batch processing request failed",
+      severityText: "ERROR",
+      attributes: {
+        event: "evaluation_batch_processing_failed",
+        status_code: status,
+      },
+    });
+    after(flushPostHogLogs);
+    return NextResponse.json({ error: message }, { status });
   }
 }

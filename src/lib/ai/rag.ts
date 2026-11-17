@@ -2,6 +2,7 @@ import { generateText } from "ai";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { embedText } from "@/lib/ai/embeddings";
 import { getChatModel } from "@/lib/ai/llm";
+import { aiTelemetry } from "@/lib/ai/observability";
 
 export type RagSource = {
   resourceId: string;
@@ -97,6 +98,7 @@ export async function queryClassResources(
     system:
       "You are a CBC teaching assistant. Answer only using the provided context. If the context is insufficient, say you do not have enough information. Be concise.",
     prompt: `Context:\n${context}\n\nQuestion: ${trimmed}\n\nAnswer:`,
+    telemetry: aiTelemetry("class_resource_rag"),
   });
 
   const sources: RagSource[] = resourceIds.map((resourceId) => ({

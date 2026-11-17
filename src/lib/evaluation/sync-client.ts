@@ -1,5 +1,5 @@
-import { GoogleGenAI } from "@google/genai";
-import { requireGoogleGenerativeAiApiKey } from "@/lib/ai/vision-model";
+import { createObservedGeminiClient } from "@/lib/ai/gemini-client";
+import { flushServerPostHog } from "@/lib/posthog-server";
 import {
   buildEvaluatePrompt,
   buildEvaluateSystemPrompt,
@@ -30,10 +30,6 @@ import {
 import { withRetries } from "@/lib/evaluation/retries";
 import { xaiSyncStructuredJson } from "@/lib/evaluation/xai-batch-client";
 
-function createGenAiClient(): GoogleGenAI {
-  return new GoogleGenAI({ apiKey: requireGoogleGenerativeAiApiKey() });
-}
-
 export type ImagePart = { mimeType: string; base64: string };
 
 function imageParts(parts: ImagePart[]) {
@@ -49,7 +45,8 @@ async function generateGeminiStructuredJson<T>(input: {
   responseSchema: Record<string, unknown>;
   parse: (raw: unknown) => T;
 }): Promise<{ result: T; modelId: string }> {
-  const ai = createGenAiClient();
+  const ai = createObservedGeminiClient();
+  const traceId = crypto.randomUUID();
 
   const response = await withRetries(
     () =>
@@ -65,9 +62,13 @@ async function generateGeminiStructuredJson<T>(input: {
           responseMimeType: "application/json",
           responseSchema: input.responseSchema,
         },
+        posthogTraceId: traceId,
+        posthogProperties: { $ai_session_id: null },
       }),
     { label: "sync-generateContent" }
   );
+
+  await flushServerPostHog();
 
   const text = response.text;
   if (!text) throw new Error("Empty model response");
@@ -85,6 +86,7 @@ async function generateXaiStructuredJson<T>(input: {
   promptCacheKey: string;
   parse: (raw: unknown) => T;
 }): Promise<{ result: T; modelId: string }> {
+  const traceId = crypto.randomUUID();
   const { text, modelId } = await withRetries(
     () =>
       xaiSyncStructuredJson({
@@ -98,6 +100,8 @@ async function generateXaiStructuredJson<T>(input: {
         schema: input.schema,
         modelId: input.modelId,
         promptCacheKey: input.promptCacheKey,
+        traceId,
+        distinctId: `evaluation:${input.promptCacheKey}`,
       }),
     { label: "sync-xai-responses" }
   );

@@ -12,6 +12,7 @@ import {
   buildIndexUserPrompt,
   indexJsonSchema,
 } from "@/lib/evaluation/index-schema";
+import { captureAiGeneration } from "@/lib/ai/observability";
 
 export const XAI_BATCH_NAME_PREFIX = "xai:";
 const XAI_API_BASE = "https://api.x.ai/v1";
@@ -398,8 +399,11 @@ export async function xaiSyncStructuredJson(input: {
   schema: Record<string, unknown>;
   modelId?: string;
   promptCacheKey: string;
+  traceId: string;
+  distinctId: string;
 }): Promise<{ text: string; modelId: string; cachedTokens?: number }> {
   const modelId = input.modelId ?? getEvalVisionModelId();
+  const startedAt = Date.now();
   const body = responsesBody({
     modelId,
     promptCacheKey: input.promptCacheKey,
@@ -419,5 +423,18 @@ export async function xaiSyncStructuredJson(input: {
   const text = extractResponsesText(json);
   if (!text) throw new Error("Empty xAI response");
   const usage = extractUsage(json);
+  await captureAiGeneration({
+    distinctId: input.distinctId,
+    traceId: input.traceId,
+    sessionId: null,
+    model: modelId,
+    provider: "xai",
+    messages: [
+      { role: "system", content: input.system },
+      { role: "user", content: input.userText },
+    ],
+    output: text,
+    latencySeconds: (Date.now() - startedAt) / 1000,
+  });
   return { text, modelId, cachedTokens: usage.cachedTokens };
 }

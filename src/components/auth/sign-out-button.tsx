@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
+import posthog from "posthog-js";
 import { createClient } from "@/lib/supabase/client";
 import { useActiveClassStore } from "@/lib/store/active-class";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
@@ -20,6 +21,7 @@ export function SignOutButton({
 
   async function handleSignOut() {
     clearActiveClass();
+    posthog.reset();
 
     // Prefer server route so cookies clear on the response and refresh tokens
     // are revoked globally (PSL-111). Fall back to client global signOut.

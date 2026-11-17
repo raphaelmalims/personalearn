@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import posthog from "posthog-js";
 import { ensureUserProfile } from "@/lib/auth/ensure-user-profile";
 import { createClient } from "@/lib/supabase/client";
 import type { Class, Student } from "@/types/database";
@@ -95,6 +96,10 @@ export function useCreateClass() {
         term: newClass.term,
       });
       queryClient.invalidateQueries({ queryKey: classesQueryKey });
+      posthog.capture("class_created", {
+        grade_level: newClass.grade_level,
+        has_section: Boolean(newClass.section),
+      });
     },
   });
 }
@@ -193,6 +198,7 @@ export function useCreateStudent(classId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: studentsQueryKey(classId) });
+      posthog.capture("student_added");
     },
   });
 }
@@ -214,8 +220,11 @@ export function useCreateStudentsBulk(classId: string) {
       if (error) throw error;
       return data as Student[];
     },
-    onSuccess: () => {
+    onSuccess: (_data, students) => {
       queryClient.invalidateQueries({ queryKey: studentsQueryKey(classId) });
+      posthog.capture("students_imported", {
+        student_count: students.length,
+      });
     },
   });
 }
