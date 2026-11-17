@@ -2,10 +2,15 @@ import { generateText } from "ai";
 import { generateConversationTitle } from "@/lib/ai-hub/conversation-title";
 import { getChatProvider, getDeepSeekProviderOptions } from "@/lib/ai/env";
 import { getChatModel } from "@/lib/ai/llm";
+import {
+  aiTelemetry,
+  type AiRuntimeContext,
+} from "@/lib/ai/observability";
 
 export async function generateAiConversationTitle(
   userMessage: string,
-  assistantReply?: string
+  assistantReply?: string,
+  runtimeContext?: AiRuntimeContext
 ): Promise<string> {
   const trimmedUser = userMessage.trim();
   if (!trimmedUser) {
@@ -25,6 +30,8 @@ export async function generateAiConversationTitle(
       system:
         "Summarize a teacher's chat thread in 3–6 words. Reply with ONLY the title — no quotes, no punctuation at the end.",
       prompt: context,
+      ...(runtimeContext ? { runtimeContext } : {}),
+      telemetry: aiTelemetry("ai_hub_conversation_title"),
     });
 
     const title = text.trim().replace(/^["']|["']$/g, "");

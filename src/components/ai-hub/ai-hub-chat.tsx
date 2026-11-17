@@ -2,6 +2,7 @@
 
 import { useChat } from "@ai-sdk/react";
 import { useQueryClient } from "@tanstack/react-query";
+import posthog from "posthog-js";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import {
   ArrowUp,
@@ -761,6 +762,11 @@ export function AiHubChat() {
             },
           }
         );
+        posthog.capture("ai_hub_message_sent", {
+          attachment_count: files.length,
+          has_text: Boolean(trimmed),
+          is_edit: true,
+        });
         return;
       }
 
@@ -781,6 +787,11 @@ export function AiHubChat() {
           },
         }
       );
+      posthog.capture("ai_hub_message_sent", {
+        attachment_count: files.length,
+        has_text: Boolean(trimmed),
+        is_edit: false,
+      });
 
       if (conversationIdRef.current) {
         patchConversationList(conversationIdRef.current);

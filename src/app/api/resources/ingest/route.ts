@@ -1,4 +1,5 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
+import { emitPostHogLog, flushPostHogLogs } from "@/instrumentation";
 import {
   detectResourceFormat,
   ExtractTextError,
@@ -85,17 +86,47 @@ export async function POST(request: Request) {
       resourceType,
     });
 
+    emitPostHogLog({
+      body: "Resource ingestion completed",
+      severityText: "INFO",
+      attributes: {
+        event: "resource_ingestion_completed",
+        resource_format: format,
+        has_resource_type: Boolean(resourceType),
+      },
+    });
+    after(flushPostHogLogs);
+
     return NextResponse.json(result);
   } catch (error) {
     if (error instanceof ExtractTextError) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: clientErrorStatus(error) }
-      );
+      const status = clientErrorStatus(error);
+      emitPostHogLog({
+        body: "Resource ingestion failed during text extraction",
+        severityText: "ERROR",
+        attributes: {
+          event: "resource_ingestion_failed",
+          failure_stage: "text_extraction",
+          status_code: status,
+        },
+      });
+      after(flushPostHogLogs);
+      return NextResponse.json({ error: error.message }, { status });
     }
 
     const message =
       error instanceof Error ? error.message : "Ingest failed";
-    return NextResponse.json({ error: message }, { status: authStatus(message) });
+    const status = authStatus(message);
+    emitPostHogLog({
+      body: "Resource ingestion request failed",
+      severityText: "ERROR",
+      attributes: {
+        event: "resource_ingestion_failed",
+        failure_stage: "request",
+        status_code: status,
+      },
+    });
+    after(flushPostHogLogs);
+    return NextResponse.json({ error: message }, { status });
   }
 }

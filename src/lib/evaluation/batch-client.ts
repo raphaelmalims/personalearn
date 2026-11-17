@@ -1,8 +1,8 @@
-import { GoogleGenAI, JobState } from "@google/genai";
+import { JobState } from "@google/genai";
 import { mkdtemp, readFile, rm } from "fs/promises";
 import { tmpdir } from "os";
 import { join } from "path";
-import { requireGoogleGenerativeAiApiKey } from "@/lib/ai/vision-model";
+import { createGeminiClient } from "@/lib/ai/gemini-client";
 import {
   buildEvaluatePrompt,
   evaluateGeminiSchema,
@@ -31,8 +31,8 @@ export type BatchRequestLine = {
   request: Record<string, unknown>;
 };
 
-function createGenAiClient(): GoogleGenAI {
-  return new GoogleGenAI({ apiKey: requireGoogleGenerativeAiApiKey() });
+function createGenAiClient() {
+  return createGeminiClient();
 }
 
 function provider(): EvalVisionProvider {

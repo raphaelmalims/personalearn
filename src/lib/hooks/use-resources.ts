@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
+import posthog from "posthog-js";
 import type { Resource, ResourceType } from "@/types/database";
 
 export const resourcesQueryKey = (classId: string) =>
@@ -99,6 +100,7 @@ export function useDeleteResource(classId: string) {
     onSuccess: (_data, resourceId) => {
       queryClient.invalidateQueries({ queryKey: resourcesQueryKey(classId) });
       queryClient.invalidateQueries({ queryKey: resourceQueryKey(resourceId) });
+      posthog.capture("resource_deleted");
     },
   });
 }
@@ -125,9 +127,12 @@ export function useUpdateResource(classId: string, resourceId: string) {
 
       return payload;
     },
-    onSuccess: () => {
+    onSuccess: (payload) => {
       queryClient.invalidateQueries({ queryKey: resourcesQueryKey(classId) });
       queryClient.invalidateQueries({ queryKey: resourceQueryKey(resourceId) });
+      posthog.capture("resource_updated", {
+        chunk_count: payload.chunkCount ?? 0,
+      });
     },
   });
 }
@@ -160,8 +165,12 @@ export function useUploadResource(classId: string) {
 
       return payload;
     },
-    onSuccess: () => {
+    onSuccess: (payload, input) => {
       queryClient.invalidateQueries({ queryKey: resourcesQueryKey(classId) });
+      posthog.capture("resource_uploaded", {
+        resource_type: input.resourceType ?? "unspecified",
+        chunk_count: payload.chunkCount ?? 0,
+      });
     },
   });
 }

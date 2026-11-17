@@ -39,6 +39,7 @@ import {
   logChatReply,
   logChatStreamError,
 } from "@/lib/ai/chat-telemetry";
+import { aiTelemetry } from "@/lib/ai/observability";
 import { requireTeacherClass } from "@/lib/auth/require-teacher-class";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -50,6 +51,7 @@ import {
 } from "ai";
 import { z } from "zod";
 import { mapApiError } from "@/lib/ai-hub/api-errors";
+import { flushAiObservability } from "@/instrumentation";
 
 const bodySchema = z.object({
   classId: z.string().uuid(),
@@ -171,6 +173,12 @@ export async function POST(request: Request) {
       tools,
       stopWhen: stepCountIs(5),
       experimental_transform: smoothStream({ delayInMs: null, chunking: "word" }),
+      runtimeContext: {
+        distinctId: user.id,
+        sessionId: activeConversationId,
+        traceName: "ai_hub_chat_turn",
+      },
+      telemetry: aiTelemetry("ai_hub_chat_turn"),
       ...(settings.provider === "deepseek"
         ? {
             providerOptions: getDeepSeekProviderOptions({
@@ -215,6 +223,7 @@ export async function POST(request: Request) {
       },
       onEnd: async ({ responseMessage, isAborted }) => {
         if (isAborted) {
+          await flushAiObservability();
           return;
         }
 
@@ -229,6 +238,7 @@ export async function POST(request: Request) {
           evalSessions.length === 0 &&
           !reasoning
         ) {
+          await flushAiObservability();
           return;
         }
 
@@ -268,10 +278,17 @@ export async function POST(request: Request) {
         if (messageCount === 2 && latestUserText) {
           const title = await generateAiConversationTitle(
             latestUserText,
-            persistContent
+            persistContent,
+            {
+              distinctId: user.id,
+              sessionId: activeConversationId!,
+              traceName: "ai_hub_conversation_title",
+            }
           );
           await updateConversationTitle(supabase, activeConversationId!, title);
         }
+
+        await flushAiObservability();
       },
       onError: (error) => {
         logChatStreamError(error, modelId);

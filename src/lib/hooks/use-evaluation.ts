@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import posthog from "posthog-js";
 import type { ScriptReviewDto } from "@/lib/evaluation/identity";
 import type { StudentEvalProfile } from "@/lib/evaluation/student-profile";
 import type {
@@ -241,7 +242,7 @@ export function useCreateEvaluationBatch(classId: string) {
       }
       return { batch: payload.batch!, reused: Boolean(payload.reused) };
     },
-    onSuccess: (_result, input) => {
+    onSuccess: (result, input) => {
       queryClient.invalidateQueries({
         queryKey: evaluationBatchesQueryKey(classId),
       });
@@ -251,6 +252,13 @@ export function useCreateEvaluationBatch(classId: string) {
           queryKey: studentEvalProfileQueryKey(classId, input.studentId),
         });
       }
+      posthog.capture("evaluation_batch_created", {
+        has_assessment: Boolean(input.assessmentId),
+        has_resource: Boolean(input.resourceId),
+        has_marking_scheme: Boolean(input.markingSchemeResourceId),
+        is_reused: result.reused,
+        is_single_student: Boolean(input.studentId),
+      });
     },
   });
 }
@@ -378,9 +386,15 @@ export function useUploadEvaluationPages(classId: string) {
       }
       return payload;
     },
-    onSuccess: () => {
+    onSuccess: (payload, input) => {
       queryClient.invalidateQueries({
         queryKey: evaluationBatchesQueryKey(classId),
+      });
+      posthog.capture("evaluation_upload_completed", {
+        file_count: input.files.length,
+        page_count: payload.pageCount ?? 0,
+        queued: Boolean(payload.queued),
+        skipped_all: Boolean(payload.skippedAll),
       });
     },
   });
@@ -405,12 +419,15 @@ export function useStartBatchIndex(classId: string) {
       }
       return payload;
     },
-    onSuccess: (_data, batchId) => {
+    onSuccess: (payload, batchId) => {
       queryClient.invalidateQueries({
         queryKey: evaluationBatchesQueryKey(classId),
       });
       queryClient.invalidateQueries({
         queryKey: evaluationScriptsQueryKey(batchId),
+      });
+      posthog.capture("evaluation_started", {
+        phase: payload.phase ?? "unknown",
       });
     },
   });
@@ -571,7 +588,7 @@ export function useUpdateQuestionEvaluation(classId: string, batchId: string) {
       }
       return payload;
     },
-    onSuccess: () => {
+    onSuccess: (_payload, input) => {
       queryClient.invalidateQueries({
         queryKey: evaluationScriptsQueryKey(batchId),
       });
@@ -579,6 +596,10 @@ export function useUpdateQuestionEvaluation(classId: string, batchId: string) {
         queryKey: evaluationBatchesQueryKey(classId),
       });
       queryClient.invalidateQueries({ queryKey: ["script-review"] });
+      posthog.capture("evaluation_question_updated", {
+        has_score_change: input.awarded !== undefined || input.max !== undefined,
+        has_feedback: input.feedback !== undefined,
+      });
     },
   });
 }
@@ -642,7 +663,7 @@ export function useSignOffScript(classId: string, batchId: string) {
       }
       return payload;
     },
-    onSuccess: () => {
+    onSuccess: (payload) => {
       queryClient.invalidateQueries({
         queryKey: evaluationScriptsQueryKey(batchId),
       });
@@ -662,6 +683,9 @@ export function useSignOffScript(classId: string, batchId: string) {
         queryKey: ["student-eval-profile", classId],
       });
       queryClient.invalidateQueries({ queryKey: ["script-review"] });
+      posthog.capture("evaluation_script_signed_off", {
+        already_signed_off: Boolean(payload.alreadySignedOff),
+      });
     },
   });
 }

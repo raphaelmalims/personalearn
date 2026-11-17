@@ -2,6 +2,7 @@ import { generateImage, generateText, tool } from "ai";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { getChatModel } from "@/lib/ai/llm";
+import { aiTelemetry } from "@/lib/ai/observability";
 import { ingestResource, ingestTxtResource } from "@/lib/ai/ingest-resource";
 import { queryClassResources } from "@/lib/ai/rag";
 import { getImageGenerationModel } from "@/lib/ai/vision-model";
@@ -361,6 +362,7 @@ Curriculum: ${curriculum}
 Term: ${deps.classContext.term} (${deps.classContext.academic_year})
 
 Create a ${typeLabel} titled "${input.title}".${extra}`,
+      telemetry: aiTelemetry("ai_hub_generate_learning_resource"),
     });
 
     const content = text.trim();

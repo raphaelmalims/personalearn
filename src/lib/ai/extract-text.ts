@@ -1,6 +1,7 @@
 import { generateText } from "ai";
 import { extractText as extractPdfText } from "unpdf";
 import { getVisionExtractionModel } from "@/lib/ai/llm";
+import { aiTelemetry } from "@/lib/ai/observability";
 import {
   detectResourceFormat,
   maxBytesForFormat,
@@ -52,6 +53,7 @@ async function extractTextFromImage(bytes: Uint8Array, mimeType: string): Promis
         ],
       },
     ],
+    telemetry: aiTelemetry("resource_image_ocr"),
   });
 
   return text.trim();
