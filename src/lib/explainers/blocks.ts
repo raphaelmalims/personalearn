@@ -2,8 +2,8 @@ import { z } from "zod";
 import type { ExplainerCacheStatus, ExplainerMetrics } from "@/lib/explainers/script";
 
 export const VISUAL_BLOCKS = [
+  "scene",
   "process-flow",
-  "labelled-diagram",
   "number-line",
   "comparison",
   "timeline",
@@ -33,20 +33,32 @@ const processSchema = z.object({
   quiz: quizSchema,
 });
 
-const diagramSchema = z.object({
-  block: z.literal("labelled-diagram"),
+const partId = z.string().trim().regex(/^[a-z0-9-]{2,32}$/);
+
+const sceneSchema = z.object({
+  block: z.literal("scene"),
   title: z.string().trim().min(1).max(80),
   parts: z
     .array(
       z.object({
-        id: z.string().trim().regex(/^[a-z0-9-]{2,32}$/),
+        id: partId,
         label: z.string().trim().min(1).max(40),
         explanation: z.string().trim().min(1).max(160),
         prompt: z.string().trim().min(1).max(120),
+        x: z.number().min(0).max(100),
+        y: z.number().min(0).max(100),
       })
     )
     .min(2)
-    .max(4),
+    .max(5),
+  arrows: z
+    .array(
+      z.object({
+        from: partId,
+        to: partId,
+      })
+    )
+    .max(6),
   quiz: quizSchema,
 });
 
@@ -101,8 +113,8 @@ const timelineSchema = z.object({
 });
 
 export const visualSpecSchema = z.discriminatedUnion("block", [
+  sceneSchema,
   processSchema,
-  diagramSchema,
   numberLineSchema,
   comparisonSchema,
   timelineSchema,
@@ -136,7 +148,7 @@ export function visualCaptions(spec: VisualSpec) {
       return spec.steps.map((step) => step.caption);
     case "number-line":
       return spec.points.map((point) => point.caption);
-    case "labelled-diagram":
+    case "scene":
       return spec.parts.map((part) => `${part.label}. ${part.explanation}`);
     case "comparison":
       return spec.captions;
@@ -170,9 +182,13 @@ export function visualSpecFromUnknown(value: unknown, block?: VisualBlock): Visu
   if (block && parsed.data.block !== block) {
     throw new Error("Visual spec did not match the block.");
   }
-  if (parsed.data.block === "labelled-diagram") {
-    const ids = parsed.data.parts.map((part) => part.id);
-    if (new Set(ids).size !== ids.length) {
+  if (parsed.data.block === "scene") {
+    const spec = parsed.data;
+    const ids = new Set(spec.parts.map((part) => part.id));
+    const arrowsFit = spec.arrows.every(
+      (arrow) => arrow.from !== arrow.to && ids.has(arrow.from) && ids.has(arrow.to)
+    );
+    if (ids.size !== spec.parts.length || !arrowsFit) {
       throw new Error("Visual spec did not match the block.");
     }
   }

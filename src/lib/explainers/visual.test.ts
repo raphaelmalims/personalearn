@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { NO_BLOCK_LINE, parseVisualSpec } from "@/lib/explainers/blocks";
+import { parseVisualSpec } from "@/lib/explainers/blocks";
 import { bundledTopicContext } from "@/lib/explainers/topic-context";
 import { memoryVisualCache } from "@/lib/explainers/visual-cache";
 import { requestVisual } from "@/lib/explainers/visual";
@@ -90,17 +90,64 @@ describe("visual blocks", () => {
     if (result.fit) expect(result.spec.title).toBe("Introduction to Integers");
   });
 
-  it("says no block fits when there is no CBC context", async () => {
+  it("fills a scene from the topic when no passage was retrieved", async () => {
+    const scene = {
+      block: "scene" as const,
+      title: "A volcano",
+      parts: [
+        { id: "vent", label: "Vent", explanation: "Magma rises through the vent.", prompt: "Tap the vent.", x: 48, y: 28 },
+        { id: "magma", label: "Magma", explanation: "Hot rock collects under the cone.", prompt: "Tap the magma.", x: 48, y: 72 },
+      ],
+      arrows: [{ from: "magma", to: "vent" }],
+      quiz: { prompt: "Where does magma leave?", answer: "Vent" },
+    };
     const result = await requestVisual(
       {
-        block: "timeline",
-        topic: "photosynthesis",
+        block: "scene",
+        topic: "volcano",
         grade: 6,
         language: "en",
         context: null,
       },
-      { cache: memoryVisualCache() }
+      {
+        cache: memoryVisualCache(),
+        complete: async () => ({
+          text: JSON.stringify(scene),
+          modelId: "deepseek-flash",
+          promptTokens: 8,
+          completionTokens: 8,
+          cachedPromptTokens: 0,
+        }),
+      }
     );
-    expect(result).toEqual({ fit: false, line: NO_BLOCK_LINE });
+    expect(result.fit).toBe(true);
+    if (result.fit) {
+      expect(result.spec.block).toBe("scene");
+      expect(result.cache).toBe("miss");
+    }
+  });
+
+  it("rejects model output that is not a valid scene", async () => {
+    await expect(
+      requestVisual(
+        {
+          block: "scene",
+          topic: "volcano",
+          grade: 6,
+          language: "en",
+          context: "Magma rises.",
+        },
+        {
+          cache: memoryVisualCache(),
+          complete: async () => ({
+            text: "not a scene",
+            modelId: "deepseek-flash",
+            promptTokens: 1,
+            completionTokens: 1,
+            cachedPromptTokens: 0,
+          }),
+        }
+      )
+    ).rejects.toThrow(/not JSON/);
   });
 });

@@ -1060,7 +1060,7 @@ export function createAgentTools(deps: AgentToolDeps) {
     }),
     visualise: tool({
       description:
-        "Show a topic with a reusable block: process-flow, labelled-diagram, number-line, comparison, or timeline. Call this when the teacher asks to explain, show, diagram, or visualise a topic. You pick the block. The tool fills a schema-checked spec from CBC materials and the chat renders it. Use number-line for integers. Use process-flow for the water cycle. Do not call generate_teaching_image when a block fits. If fit is false, say the returned line once and explain in text. Do not promise an image or say video is impossible.",
+        "Show a topic with one block. Call this when the teacher asks to explain, show, diagram, or visualise a topic. Use scene when a picture can teach the topic: a structure, a place, a cycle, or the parts of a thing. The tool fills one labelled scene and the chat draws the labels and arrows on the picture. Use number-line for integers and other numbers. Use timeline for events in time. Use comparison for a side-by-side contrast. Use process-flow only when a still picture cannot teach the topic and it needs a narrated sequence. Do not call generate_teaching_image when a block fits. If fit is false, say the returned line once and explain in text. Do not promise an image or say video is impossible.",
       inputSchema: z.object({
         block: z.enum(VISUAL_BLOCKS).describe("The block that fits the topic"),
         topic: z.string().min(1).max(80).describe("Topic title, such as Introduction to Integers"),
@@ -1095,7 +1095,7 @@ export function createAgentTools(deps: AgentToolDeps) {
     }),
     generate_teaching_image: tool({
       description:
-        "Generate a teaching-aid picture only when no visualise block fits. Do not use this for a process, labelled parts, a number line, a comparison, or a timeline. If the result says the image tool is unavailable, say that in one line and do not offer to retry.",
+        "Generate a teaching-aid picture only when no visualise block fits. Do not use this for a scene, a narrated sequence, a number line, a comparison, or a timeline. If the result says the image tool is unavailable, say that in one line and do not offer to retry.",
       inputSchema: z.object({
         title: z.string().min(1).describe("Title for the teaching aid"),
         prompt: z

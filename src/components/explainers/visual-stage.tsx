@@ -1,8 +1,9 @@
 "use client";
 
-import { useId, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ExplainerStage } from "@/components/explainers/explainer-stage";
 import { MediaControls } from "@/components/explainers/media-controls";
+import { ScenePlate } from "@/components/explainers/scene-plate";
 import {
   visualCaptions,
   type VisualArtifact,
@@ -90,8 +91,8 @@ function StaticFigure({
             onAdvance={advance}
           />
         ) : null}
-        {spec.block === "labelled-diagram" ? (
-          <LabelledDiagram
+        {spec.block === "scene" ? (
+          <ScenePlate
             spec={spec}
             quizOpen={quizOpen}
             onQuiz={answerQuiz}
@@ -276,162 +277,6 @@ function tickValues(min: number, max: number, points: number[]) {
   return [...values].filter((value) => value >= min && value <= max).sort((a, b) => a - b);
 }
 
-type DiagramPart = Extract<VisualSpec, { block: "labelled-diagram" }>["parts"][number];
-
-const PLANT_REGIONS = {
-  flower: { left: "38%", top: "8%", width: "24%", height: "22%" },
-  leaf: { left: "18%", top: "28%", width: "28%", height: "22%" },
-  stem: { left: "40%", top: "30%", width: "20%", height: "42%" },
-  root: { left: "30%", top: "68%", width: "40%", height: "24%" },
-} as const;
-
-function plantRegion(part: DiagramPart) {
-  const blob = `${part.id} ${part.label}`.toLowerCase();
-  if (/flower|bloom|petal/.test(blob)) return "flower" as const;
-  if (/leaf|leaves/.test(blob)) return "leaf" as const;
-  if (/stem|stalk/.test(blob)) return "stem" as const;
-  if (/root/.test(blob)) return "root" as const;
-  return null;
-}
-
-function LabelledDiagram({
-  spec,
-  quizOpen,
-  onQuiz,
-  onAdvance,
-}: {
-  spec: Extract<VisualSpec, { block: "labelled-diagram" }>;
-  quizOpen: boolean;
-  onQuiz: (correct: boolean, rightText: string, miss: string) => void;
-  onAdvance: (prompt: Prompt) => void;
-}) {
-  const [selected, setSelected] = useState<string | null>(null);
-  const plant = spec.parts.every((part) => plantRegion(part));
-
-  function choose(part: DiagramPart) {
-    setSelected(part.id);
-    if (quizOpen) {
-      onQuiz(sameText(part.label, spec.quiz.answer), `${part.label}. ${part.explanation}`, "Not that part.");
-      return;
-    }
-    onAdvance({ id: part.id, text: `${part.label}. ${part.explanation}` });
-  }
-
-  return (
-    <div className="relative">
-      <svg viewBox="0 0 640 380" className="block h-auto w-full text-foreground" aria-hidden="true">
-        <rect x="16" y="12" width="608" height="356" rx="18" fill="var(--surface-2)" />
-        {plant ? <PlantDrawing selected={selected} parts={spec.parts} /> : <CalloutStrip selected={selected} parts={spec.parts} />}
-      </svg>
-      {(plant ? spec.parts : spec.parts).map((part) => {
-        const region = plant ? PLANT_REGIONS[plantRegion(part)!] : stripRegion(spec.parts.length, spec.parts.indexOf(part));
-        return (
-          <button
-            key={part.id}
-            type="button"
-            aria-pressed={selected === part.id}
-            aria-label={part.label}
-            className="absolute bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            style={region}
-            onClick={() => choose(part)}
-          />
-        );
-      })}
-    </div>
-  );
-}
-
-function PlantDrawing({
-  selected,
-  parts,
-}: {
-  selected: string | null;
-  parts: DiagramPart[];
-}) {
-  const labelFor = (kind: keyof typeof PLANT_REGIONS) =>
-    parts.find((part) => plantRegion(part) === kind)?.label ?? "";
-  const on = (kind: keyof typeof PLANT_REGIONS) =>
-    parts.some((part) => plantRegion(part) === kind && part.id === selected);
-  return (
-    <g>
-      <path d="M70 300 C 180 286, 460 286, 570 304" fill="none" stroke="currentColor" strokeOpacity="0.25" />
-      <path d="M318 96 C 318 180, 314 240, 320 292" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
-      <path
-        d="M214 214 C 250 196, 286 188, 312 196 C 286 214, 250 228, 214 214 Z"
-        fill="color-mix(in srgb, var(--success) 55%, var(--surface-1))"
-        stroke="currentColor"
-        strokeWidth={on("leaf") ? 2 : 1}
-      />
-      <path
-        d="M430 168 C 390 156, 350 160, 326 176 C 356 188, 398 190, 430 168 Z"
-        fill="color-mix(in srgb, var(--success) 55%, var(--surface-1))"
-        stroke="currentColor"
-        strokeWidth={on("leaf") ? 2 : 1}
-      />
-      <path d="M292 292 C 270 324, 246 338, 220 346 M320 294 C 320 330, 336 348, 368 356 M348 292 C 372 318, 390 332, 410 338" fill="none" stroke="currentColor" strokeWidth={on("root") ? 2.4 : 1.6} strokeLinecap="round" />
-      <circle cx="320" cy="78" r="16" fill="color-mix(in srgb, var(--warning) 70%, var(--surface-1))" stroke="currentColor" strokeWidth={on("flower") ? 2 : 1} />
-      <circle cx="304" cy="66" r="10" fill="var(--surface-1)" stroke="currentColor" strokeWidth="1" />
-      <circle cx="336" cy="66" r="10" fill="var(--surface-1)" stroke="currentColor" strokeWidth="1" />
-      <circle cx="308" cy="90" r="10" fill="var(--surface-1)" stroke="currentColor" strokeWidth="1" />
-      <circle cx="334" cy="90" r="10" fill="var(--surface-1)" stroke="currentColor" strokeWidth="1" />
-      <Leader x1={360} y1={78} x2={470} y2={64} label={labelFor("flower")} hot={on("flower")} />
-      <Leader x1={214} y1={214} x2={78} y2={196} label={labelFor("leaf")} hot={on("leaf")} />
-      <Leader x1={336} y1={200} x2={470} y2={220} label={labelFor("stem")} hot={on("stem")} />
-      <Leader x1={280} y1={330} x2={78} y2={348} label={labelFor("root")} hot={on("root")} />
-    </g>
-  );
-}
-
-function Leader({ x1, y1, x2, y2, label, hot }: { x1: number; y1: number; x2: number; y2: number; label: string; hot: boolean }) {
-  return (
-    <g>
-      <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="currentColor" strokeOpacity="0.55" strokeWidth="1" />
-      <text x={x2} y={y2} fill="currentColor" fontSize="15" fontWeight={hot ? 650 : 500} textAnchor={x2 < 200 ? "start" : "start"}>
-        {label}
-      </text>
-    </g>
-  );
-}
-
-function stripRegion(count: number, index: number) {
-  const width = 80 / count;
-  return {
-    left: `${10 + index * width}%`,
-    top: "18%",
-    width: `${width - 2}%`,
-    height: "64%",
-  };
-}
-
-function CalloutStrip({ selected, parts }: { selected: string | null; parts: DiagramPart[] }) {
-  const markerId = useId().replace(/:/g, "");
-  return (
-    <g>
-      <defs>
-        <marker id={markerId} markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
-          <path d="M0 0 L7 4 L0 8" fill="none" stroke="currentColor" strokeWidth="1.2" />
-        </marker>
-      </defs>
-      {parts.map((part, index) => {
-        const count = parts.length;
-        const x = 70 + ((500 / Math.max(count - 1, 1)) * index);
-        const next = index < count - 1 ? 70 + (500 / Math.max(count - 1, 1)) * (index + 1) : null;
-        const hot = selected === part.id;
-        return (
-          <g key={part.id}>
-            {next == null ? null : (
-              <line x1={x + 28} y1={150} x2={next - 28} y2={150} stroke="currentColor" strokeWidth="1.25" markerEnd={`url(#${markerId})`} />
-            )}
-            <rect x={x - 22} y={128} width="44" height="44" rx="12" fill="var(--surface-1)" stroke="currentColor" strokeWidth={hot ? 2 : 1} />
-            <text x={x} y={214} textAnchor="middle" fill="currentColor" fontSize="15" fontWeight={hot ? 650 : 500}>
-              {part.label}
-            </text>
-          </g>
-        );
-      })}
-    </g>
-  );
-}
 
 function Comparison({
   spec,

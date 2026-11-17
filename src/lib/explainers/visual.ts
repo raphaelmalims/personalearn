@@ -2,7 +2,6 @@ import { generateText } from "ai";
 import { getChatProvider, getDeepSeekProviderOptions } from "@/lib/ai/env";
 import { getActiveChatModelId, getChatModel } from "@/lib/ai/llm";
 import {
-  NO_BLOCK_LINE,
   parseVisualSpec,
   type VisualArtifact,
   type VisualBlock,
@@ -35,8 +34,8 @@ type Completion = {
 const SHAPE: Record<VisualBlock, string> = {
   "process-flow":
     '{"block":"process-flow","title":"","steps":[{"label":"","caption":""},{"label":"","caption":""},{"label":"","caption":""},{"label":"","caption":""}],"quiz":{"prompt":"","answer":""}}',
-  "labelled-diagram":
-    '{"block":"labelled-diagram","title":"","parts":[{"id":"part-one","label":"","explanation":"","prompt":"Tap the part that ..."}],"quiz":{"prompt":"","answer":""}}',
+  scene:
+    '{"block":"scene","title":"","parts":[{"id":"part-one","label":"","explanation":"","prompt":"Tap this part.","x":24,"y":40},{"id":"part-two","label":"","explanation":"","prompt":"Tap this part.","x":70,"y":36}],"arrows":[{"from":"part-one","to":"part-two"}],"quiz":{"prompt":"","answer":""}}',
   "number-line":
     '{"block":"number-line","title":"","min":-5,"max":5,"points":[{"value":-3,"label":"-3","caption":""},{"value":0,"label":"0","caption":""},{"value":2,"label":"2","caption":""}],"quiz":{"prompt":"","answer":""}}',
   comparison:
@@ -120,6 +119,7 @@ function fillSystem(block: VisualBlock, grade: number, language: string) {
     `Write in ${languageName(language)} for grade ${grade}.`,
     "Captions are one short sentence. The quiz asks one check the learner can answer from the block.",
     "Part ids are lowercase words joined by hyphens.",
+    "For a scene, x and y are 0 to 100 and the labels must not sit on top of each other. Add an arrow only when one part leads to another.",
     `Reply with JSON only: ${SHAPE[block]}`,
   ].join(" ");
 }
@@ -174,7 +174,6 @@ export async function requestVisual(
   const cache = deps?.cache;
   if (!cache) throw new Error("Visual cache is not configured.");
   const context = input.context?.trim() ?? "";
-  if (!context) return { fit: false, line: NO_BLOCK_LINE };
 
   const now = deps?.now ?? (() => performance.now());
   const at = deps?.at ?? new Date();
@@ -193,7 +192,9 @@ export async function requestVisual(
   if (!base) {
     const completion = await complete({
       system: fillSystem(input.block, grade, language),
-      prompt: `Context:\n${context}\n\nTopic: ${topic}`,
+      prompt: context
+        ? `Context:\n${context}\n\nTopic: ${topic}`
+        : `Topic: ${topic}\nNo passage was retrieved. Stay on this topic.`,
     });
     const spec = parseVisualSpec(completion.text, input.block);
     base = { spec, modelId: completion.modelId };

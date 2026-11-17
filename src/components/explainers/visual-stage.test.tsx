@@ -53,4 +53,36 @@ describe("visual stage", () => {
     expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Volume" })).toBeInTheDocument();
   });
+
+  it("draws a labelled scene and clears feedback on the next tap", async () => {
+    const user = userEvent.setup();
+    const volcano: VisualArtifact = {
+      ...artifact,
+      block: "scene",
+      topic: "volcano",
+      spec: {
+        block: "scene",
+        title: "A volcano",
+        parts: [
+          { id: "vent", label: "Vent", explanation: "Magma leaves through the vent.", prompt: "Tap the opening.", x: 50, y: 28 },
+          { id: "magma", label: "Magma chamber", explanation: "Hot rock collects here.", prompt: "Tap the chamber.", x: 50, y: 72 },
+          { id: "ash", label: "Ash cloud", explanation: "Ash rises above the cone.", prompt: "Tap the cloud.", x: 78, y: 22 },
+        ],
+        arrows: [
+          { from: "magma", to: "vent" },
+          { from: "vent", to: "ash" },
+        ],
+        quiz: { prompt: "Where does magma leave the cone?", answer: "Vent" },
+      },
+    };
+    render(<VisualStage artifact={volcano} playKey="volcano" />);
+    expect(screen.getByRole("img", { name: "A volcano" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Find it" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Vent" }));
+    expect(screen.getByText("Where does magma leave the cone?")).toBeInTheDocument();
+    expect(screen.getByText(/Right\. Vent\./)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Ash cloud" }));
+    expect(screen.queryByText(/Right\./)).not.toBeInTheDocument();
+    expect(screen.getByText(/Ash rises above the cone/)).toBeInTheDocument();
+  });
 });
