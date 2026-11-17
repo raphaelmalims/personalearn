@@ -34,13 +34,23 @@ const artifact: VisualArtifact = {
 };
 
 describe("visual stage", () => {
-  it("shows a number-line point and the quiz answer", async () => {
+  it("puts the numbers on the line and clears quiz feedback on the next prompt", async () => {
     const user = userEvent.setup();
     render(<VisualStage artifact={artifact} playKey="test" />);
-    await user.click(screen.getByRole("button", { name: "-3" }));
-    expect(screen.getByText(/left of zero/)).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Show answer" }));
-    expect(screen.getAllByRole("button", { name: "-3" })).toHaveLength(2);
+    const line = screen.getByRole("img", { name: "Introduction to Integers" });
+    const negative = screen.getByRole("button", { name: "-3" });
+    expect(line.parentElement).toContainElement(negative);
+    expect(screen.queryByRole("button", { name: "Show answer" })).not.toBeInTheDocument();
+
+    await user.click(negative);
     expect(screen.getByText("Which point is less than zero?")).toBeInTheDocument();
+    expect(screen.getByText(/Right\. Negative three is left of zero/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "2" }));
+    expect(screen.queryByText(/Right\./)).not.toBeInTheDocument();
+    expect(screen.queryByText("Which point is less than zero?")).not.toBeInTheDocument();
+    expect(screen.getByText("Two is greater than zero.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Volume" })).toBeInTheDocument();
   });
 });
