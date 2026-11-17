@@ -72,11 +72,14 @@ describe("visual stage", () => {
           { from: "magma", to: "vent" },
           { from: "vent", to: "ash" },
         ],
+        imagePath: "scenes/6/en/volcano.png",
         quiz: { prompt: "Where does magma leave the cone?", answer: "Vent" },
       },
     };
     render(<VisualStage artifact={volcano} playKey="volcano" />);
-    expect(screen.getByRole("img", { name: "A volcano" })).toBeInTheDocument();
+    const vent = screen.getByRole("button", { name: "Vent" });
+    expect(vent).toHaveStyle({ left: "50%", top: "28%" });
+    expect(screen.getByRole("img", { name: "A volcano" })).toHaveAttribute("src", "/api/explainers/scenes?path=scenes%2F6%2Fen%2Fvolcano.png");
     expect(screen.queryByRole("button", { name: "Find it" })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Vent" }));
     expect(screen.getByText("Where does magma leave the cone?")).toBeInTheDocument();

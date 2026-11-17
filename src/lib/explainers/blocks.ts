@@ -12,6 +12,8 @@ export const VISUAL_BLOCKS = [
 export type VisualBlock = (typeof VISUAL_BLOCKS)[number];
 
 export const NO_BLOCK_LINE = "No visual block fits this topic.";
+export const SCENE_PICTURE_LINE = "The picture could not be generated.";
+export const SCENE_QUOTA_LINE = "The picture quota for today is used up.";
 
 const quizSchema = z.object({
   prompt: z.string().trim().min(1).max(140),
@@ -59,6 +61,11 @@ const sceneSchema = z.object({
       })
     )
     .max(6),
+  imagePath: z
+    .string()
+    .trim()
+    .regex(/^scenes\/[1-9]\/(?:en|sw)\/[a-z0-9-]{1,80}\.(?:png|webp|jpe?g)$/)
+    .optional(),
   quiz: quizSchema,
 });
 

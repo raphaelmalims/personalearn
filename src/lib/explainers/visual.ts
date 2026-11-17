@@ -9,6 +9,14 @@ import {
   type VisualSpec,
 } from "@/lib/explainers/blocks";
 import { canonicalTopic } from "@/lib/explainers/topic-context";
+import {
+  applyScenePicture,
+  illustrationPrompt,
+  ScenePictureError,
+  SceneQuotaError,
+  sceneObjectPath,
+  type ScenePipeline,
+} from "@/lib/explainers/scene-image";
 import { writeVisualCache, type VisualCacheStore } from "@/lib/explainers/visual-cache";
 import { personalCacheKey } from "@/lib/explainers/request";
 import {
@@ -119,7 +127,7 @@ function fillSystem(block: VisualBlock, grade: number, language: string) {
     `Write in ${languageName(language)} for grade ${grade}.`,
     "Captions are one short sentence. The quiz asks one check the learner can answer from the block.",
     "Part ids are lowercase words joined by hyphens.",
-    "For a scene, x and y are 0 to 100 and the labels must not sit on top of each other. Add an arrow only when one part leads to another.",
+    "For a scene, x and y are rough positions from 0 to 100. Omit imagePath. The labels and arrows are drawn on one picture and the positions are checked afterwards.",
     `Reply with JSON only: ${SHAPE[block]}`,
   ].join(" ");
 }
@@ -141,6 +149,27 @@ function logVisual(result: VisualArtifact) {
       wallTimeMs: result.metrics.wallTimeMs,
     })
   );
+}
+
+async function realiseScene(
+  spec: Extract<VisualSpec, { block: "scene" }>,
+  grade: number,
+  language: string,
+  topic: string,
+  scene: ScenePipeline | undefined
+) {
+  if (!scene) throw new ScenePictureError();
+  if ((await scene.takeCap()) === "capped") throw new SceneQuotaError();
+  const image = await scene.illustrate(illustrationPrompt(spec, grade));
+  const points = await scene.locate({
+    bytes: image.bytes,
+    mediaType: image.mediaType,
+    parts: spec.parts.map((part) => ({ id: part.id, label: part.label })),
+  });
+  const imagePath = sceneObjectPath({ topic, grade, language });
+  const pictured = applyScenePicture(spec, points, imagePath);
+  await scene.store(imagePath, image.bytes, image.mediaType);
+  return { spec: pictured, modelId: image.modelId, costUsd: image.costUsd };
 }
 
 function artifact(input: {
@@ -169,6 +198,7 @@ export async function requestVisual(
     now?: () => number;
     at?: Date;
     complete?: (input: { system: string; prompt: string }) => Promise<Completion>;
+    scene?: ScenePipeline;
   }
 ): Promise<VisualResult> {
   const cache = deps?.cache;
@@ -186,6 +216,7 @@ export async function requestVisual(
   const complete = deps?.complete ?? completeWithModel;
 
   let base = await cache.get(key);
+  if (base?.spec.block === "scene" && !base.spec.imagePath) base = null;
   let baseStatus: "hit" | "miss" = base ? "hit" : "miss";
   let baseMetrics = emptyMetrics(base?.modelId ?? "");
 
@@ -196,14 +227,26 @@ export async function requestVisual(
         ? `Context:\n${context}\n\nTopic: ${topic}`
         : `Topic: ${topic}\nNo passage was retrieved. Stay on this topic.`,
     });
-    const spec = parseVisualSpec(completion.text, input.block);
-    base = { spec, modelId: completion.modelId };
-    await writeVisualCache(cache, key, base);
+    let spec = parseVisualSpec(completion.text, input.block);
+    let modelId = completion.modelId;
     baseMetrics = metricsFromCompletion(completion, at, roundMs(now() - started));
+    if (spec.block === "scene") {
+      const picture = await realiseScene(spec, grade, language, topic, deps?.scene);
+      spec = picture.spec;
+      modelId = picture.modelId;
+      baseMetrics = {
+        ...baseMetrics,
+        modelId,
+        costUsd: baseMetrics.costUsd + picture.costUsd,
+        wallTimeMs: roundMs(now() - started),
+      };
+    }
+    base = { spec, modelId };
+    await writeVisualCache(cache, key, base);
     baseStatus = "miss";
   }
 
-  if (!emphasis) {
+  if (!emphasis || base.spec.block === "scene") {
     const result = artifact({
       cache: baseStatus,
       block: input.block,

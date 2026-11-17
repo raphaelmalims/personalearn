@@ -2,9 +2,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { retrieveClassContext } from "@/lib/ai/rag";
 import {
   NO_BLOCK_LINE,
+  SCENE_PICTURE_LINE,
+  SCENE_QUOTA_LINE,
   isVisualBlock,
   type VisualBlock,
 } from "@/lib/explainers/blocks";
+import { ScenePictureError, SceneQuotaError, scenePipeline, type ScenePipeline } from "@/lib/explainers/scene-image";
+import type { VisualCacheStore } from "@/lib/explainers/visual-cache";
 import { buildEmphasis } from "@/lib/explainers/personalise";
 import { bundledTopicContext, canonicalTopic } from "@/lib/explainers/topic-context";
 import { requestVisual } from "@/lib/explainers/visual";
@@ -17,6 +21,8 @@ export async function executeVisualise(
     supabase: SupabaseClient;
     classId: string;
     grade: number;
+    scene?: ScenePipeline;
+    cache?: VisualCacheStore;
   },
   input: {
     block: string;
@@ -66,9 +72,14 @@ export async function executeVisualise(
         emphasis,
         context,
       },
-      { cache: supabaseVisualCache(deps.supabase) }
+      {
+        cache: deps.cache ?? supabaseVisualCache(deps.supabase),
+        scene: deps.scene ?? scenePipeline(deps.supabase),
+      }
     );
   } catch (error) {
+    if (error instanceof SceneQuotaError) return { fit: false as const, line: SCENE_QUOTA_LINE };
+    if (error instanceof ScenePictureError) return { fit: false as const, line: SCENE_PICTURE_LINE };
     const message = error instanceof Error ? error.message : "Visual failed";
     const invalid = /not JSON|did not match the block/i.test(message);
     console.info(

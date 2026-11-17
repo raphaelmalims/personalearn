@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { parseVisualSpec } from "@/lib/explainers/blocks";
+import { SCENE_QUOTA_LINE, parseVisualSpec } from "@/lib/explainers/blocks";
 import { bundledTopicContext } from "@/lib/explainers/topic-context";
+import { SceneQuotaError, memorySceneCap } from "@/lib/explainers/scene-image";
 import { memoryVisualCache } from "@/lib/explainers/visual-cache";
 import { requestVisual } from "@/lib/explainers/visual";
 
@@ -90,41 +91,99 @@ describe("visual blocks", () => {
     if (result.fit) expect(result.spec.title).toBe("Introduction to Integers");
   });
 
-  it("fills a scene from the topic when no passage was retrieved", async () => {
+  it("stores one checked picture and does not generate it again", async () => {
     const scene = {
       block: "scene" as const,
       title: "A volcano",
       parts: [
-        { id: "vent", label: "Vent", explanation: "Magma rises through the vent.", prompt: "Tap the vent.", x: 48, y: 28 },
-        { id: "magma", label: "Magma", explanation: "Hot rock collects under the cone.", prompt: "Tap the magma.", x: 48, y: 72 },
+        { id: "vent", label: "Vent", explanation: "Magma rises through the vent.", prompt: "Tap the vent.", x: 10, y: 10 },
+        { id: "magma", label: "Magma", explanation: "Hot rock collects under the cone.", prompt: "Tap the magma.", x: 12, y: 12 },
       ],
       arrows: [{ from: "magma", to: "vent" }],
       quiz: { prompt: "Where does magma leave?", answer: "Vent" },
     };
-    const result = await requestVisual(
-      {
-        block: "scene",
-        topic: "volcano",
-        grade: 6,
-        language: "en",
-        context: null,
+    let illustrated = 0;
+    const cache = memoryVisualCache();
+    const scenePipeline = {
+      ...memorySceneCap(),
+      illustrate: async () => {
+        illustrated += 1;
+        return {
+          bytes: new Uint8Array([1, 2, 3]),
+          mediaType: "image/png",
+          modelId: "gemini-2.5-flash-image",
+          costUsd: 0.039,
+        };
       },
-      {
-        cache: memoryVisualCache(),
-        complete: async () => ({
-          text: JSON.stringify(scene),
-          modelId: "deepseek-flash",
-          promptTokens: 8,
-          completionTokens: 8,
-          cachedPromptTokens: 0,
-        }),
-      }
+      locate: async () => [
+        { id: "vent", x: 46, y: 22 },
+        { id: "magma", x: 48, y: 74 },
+      ],
+      store: async () => {},
+    };
+    const complete = async () => ({
+      text: JSON.stringify(scene),
+      modelId: "deepseek-flash",
+      promptTokens: 8,
+      completionTokens: 8,
+      cachedPromptTokens: 0,
+    });
+    const first = await requestVisual(
+      { block: "scene", topic: "volcano", grade: 6, language: "en", context: null },
+      { cache, complete, scene: scenePipeline }
     );
-    expect(result.fit).toBe(true);
-    if (result.fit) {
-      expect(result.spec.block).toBe("scene");
-      expect(result.cache).toBe("miss");
+    const second = await requestVisual(
+      { block: "scene", topic: "volcano", grade: 6, language: "en", context: null },
+      { cache, complete, scene: scenePipeline }
+    );
+    expect(illustrated).toBe(1);
+    expect(first.fit && first.spec.block === "scene" && first.spec.imagePath).toBe("scenes/6/en/volcano.png");
+    if (first.fit && first.spec.block === "scene") {
+      expect(first.spec.parts.find((part) => part.id === "vent")?.x).toBe(46);
+      expect(first.metrics.costUsd).toBeGreaterThan(0);
     }
+    expect(second.fit && second.cache).toBe("hit");
+    if (second.fit) expect(second.metrics.costUsd).toBe(0);
+  });
+
+  it("stops at the daily picture cap before generating", async () => {
+    const scene = {
+      block: "scene",
+      title: "A volcano",
+      parts: [
+        { id: "vent", label: "Vent", explanation: "Magma rises through the vent.", prompt: "Tap the vent.", x: 20, y: 20 },
+        { id: "magma", label: "Magma", explanation: "Hot rock collects under the cone.", prompt: "Tap the magma.", x: 70, y: 70 },
+      ],
+      arrows: [],
+      quiz: { prompt: "Where does magma leave?", answer: "Vent" },
+    };
+    let illustrated = 0;
+    await expect(
+      requestVisual(
+        { block: "scene", topic: "volcano", grade: 6, language: "en", context: "Magma rises." },
+        {
+          cache: memoryVisualCache(),
+          complete: async () => ({
+            text: JSON.stringify(scene),
+            modelId: "deepseek-flash",
+            promptTokens: 1,
+            completionTokens: 1,
+            cachedPromptTokens: 0,
+          }),
+          scene: {
+            ...memorySceneCap(0),
+            illustrate: async () => {
+              illustrated += 1;
+              return { bytes: new Uint8Array(), mediaType: "image/png", modelId: "image", costUsd: 0 };
+            },
+            locate: async () => [],
+            store: async () => {},
+          },
+        }
+      )
+    ).rejects.toBeInstanceOf(SceneQuotaError);
+    expect(illustrated).toBe(0);
+    expect(SCENE_QUOTA_LINE).toMatch(/quota/);
   });
 
   it("rejects model output that is not a valid scene", async () => {

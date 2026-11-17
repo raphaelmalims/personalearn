@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { NO_BLOCK_LINE } from "@/lib/explainers/blocks";
+import { NO_BLOCK_LINE, SCENE_PICTURE_LINE, SCENE_QUOTA_LINE } from "@/lib/explainers/blocks";
+import { ScenePictureError, SceneQuotaError } from "@/lib/explainers/scene-image";
 import { supabaseVisualCache } from "@/lib/explainers/visual-cache";
 import { executeVisualise } from "@/lib/explainers/visual-tool";
 
@@ -82,5 +83,18 @@ describe("executeVisualise", () => {
     await expect(
       executeVisualise(deps, { block: "process-flow", topic: "water cycle" })
     ).rejects.toThrow(/cache write/);
+  });
+
+  it("returns one line when the picture fails or the day is capped", async () => {
+    mockRequestVisual.mockRejectedValue(new ScenePictureError());
+    await expect(executeVisualise(deps, { block: "scene", topic: "volcano" })).resolves.toEqual({
+      fit: false,
+      line: SCENE_PICTURE_LINE,
+    });
+    mockRequestVisual.mockRejectedValue(new SceneQuotaError());
+    await expect(executeVisualise(deps, { block: "scene", topic: "volcano" })).resolves.toEqual({
+      fit: false,
+      line: SCENE_QUOTA_LINE,
+    });
   });
 });
