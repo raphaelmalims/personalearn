@@ -49,7 +49,7 @@ export function ClassSelector({ fill = false, rail = false }: ClassSelectorProps
     }
   }
 
-  function shortLabel(cls: {
+  function detailLabel(cls: {
     grade_level: number;
     subject: string;
     section: string | null;
@@ -61,7 +61,7 @@ export function ClassSelector({ fill = false, rail = false }: ClassSelectorProps
   const label = isLoading
     ? "Loading…"
     : activeClass
-      ? shortLabel(activeClass)
+      ? activeClass.name
       : classes?.length
         ? "Select class"
         : "No active class";
@@ -72,7 +72,7 @@ export function ClassSelector({ fill = false, rail = false }: ClassSelectorProps
         align="start"
         portal
         rootClassName={cn("min-w-0", fill && "w-full")}
-        contentClassName={cn("min-w-0", fill ? "w-full max-w-full" : "max-w-xs")}
+        contentClassName="min-w-0 max-w-full"
         trigger={
           <button
             type="button"
@@ -106,12 +106,17 @@ export function ClassSelector({ fill = false, rail = false }: ClassSelectorProps
                 activeClass?.id === cls.id ? "bg-primary/10 text-primary" : undefined
               )}
             >
-              <span className="min-w-0 truncate font-medium">{shortLabel(cls)}</span>
+              <span className="min-w-0">
+                <span className="block truncate font-medium">{cls.name}</span>
+                <span className="block truncate text-xs font-normal text-muted-foreground">
+                  {detailLabel(cls)}
+                </span>
+              </span>
             </DropdownMenuItem>
             <button
               type="button"
               className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-              aria-label={`Edit ${shortLabel(cls)}`}
+              aria-label={`Edit ${cls.name}`}
               onClick={() => setEditClass(cls)}
             >
               <Pencil className="h-3.5 w-3.5" />
