@@ -98,6 +98,11 @@ describe("HubClassPanel", () => {
     expect(onCollapsedChange).toHaveBeenCalledWith(false);
   });
 
+  it("renders the class picker in the mobile hub drawer", () => {
+    renderPanel({ sheetMode: true });
+    expect(screen.getByTestId("class-selector")).toBeInTheDocument();
+  });
+
   it("collapses from the expanded header", async () => {
     const user = userEvent.setup();
     const onCollapsedChange = vi.fn();

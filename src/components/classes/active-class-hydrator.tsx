@@ -5,12 +5,14 @@ import { useClasses } from "@/lib/hooks/use-classes";
 import { useActiveClassStore } from "@/lib/store/active-class";
 
 export function ActiveClassHydrator() {
-  const { data: classes, isSuccess } = useClasses();
+  const { data: classes, isSuccess, isFetching } = useClasses();
   const activeClass = useActiveClassStore((state) => state.activeClass);
   const setActiveClass = useActiveClassStore((state) => state.setActiveClass);
 
   useEffect(() => {
-    if (!isSuccess || !classes?.length) return;
+    // Creating a class sets the new row active before the list refetch lands.
+    // Skip while fetching so the previous list head cannot replace it.
+    if (!isSuccess || isFetching || !classes?.length) return;
 
     const stillValid = activeClass && classes.some((c) => c.id === activeClass.id);
     if (!stillValid) {
@@ -24,7 +26,7 @@ export function ActiveClassHydrator() {
         term: first.term,
       });
     }
-  }, [isSuccess, classes, activeClass, setActiveClass]);
+  }, [isSuccess, isFetching, classes, activeClass, setActiveClass]);
 
   return null;
 }
