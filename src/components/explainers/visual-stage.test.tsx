@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { VisualStage } from "@/components/explainers/visual-stage";
 import type { VisualArtifact } from "@/lib/explainers/blocks";
 
@@ -87,5 +87,43 @@ describe("visual stage", () => {
     await user.click(screen.getByRole("button", { name: "Ash cloud" }));
     expect(screen.queryByText(/Right\./)).not.toBeInTheDocument();
     expect(screen.getByText(/Ash rises above the cone/)).toBeInTheDocument();
+  });
+
+  it("maps a water-cycle scene onto the fixed parts and shows the tally", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        tally: [
+          { partId: "evaporation", correct: 1, incorrect: 2 },
+          { partId: "condensation", correct: 0, incorrect: 0 },
+          { partId: "precipitation", correct: 0, incorrect: 0 },
+          { partId: "collection", correct: 0, incorrect: 0 },
+        ],
+      }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    const oddIds: VisualArtifact = {
+      ...artifact,
+      block: "scene",
+      topic: "water cycle",
+      grade: 4,
+      spec: {
+        block: "scene",
+        title: "The water cycle",
+        parts: [
+          { id: "sun-heat", label: "Sun", explanation: "Water turns into vapour.", prompt: "Tap the heat.", x: 18, y: 22 },
+          { id: "clouds", label: "Clouds", explanation: "Droplets gather.", prompt: "Tap the cloud.", x: 72, y: 20 },
+          { id: "raindrops", label: "Rain", explanation: "Water falls.", prompt: "Tap the rain.", x: 74, y: 48 },
+          { id: "lake", label: "Lake", explanation: "Water gathers.", prompt: "Tap the lake.", x: 40, y: 78 },
+        ],
+        arrows: [{ from: "sun-heat", to: "clouds" }],
+        quiz: { prompt: "Where does rain go?", answer: "Lake" },
+      },
+    };
+    render(<VisualStage artifact={oddIds} playKey="water" />);
+    expect(screen.getByRole("button", { name: "Sun" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Find it" })).not.toBeInTheDocument();
+    expect(await screen.findByText(/evaporation: 2 wrong, 1 right/)).toBeInTheDocument();
+    vi.unstubAllGlobals();
   });
 });

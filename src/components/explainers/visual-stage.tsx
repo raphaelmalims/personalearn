@@ -1,9 +1,11 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ExplainerStage } from "@/components/explainers/explainer-stage";
 import { MediaControls } from "@/components/explainers/media-controls";
 import { ScenePlate } from "@/components/explainers/scene-plate";
+import type { DiagramAnswer, PartTally } from "@/lib/diagrams/tally";
+import { toWaterCycleDiagram } from "@/lib/diagrams/water-cycle-parts";
 import {
   visualCaptions,
   type VisualArtifact,
@@ -48,15 +50,107 @@ export function VisualStage({
     );
   }
 
-  return <StaticFigure spec={spec} language={artifact.language} />;
+  return <PictureStage artifact={artifact} spec={spec} />;
+}
+
+function PictureStage({
+  artifact,
+  spec,
+}: {
+  artifact: VisualArtifact;
+  spec: Exclude<VisualSpec, { block: "process-flow" }>;
+}) {
+  const water = spec.block === "scene" ? toWaterCycleDiagram(artifact.topic, spec) : null;
+  const [tally, setTally] = useState<PartTally[] | null>(null);
+  const tallyKey = `${artifact.topic}|${artifact.grade}|${artifact.language}|${water ? "water" : "plain"}`;
+
+  useEffect(() => {
+    if (!tallyKey.endsWith("|water")) return;
+    let cancelled = false;
+    void loadDiagramTally(artifact).then((rows) => {
+      if (!cancelled && rows) setTally(rows);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [tallyKey, artifact]);
+
+  const recorded = tally?.some((row) => row.correct > 0 || row.incorrect > 0) ?? false;
+
+  return (
+    <div>
+      <StaticFigure
+        spec={spec}
+        language={artifact.language}
+        onScenePart={
+          water
+            ? (part) => {
+                const mapped = water.parts.find((item) => item.label === part.label);
+                if (!mapped) return;
+                const correct = sameText(part.label, spec.quiz.answer);
+                void recordDiagramAnswer(artifact, {
+                  partId: mapped.id,
+                  mode: "find",
+                  correct,
+                }).then((rows) => {
+                  if (rows) setTally(rows);
+                });
+              }
+            : undefined
+        }
+      />
+      {water && recorded && tally ? (
+        <ul className="px-4 pb-3 text-xs text-muted-foreground">
+          {tally.map((row) => (
+            <li key={row.partId}>
+              {row.partId}: {row.incorrect} wrong, {row.correct} right
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
+async function loadDiagramTally(artifact: VisualArtifact) {
+  const params = new URLSearchParams({
+    topic: artifact.topic,
+    grade: String(artifact.grade),
+    language: artifact.language,
+  });
+  const response = await fetch(`/api/diagrams/answers?${params}`);
+  if (!response.ok) return null;
+  const body = (await response.json()) as { tally?: PartTally[] };
+  return body.tally ?? null;
+}
+
+function recordDiagramAnswer(artifact: VisualArtifact, answer: DiagramAnswer) {
+  return fetch("/api/diagrams/answers", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      topic: artifact.topic,
+      grade: artifact.grade,
+      language: artifact.language,
+      partId: answer.partId,
+      mode: answer.mode,
+      correct: answer.correct,
+    }),
+  }).then(async (response) => {
+    if (!response.ok) return null;
+    const body = (await response.json()) as { tally?: PartTally[] };
+    return body.tally ?? null;
+  });
 }
 
 function StaticFigure({
   spec,
   language,
+  onScenePart,
 }: {
   spec: Exclude<VisualSpec, { block: "process-flow" }>;
   language: string;
+  onScenePart?: (part: Extract<VisualSpec, { block: "scene" }>["parts"][number]) => void;
 }) {
   const narration = useNarration(visualCaptions(spec), language);
   const [prompt, setPrompt] = useState<Prompt>({ id: "quiz", text: spec.quiz.prompt });
@@ -97,6 +191,7 @@ function StaticFigure({
             quizOpen={quizOpen}
             onQuiz={answerQuiz}
             onAdvance={advance}
+            onPart={onScenePart}
           />
         ) : null}
         {spec.block === "comparison" ? (
