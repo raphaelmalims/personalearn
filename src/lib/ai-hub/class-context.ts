@@ -1,10 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  classLevelLabel,
+  curriculumForLevel,
+  type ClassLevelCode,
+} from "@/lib/classes/level";
 
 export type ClassContext = {
   id: string;
   name: string;
   subject: string;
-  grade_level: number;
+  grade_level: ClassLevelCode;
   term: number;
   section: string | null;
   academic_year: string;
@@ -29,13 +34,16 @@ export async function getClassContext(
 
 export function buildClassAssistantSystemPrompt(classContext: ClassContext): string {
   const section = classContext.section ? `, ${classContext.section}` : "";
+  const curriculum = curriculumForLevel(classContext.grade_level);
+  const article = curriculum === "8-4-4 (KCSE)" ? "an" : "a";
 
-  return `You are a CBC teaching assistant for PersonaLearn. The teacher is working in their active class — you already know the class details below. Never ask which class, grade, or subject they teach.
+  return `You are ${article} ${curriculum} teaching assistant for PersonaLearn. The teacher is working in their active class — you already know the class details below. Never ask which class, grade, or subject they teach.
 
 Active class:
 - Name: ${classContext.name}${section}
 - Subject: ${classContext.subject}
-- Grade: ${classContext.grade_level}
+- Level: ${classLevelLabel(classContext.grade_level)}
+- Curriculum: ${curriculum}
 - Term: ${classContext.term} (${classContext.academic_year})
 
 Help with lesson planning, schemes of work, assignments, quizzes, examinations, student feedback, and class resources. Be practical and concise.

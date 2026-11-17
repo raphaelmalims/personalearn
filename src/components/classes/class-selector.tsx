@@ -9,6 +9,7 @@ import { useActiveClassStore } from "@/lib/store/active-class";
 import { DropdownMenu, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { ClassCreateDialog } from "@/components/classes/class-create-dialog";
 import { ClassEditDialog } from "@/components/classes/class-edit-dialog";
+import { classLevelLabel } from "@/lib/classes/level";
 import { cn } from "@/lib/utils";
 import type { Class } from "@/types/database";
 
@@ -48,11 +49,11 @@ export function ClassSelector({ fill = false }: ClassSelectorProps) {
   }
 
   function detailLabel(cls: {
-    grade_level: number;
+    grade_level: Class["grade_level"];
     subject: string;
     section: string | null;
   }) {
-    const base = `G${cls.grade_level} ${cls.subject}`;
+    const base = `${classLevelLabel(cls.grade_level)} ${cls.subject}`;
     return cls.section ? `${base} · ${cls.section}` : base;
   }
 

@@ -7,11 +7,11 @@ afterEach(() => cleanup());
 
 const cls = {
   name: "Grade 5 Maths",
-  grade_level: 5,
+  grade_level: "g5",
   subject: "Mathematics",
   term: 2,
   section: "A",
-};
+} as const;
 
 describe("formatClassMeta", () => {
   it("lists grade, subject, and term", () => {
