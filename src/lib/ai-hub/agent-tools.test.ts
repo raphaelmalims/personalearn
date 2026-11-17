@@ -321,7 +321,7 @@ describe("executeGenerateTeachingImage", () => {
         prompt: "Number line",
       })
     ).resolves.toMatchObject({
-      error: expect.stringMatching(/quota exceeded/i),
+      error: expect.stringMatching(/quota is used up/i),
     });
   });
 });

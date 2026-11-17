@@ -1,12 +1,20 @@
 "use client";
 
-import Script from "next/script";
-import { createElement, useEffect, useState } from "react";
+import { useState } from "react";
 import { LogoMark } from "@/components/brand/logo";
+import { ExplainerStage } from "@/components/explainers/explainer-stage";
 import { Button } from "@/components/ui/button";
-import { templateVariables, type ExplainerResult } from "@/lib/explainers/request";
+import type { ExplainerResult } from "@/lib/explainers/request";
 
-type PlayerElement = HTMLElement & { play: () => void };
+const SAMPLE_SCRIPT = {
+  title: "The water cycle",
+  steps: [
+    { label: "Evaporation", caption: "The sun turns water into vapour." },
+    { label: "Condensation", caption: "Vapour cools and forms clouds." },
+    { label: "Precipitation", caption: "Heavy drops fall as rain." },
+    { label: "Collection", caption: "Water collects, then rises again." },
+  ],
+};
 
 function money(value: number) {
   if (value === 0) return "$0";
@@ -26,31 +34,46 @@ function Metric({ label, value }: { label: string; value: string }) {
 export function ExplainerPlayer() {
   const [grade, setGrade] = useState(4);
   const [language, setLanguage] = useState("en");
+  const [emphasis, setEmphasis] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [miss, setMiss] = useState<ExplainerResult | null>(null);
+  const [personalised, setPersonalised] = useState<ExplainerResult | null>(null);
   const [hit, setHit] = useState<ExplainerResult | null>(null);
-  const [src, setSrc] = useState<string | null>(null);
-  const [playerReady, setPlayerReady] = useState(false);
+  const [sample, setSample] = useState(false);
+
+  const showing = hit ?? personalised ?? miss;
+  const playback = sample
+    ? { script: SAMPLE_SCRIPT, language: "en", playKey: "sample" }
+    : showing
+      ? { script: showing.script, language: showing.language, playKey: `${showing.cache}-${showing.metrics.wallTimeMs}` }
+      : null;
 
   async function requestExplainer() {
     setPending(true);
     setError(null);
+    setSample(false);
     try {
       const response = await fetch("/api/explainers", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ topic: "water cycle", grade, language }),
+        body: JSON.stringify({
+          topic: "water cycle",
+          grade,
+          language,
+          emphasis: emphasis.trim() || undefined,
+        }),
       });
       const body = (await response.json()) as ExplainerResult & { error?: string };
       if (!response.ok) {
         throw new Error(body.error ?? "Explainer failed");
       }
-      const vars = templateVariables(body.script);
-      const nextSrc = `/explainers/template?vars=${encodeURIComponent(JSON.stringify(vars))}&play=${Date.now()}`;
-      setSrc(nextSrc);
       if (body.cache === "miss") {
         setMiss(body);
+        setPersonalised(null);
+        setHit(null);
+      } else if (body.cache === "personalised") {
+        setPersonalised(body);
         setHit(null);
       } else {
         setHit(body);
@@ -62,28 +85,8 @@ export function ExplainerPlayer() {
     }
   }
 
-  const showing = hit ?? miss;
-
-  useEffect(() => {
-    if (!src) return;
-    const timer = window.setTimeout(() => {
-      const player = document.querySelector("hyperframes-player") as PlayerElement | null;
-      try {
-        player?.play();
-      } catch {
-        // The player rejects play until its timeline is ready.
-      }
-    }, 800);
-    return () => window.clearTimeout(timer);
-  }, [src]);
-
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
-      <Script
-        src="https://cdn.jsdelivr.net/npm/hyperframes@0.9.32/dist/hyperframes-player.global.js"
-        strategy="afterInteractive"
-        onLoad={() => setPlayerReady(true)}
-      />
       <header className="flex items-center gap-3">
         <LogoMark className="size-8" title="PersonaLearn" />
         <div>
@@ -109,6 +112,7 @@ export function ExplainerPlayer() {
             onChange={(event) => {
               setGrade(Number(event.target.value));
               setHit(null);
+              setPersonalised(null);
             }}
           >
             {Array.from({ length: 9 }, (_, index) => index + 1).map((value) => (
@@ -126,39 +130,58 @@ export function ExplainerPlayer() {
             onChange={(event) => {
               setLanguage(event.target.value);
               setHit(null);
+              setPersonalised(null);
             }}
           >
             <option value="en">English</option>
             <option value="sw">Kiswahili</option>
           </select>
         </label>
-        <Button type="button" onClick={requestExplainer} disabled={pending || !playerReady}>
+        <label className="flex min-w-64 flex-1 flex-col gap-1 text-sm text-foreground">
+          Emphasis
+          <input
+            className="h-10 rounded-md border border-border bg-surface-1 px-3 text-sm"
+            value={emphasis}
+            placeholder="Optional, such as a local example"
+            onChange={(event) => {
+              setEmphasis(event.target.value);
+              setHit(null);
+            }}
+          />
+        </label>
+        <Button type="button" onClick={requestExplainer} disabled={pending}>
           {pending ? "Requesting…" : "Play explainer"}
+        </Button>
+        <Button type="button" variant="outline" onClick={() => setSample(true)}>
+          Sample playback
         </Button>
       </section>
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {sample ? (
+        <p className="text-sm text-muted-foreground">
+          Sample playback uses the template script. It does not call the model.
+        </p>
+      ) : null}
 
-      <div className="overflow-hidden rounded-xl border border-border bg-surface-1">
-        {src
-          ? createElement("hyperframes-player", {
-              key: src,
-              src,
-              controls: true,
-              style: { display: "block", width: "100%", aspectRatio: "16 / 9" },
-            })
-          : null}
-        {src ? null : (
-          <div className="flex aspect-video items-center justify-center text-sm text-muted-foreground">
-            Request an explainer to play it here.
-          </div>
-        )}
-      </div>
+      {playback ? (
+        <ExplainerStage
+          script={playback.script}
+          language={playback.language}
+          playKey={playback.playKey}
+          autoPlay
+        />
+      ) : (
+        <div className="flex aspect-video items-center justify-center rounded-xl border border-border text-sm text-muted-foreground">
+          Request an explainer to play it here. A signed-in teacher is required.
+        </div>
+      )}
 
-      {showing ? (
-        <section className="grid gap-4 md:grid-cols-2">
+      {showing && !sample ? (
+        <section className="grid gap-4 md:grid-cols-3">
           <Metrics title="First request" result={miss} />
-          <Metrics title="Cached request" result={hit} />
+          <Metrics title="Base cached, personalised" result={personalised} />
+          <Metrics title="Fully cached" result={hit} />
         </section>
       ) : null}
     </main>
@@ -181,6 +204,7 @@ function Metrics({
           <Metric label="Model" value={result.metrics.modelId} />
           <Metric label="Prompt tokens" value={String(result.metrics.promptTokens)} />
           <Metric label="Completion tokens" value={String(result.metrics.completionTokens)} />
+          <Metric label="Cached prompt tokens" value={String(result.metrics.cachedPromptTokens)} />
           <Metric label="Cost" value={money(result.metrics.costUsd)} />
           <Metric label="Wall time" value={`${result.metrics.wallTimeMs} ms`} />
         </div>

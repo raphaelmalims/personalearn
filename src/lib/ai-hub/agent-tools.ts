@@ -24,6 +24,8 @@ import {
 } from "@/lib/evaluation/create-assessment-from-resource";
 import type { GradableResourceType } from "@/lib/evaluation/gradable";
 import { STUDENT_INTERESTS_MAX_LENGTH, normalizeStudentInterests } from "@/lib/students/interests";
+import { VISUAL_BLOCKS } from "@/lib/explainers/blocks";
+import { executeVisualise } from "@/lib/explainers/visual-tool";
 
 export const RESOURCE_TYPES = [
   "scheme_of_work",
@@ -501,7 +503,7 @@ Style: clear, age-appropriate diagram or illustration suitable for printing or p
     }
     if (/quota|rate.?limit|RESOURCE_EXHAUSTED|billing/i.test(message)) {
       return userSafeError(
-        "Google image quota exceeded for this API key. Wait for the free-tier reset, or enable billing in Google AI Studio, then try again."
+        "The image tool is unavailable because the Google image quota is used up. Say that in one line. Do not offer to retry it, and do not say video is impossible."
       );
     }
     return userSafeError(
@@ -1056,9 +1058,44 @@ export function createAgentTools(deps: AgentToolDeps) {
       }),
       execute: async (input) => executeGenerateLearningResource(deps, input),
     }),
+    visualise: tool({
+      description:
+        "Show a topic with one block. Call this when the teacher asks to explain, show, diagram, or visualise a topic. Use scene when a picture can teach the topic: a structure, a place, a cycle, or the parts of a thing. The tool stores one picture for that topic, grade, and language. Later requests use the stored picture and do not generate another. The labels and arrows are on the picture, and the taps sit on the parts. If the picture could not be generated or the day's picture quota is used up, say that line once and explain in text. Do not offer to retry. Use number-line for integers and other numbers. Use timeline for events in time. Use comparison for a side-by-side contrast. Use process-flow only when a still picture cannot teach the topic and it needs a narrated sequence. Do not call generate_teaching_image when a block fits. If fit is false, say the returned line once and explain in text. Do not promise an image or say video is impossible.",
+      inputSchema: z.object({
+        block: z.enum(VISUAL_BLOCKS).describe("The block that fits the topic"),
+        topic: z.string().min(1).max(80).describe("Topic title, such as Introduction to Integers"),
+        grade: z
+          .number()
+          .int()
+          .min(1)
+          .max(9)
+          .optional()
+          .describe("Grade when the teacher names one. Otherwise omit and the class grade is used."),
+        language: z
+          .string()
+          .min(2)
+          .max(16)
+          .optional()
+          .describe("en or sw. Omit for English."),
+        note: z
+          .string()
+          .max(160)
+          .optional()
+          .describe("Optional emphasis, such as a local example. Omit when the teacher did not ask for one."),
+      }),
+      execute: async (input) =>
+        executeVisualise(
+          {
+            supabase: deps.supabase,
+            classId: deps.classId,
+            grade: deps.classContext.grade_level,
+          },
+          input
+        ),
+    }),
     generate_teaching_image: tool({
       description:
-        "Generate a non-gradable teaching-aid image draft (diagram/illustration). Persists bytes server-side and returns draftId. Never saves automatically — call save_resource with draftId after teacher confirmation. Not attached to assessments.",
+        "Generate a teaching-aid picture only when no visualise block fits. Do not use this for a scene, a narrated sequence, a number line, a comparison, or a timeline. If the result says the image tool is unavailable, say that in one line and do not offer to retry.",
       inputSchema: z.object({
         title: z.string().min(1).describe("Title for the teaching aid"),
         prompt: z

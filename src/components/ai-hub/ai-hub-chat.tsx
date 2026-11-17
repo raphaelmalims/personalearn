@@ -66,6 +66,7 @@ import {
 import {
   getMessageText,
   getVisibleDrafts,
+  getVisibleExplainers,
   getVisibleEvalSessions,
 } from "@/lib/ai-hub/message-content";
 import { shouldShowThinkingBubble } from "@/lib/ai-hub/thinking-indicator";
@@ -400,7 +401,8 @@ export function AiHubChat() {
         last?.role === "assistant" &&
         !getMessageText(last).trim() &&
         getVisibleDrafts(last).length === 0 &&
-        getVisibleEvalSessions(last).length === 0
+        getVisibleEvalSessions(last).length === 0 &&
+        getVisibleExplainers(last).length === 0
       ) {
         setActionError(
           "The assistant returned an empty reply. Confirm DEEPSEEK_API_KEY (or CHAT_PROVIDER + matching key) is set in Vercel Production, then redeploy."

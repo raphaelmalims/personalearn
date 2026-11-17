@@ -9,6 +9,7 @@ import {
   getVisibleDrafts,
   getVisibleEvalSessions,
   stripDatabaseIdsFromTeacherText,
+  getVisibleExplainers,
   toUIMessageFromRow,
   truncateMessagesBefore,
 } from "@/lib/ai-hub/message-content";
@@ -336,6 +337,7 @@ describe("eval session artifacts", () => {
       },
     });
 
+    expect(getVisibleExplainers(uiMessage)).toEqual([]);
     expect(getVisibleEvalSessions(uiMessage)).toEqual([
       {
         batchId: "batch-1",
@@ -345,6 +347,41 @@ describe("eval session artifacts", () => {
         reused: false,
       },
     ]);
+  });
+
+  it("rebuilds an inline explainer from tool_calls", async () => {
+    const { convertToModelMessages } = await import("ai");
+    const artifact = {
+      topic: "water cycle",
+      grade: 4,
+      language: "en",
+      title: "The water cycle",
+      steps: [
+        { label: "Evaporation", caption: "The sun turns water into vapour." },
+        { label: "Condensation", caption: "Vapour cools and forms clouds." },
+        { label: "Precipitation", caption: "Heavy drops fall as rain." },
+        { label: "Collection", caption: "Water collects, then rises again." },
+      ],
+      cache: "hit" as const,
+      metrics: {
+        modelId: "deepseek-flash",
+        promptTokens: 0,
+        completionTokens: 0,
+        cachedPromptTokens: 0,
+        costUsd: 0,
+        wallTimeMs: 2,
+      },
+    };
+    const uiMessage = toUIMessageFromRow({
+      id: "m-explainer",
+      role: "assistant",
+      content: "Here is the water cycle explainer for grade 4 in English.",
+      tool_calls: { explainer: artifact },
+    });
+
+    expect(getVisibleExplainers(uiMessage)).toEqual([artifact]);
+    const modelMessages = await convertToModelMessages([uiMessage]);
+    expect(modelMessages[0]?.role).toBe("assistant");
   });
 });
 

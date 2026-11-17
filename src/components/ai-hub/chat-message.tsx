@@ -14,6 +14,8 @@ import {
   stripDatabaseIdsFromTeacherText,
 } from "@/lib/ai-hub/message-content";
 import { ThoughtProcess } from "@/components/ai-hub/thought-process";
+import { ExplainerStage } from "@/components/explainers/explainer-stage";
+import { VisualStage } from "@/components/explainers/visual-stage";
 import {
   formatResourceType,
   isResourceType,
@@ -44,6 +46,10 @@ export function ChatMessage({
   const displayBlocks = isUser ? [] : getAssistantDisplayBlocks(message);
   const fileParts = message.parts.filter(isFileUIPart);
   const evalBlocks = displayBlocks.filter((block) => block.type === "eval_session");
+  const explainerBlocks = displayBlocks.filter((block) => block.type === "explainer");
+  const visualBlocks = displayBlocks.filter(
+    (block) => block.type === "visual" || block.type === "visual-fallback"
+  );
   const classId = useActiveClassStore((s) => s.activeClass?.id);
   const openBatch = useHubEvalSessionStore((s) => s.openBatch);
 
@@ -52,6 +58,8 @@ export function ChatMessage({
     fileParts.length === 0 &&
     drafts.length === 0 &&
     evalBlocks.length === 0 &&
+    explainerBlocks.length === 0 &&
+    visualBlocks.length === 0 &&
     !reasoning
   ) {
     return null;
@@ -114,7 +122,11 @@ export function ChatMessage({
                   reasoning={reasoning}
                   isStreaming={isStreaming}
                   hasResponseContent={
-                    Boolean(text) || drafts.length > 0 || evalBlocks.length > 0
+                    Boolean(text) ||
+                    drafts.length > 0 ||
+                    evalBlocks.length > 0 ||
+                    explainerBlocks.length > 0 ||
+                    visualBlocks.length > 0
                   }
                   reasoningMs={getMessageReasoningMs(message)}
                   answerLabel={answer?.label}
@@ -128,6 +140,40 @@ export function ChatMessage({
                       key={`text-${index}`}
                       content={block.text}
                     />
+                  );
+                }
+
+                if (block.type === "explainer") {
+                  return (
+                    <ExplainerStage
+                      key={`explainer-${index}`}
+                      script={{
+                        title: block.artifact.title,
+                        steps: block.artifact.steps,
+                      }}
+                      language={block.artifact.language}
+                      playKey={`${message.id}-${index}`}
+                      autoPlay={isStreaming}
+                    />
+                  );
+                }
+
+                if (block.type === "visual") {
+                  return (
+                    <VisualStage
+                      key={`visual-${index}`}
+                      artifact={block.artifact}
+                      playKey={`${message.id}-${index}`}
+                      autoPlay={isStreaming}
+                    />
+                  );
+                }
+
+                if (block.type === "visual-fallback") {
+                  return (
+                    <p key={`visual-fallback-${index}`} className="text-sm text-muted-foreground">
+                      {block.fallback.line}
+                    </p>
                   );
                 }
 
