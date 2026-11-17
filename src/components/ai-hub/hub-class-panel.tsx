@@ -3,6 +3,7 @@
 import { PanelRight, Plus, Search, X } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { ConversationList } from "@/components/ai-hub/conversation-sidebar";
+import { ClassSelector } from "@/components/classes/class-selector";
 import { ClassResourcesSection } from "@/components/classes/class-resources-section";
 import { StudentRosterTable } from "@/components/classes/student-roster-table";
 import { Button } from "@/components/ui/button";
@@ -145,6 +146,12 @@ export function HubClassPanel({
           <X className="h-4 w-4 rotate-0 transition-transform duration-200 ease-out motion-reduce:transition-none" />
         </Button>
       </div>
+
+      {sheetMode ? (
+        <div className="px-3 pb-2">
+          <ClassSelector fill />
+        </div>
+      ) : null}
 
       <div
         className="relative mx-3 mb-2 flex shrink-0 gap-0.5 rounded-xl bg-muted/60 p-0.5"

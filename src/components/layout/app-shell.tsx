@@ -63,17 +63,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             onMouseEnter={() => setRailExpanded(true)}
             onMouseLeave={() => setRailExpanded(false)}
           >
-            <div
-              className={cn(
-                "mb-1 transition-opacity",
-                railExpanded
-                  ? "opacity-100"
-                  : "pointer-events-none h-0 overflow-hidden opacity-0"
-              )}
-            >
-              <ClassSelector />
-            </div>
-
             {navItems.map(({ href, label, icon: Icon }) => {
               const active = isHubNavActive(pathname);
               return (
@@ -139,6 +128,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           isHub && "max-md:h-full max-md:min-h-0 max-md:overflow-hidden"
         )}
       >
+        <div className="hidden shrink-0 px-6 pt-4 md:block print:hidden">
+          <ClassSelector />
+        </div>
         {isHub ? null : (
         <header className="sticky top-0 z-30 flex items-center justify-between gap-2 bg-background/80 px-4 py-3 backdrop-blur-xl md:hidden print:hidden">
           <Link
