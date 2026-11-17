@@ -69,11 +69,13 @@ export function ClassSelector({ fill = false }: ClassSelectorProps) {
       <DropdownMenu
         align="start"
         portal
-        rootClassName={cn("min-w-0", fill && "w-full")}
-        contentClassName="min-w-0 max-w-full"
+        matchTrigger
+        rootClassName={cn("w-max max-w-full min-w-0", fill && "w-full")}
+        contentClassName="min-w-0"
         trigger={
           <button
             type="button"
+            data-pl-dropdown-trigger=""
             aria-label={`Class: ${label}`}
             title={label}
             className={cn(
@@ -91,6 +93,7 @@ export function ClassSelector({ fill = false }: ClassSelectorProps) {
           return (
             <div key={cls.id} className="flex min-w-0 items-center gap-1">
               <DropdownMenuItem
+                active={selected}
                 onClick={() => selectClass(cls)}
                 className={cn(
                   "min-h-10 min-w-0 flex-1 gap-2",

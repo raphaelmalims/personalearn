@@ -37,7 +37,13 @@ export function MobileHubToolbar({
       >
         <PanelLeft className="h-6 w-6" strokeWidth={1.5} />
       </Button>
-      <p className="min-w-0 flex-1 truncate text-sm font-medium">{title}</p>
+      <button
+        type="button"
+        onClick={onOpenPanel}
+        className="min-w-0 flex-1 truncate text-left text-sm font-medium text-muted-foreground"
+      >
+        {title}
+      </button>
       <Button
         type="button"
         variant="ghost"

@@ -111,18 +111,23 @@ describe("ClassSelector", () => {
 
   it("clamps the open menu to the viewport so edit controls stay inside", async () => {
     const user = userEvent.setup();
-    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
-      width: 320,
-      height: 36,
-      top: 48,
-      bottom: 84,
-      left: 280,
-      right: 600,
-      x: 280,
-      y: 48,
-      toJSON() {
-        return {};
-      },
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+      const trigger = this.hasAttribute("data-pl-dropdown-trigger");
+      const width = trigger ? 200 : 1790;
+      const left = trigger ? 24 : 0;
+      return {
+        width,
+        height: 40,
+        top: 48,
+        bottom: 88,
+        left,
+        right: left + width,
+        x: left,
+        y: 48,
+        toJSON() {
+          return {};
+        },
+      };
     });
     Object.defineProperty(window, "innerWidth", { configurable: true, value: 375 });
 
@@ -131,10 +136,31 @@ describe("ClassSelector", () => {
 
     const panel = document.querySelector("[data-pl-dropdown-panel]");
     expect(panel).toBeTruthy();
-    const maxWidth = Number.parseFloat((panel as HTMLElement).style.maxWidth);
-    expect(maxWidth).toBeLessThanOrEqual(375 - 280);
-    expect(maxWidth).toBeGreaterThan(0);
+    const width = Number.parseFloat((panel as HTMLElement).style.width);
+    expect(width).toBeGreaterThanOrEqual(240);
+    expect(width).toBeLessThanOrEqual(320);
+    expect(width).not.toBe(1790);
     expect(panel?.className).not.toMatch(/(^|\s)w-full(\s|$)/);
     vi.restoreAllMocks();
+  });
+
+  it("moves between class rows, selects with Enter, and returns focus on Escape", async () => {
+    const user = userEvent.setup();
+    render(<ClassSelector />);
+
+    const trigger = screen.getByRole("button", { name: "Class: Maths A" });
+    await user.click(trigger);
+    expect(screen.getByRole("menuitem", { name: /Maths A/ })).toHaveFocus();
+
+    await user.keyboard("{ArrowDown}");
+    expect(screen.getByRole("menuitem", { name: /Science B/ })).toHaveFocus();
+
+    await user.keyboard("{Enter}");
+    expect(setActiveClass).toHaveBeenCalledWith(expect.objectContaining({ id: "class-2" }));
+
+    await user.click(trigger);
+    await user.keyboard("{Escape}");
+    expect(document.querySelector("[data-pl-dropdown-panel]")).toBeNull();
+    expect(trigger).toHaveFocus();
   });
 });
