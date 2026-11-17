@@ -43,7 +43,19 @@ vi.mock("@/lib/hooks/use-classes", () => ({
 }));
 
 vi.mock("@/lib/store/active-class", () => ({
-  useActiveClassStore: (selector: (state: { activeClass: { id: string } | null; setActiveClass: typeof setActiveClass }) => unknown) =>
+  useActiveClassStore: (
+    selector: (state: {
+      activeClass: {
+        id: string;
+        name: string;
+        grade_level: number;
+        subject: string;
+        section: string | null;
+        term: number;
+      } | null;
+      setActiveClass: typeof setActiveClass;
+    }) => unknown
+  ) =>
     selector({
       activeClass: {
         id: "class-1",
