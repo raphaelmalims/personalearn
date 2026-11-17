@@ -157,6 +157,7 @@ describe("ClassSelector", () => {
 
     await user.keyboard("{Enter}");
     expect(setActiveClass).toHaveBeenCalledWith(expect.objectContaining({ id: "class-2" }));
+    expect(trigger).toHaveFocus();
 
     await user.click(trigger);
     await user.keyboard("{Escape}");
