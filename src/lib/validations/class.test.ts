@@ -4,7 +4,7 @@ import { classSchema, studentSchema } from "./class";
 describe("classSchema", () => {
   const validClass = {
     name: "Grade 5 Mathematics",
-    grade_level: 5,
+    grade_level: "g5",
     subject: "Mathematics",
     term: 2,
     academic_year: "2026",
@@ -15,14 +15,19 @@ describe("classSchema", () => {
     expect(classSchema.safeParse(validClass).success).toBe(true);
   });
 
-  it("rejects grade levels below 1", () => {
-    expect(classSchema.safeParse({ ...validClass, grade_level: 0 }).success).toBe(
-      false
-    );
+  it("accepts PP, senior grade, and form codes", () => {
+    for (const grade_level of ["pp1", "pp2", "g12", "f1", "f4"]) {
+      expect(classSchema.safeParse({ ...validClass, grade_level }).success).toBe(
+        true
+      );
+    }
   });
 
-  it("rejects grade levels above 9", () => {
-    expect(classSchema.safeParse({ ...validClass, grade_level: 10 }).success).toBe(
+  it("rejects a bare grade number", () => {
+    expect(classSchema.safeParse({ ...validClass, grade_level: 1 }).success).toBe(
+      false
+    );
+    expect(classSchema.safeParse({ ...validClass, grade_level: "1" }).success).toBe(
       false
     );
   });

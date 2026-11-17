@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Dialog } from "@/components/ui/dialog";
+import { ClassLevelOptions } from "@/components/classes/class-level-options";
 import { classSchema, type ClassFormValues } from "@/lib/validations/class";
 import { useActiveClassStore } from "@/lib/store/active-class";
 import { useArchiveClass, useClasses, useUpdateClass } from "@/lib/hooks/use-classes";
@@ -140,17 +141,13 @@ export function ClassEditDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor={`grade-${cls.id}`}>Grade</Label>
+              <Label htmlFor={`grade-${cls.id}`}>Level</Label>
               <Select
                 id={`grade-${cls.id}`}
                 className={fieldClass}
                 {...register("grade_level")}
               >
-                {Array.from({ length: 9 }, (_, i) => i + 1).map((g) => (
-                  <option key={g} value={g}>
-                    Grade {g}
-                  </option>
-                ))}
+                <ClassLevelOptions />
               </Select>
             </div>
             <div className="space-y-2">

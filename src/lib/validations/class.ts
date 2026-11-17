@@ -1,9 +1,10 @@
 import { z } from "zod";
+import { CLASS_LEVEL_CODES } from "@/lib/classes/level";
 import { STUDENT_INTERESTS_MAX_LENGTH } from "@/lib/students/interests";
 
 export const classSchema = z.object({
   name: z.string().min(2, "Class name is required"),
-  grade_level: z.coerce.number().int().min(1).max(9),
+  grade_level: z.enum(CLASS_LEVEL_CODES),
   subject: z.string().min(2, "Subject is required"),
   term: z.coerce.number().int().min(1).max(3),
   academic_year: z.string().min(4, "Academic year is required"),

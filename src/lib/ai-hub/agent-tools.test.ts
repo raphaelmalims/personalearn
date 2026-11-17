@@ -17,11 +17,11 @@ const classContext = {
   id: "class-1",
   name: "Grade 7 Maths",
   subject: "Mathematics",
-  grade_level: 7,
+  grade_level: "g7",
   term: 1,
   section: "East",
   academic_year: "2026",
-};
+} as const;
 
 const deps: AgentToolDeps = {
   supabase: {} as unknown as AgentToolDeps["supabase"],

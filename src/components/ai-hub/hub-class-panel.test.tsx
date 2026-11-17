@@ -35,7 +35,7 @@ vi.mock("@/lib/store/active-class", () => ({
       activeClass: {
         id: "class-1",
         name: "Grade 5 Maths",
-        grade_level: 5,
+        grade_level: "g5",
         subject: "Mathematics",
         section: "A",
         term: 2,

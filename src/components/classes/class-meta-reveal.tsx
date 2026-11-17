@@ -1,11 +1,12 @@
 "use client";
 
 import { useId, useState } from "react";
+import { classLevelLabel, type ClassLevelCode } from "@/lib/classes/level";
 import { cn } from "@/lib/utils";
 
 export type ClassMetaRevealClass = {
   name: string;
-  grade_level: number;
+  grade_level: ClassLevelCode;
   subject: string;
   term: number;
   section: string | null;
@@ -20,7 +21,7 @@ type ClassMetaRevealProps = {
 };
 
 export function formatClassMeta(cls: ClassMetaRevealClass) {
-  const base = `Grade ${cls.grade_level} · ${cls.subject} · Term ${cls.term}`;
+  const base = `${classLevelLabel(cls.grade_level)} · ${cls.subject} · Term ${cls.term}`;
   return cls.section ? `${base} · Section ${cls.section}` : base;
 }
 

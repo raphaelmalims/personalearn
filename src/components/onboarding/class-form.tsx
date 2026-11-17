@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { getPostLoginPath } from "@/lib/auth/post-login-path";
+import { ClassLevelOptions } from "@/components/classes/class-level-options";
 import { classSchema, type ClassFormValues } from "@/lib/validations/class";
 import { useCreateClass } from "@/lib/hooks/use-classes";
 import type { Class } from "@/types/database";
@@ -37,7 +38,7 @@ export function ClassForm({
     resolver: zodResolver(classSchema),
     defaultValues: {
       name: "",
-      grade_level: 1,
+      grade_level: "g1",
       subject: "",
       term: 1,
       academic_year: new Date().getFullYear().toString(),
@@ -75,13 +76,9 @@ export function ClassForm({
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <Label htmlFor="grade_level">Grade</Label>
+          <Label htmlFor="grade_level">Level</Label>
           <Select id="grade_level" className={fieldClass} {...register("grade_level")}>
-            {Array.from({ length: 9 }, (_, i) => i + 1).map((g) => (
-              <option key={g} value={g}>
-                Grade {g}
-              </option>
-            ))}
+            <ClassLevelOptions />
           </Select>
         </div>
         <div className="space-y-2">
