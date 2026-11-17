@@ -1,18 +1,18 @@
 name: Feature request
-description: Suggest a new capability or improvement. Ideas are triaged into the Jira backlog.
+description: Suggest a new capability or improvement. Ideas are triaged into the Linear backlog.
 title: "[Feature] "
 labels: ["needs-triage", "type-feature"]
 assignees:
-  - nervustech
+  - raphaelmalims
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for the suggestion. We'll review fit against the roadmap and create a **Jira story (`PSL-N`)** if we commit to building it.
+        Thanks for the suggestion. We'll review fit against the roadmap and create a **Linear issue (`PSL-N`)** if we commit to building it.
 
-        Feature requests are **not implemented directly from GitHub Issues** — Jira is the system of record.
+        Feature requests are **not implemented directly from GitHub Issues** — Linear is the system of record.
 
-        On create this issue is assigned to **nervustech**, labelled `needs-triage` + `type-feature`, and should get a **milestone** (current sprint or Backlog) at triage. Triage adds exactly one **`area-*`** label when the work is scheduled.
+        On create this issue is assigned to **raphaelmalims**, labelled `needs-triage` + `type-feature`, and should get a **milestone** (current sprint or Backlog) at triage. Triage adds exactly one **`area-*`** label when the work is scheduled.
 
         **Gold bar:** See [docs/sdlc-writing-standard.md](https://github.com/raphaelmalims/personalearn/blob/develop/docs/sdlc-writing-standard.md).
 
@@ -46,7 +46,7 @@ body:
     id: acceptance_criteria
     attributes:
       label: Acceptance criteria
-      description: Checkbox-friendly list of done conditions (copied to Jira when triaged).
+      description: Checkbox-friendly list of done conditions (copied to Linear when triaged).
       placeholder: |
         - [ ] Teacher can ...
         - [ ] Error states handled when ...

@@ -499,10 +499,10 @@ sequenceDiagram
 1. **Parse timing:** at identity only, or async immediately after each upload chunk?
 2. **Cross-batch cache:** same `content_hash` in a new batch — reuse parse or re-run (different assessment context)?
 3. **Structured marking scheme:** Phase A text grading improves further if scheme is per-question JSON, not prose blob.
-4. **Confluence / Jira:** promote to ADR-00X + PSL ticket when Epic F is scheduled.
+4. **Notion / Linear:** promote to ADR-00X + a Linear issue when Epic F is scheduled.
 
 ---
 
-## Mirror in Confluence
+## Mirror in Notion
 
-When implementation is scheduled, duplicate under **PLEARN → Architecture** (Decision documentation blueprint) and link from the eval rehaul epic.
+When implementation is scheduled, duplicate the decision in Notion and link it from the eval rehaul issue.

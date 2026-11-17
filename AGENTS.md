@@ -12,7 +12,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 Never implement on `develop` or `main`. Fetch `origin/develop` and branch from that tip (or from the merged prerequisite). If this ticket already has a branch, check it out.
 
-Branch name: `{feature|fix|chore|docs}/PSL-N-short-kebab-description`.
+Branch name: `{feature|fix|chore|docs}/PSL-N-short-kebab-description`, or `hotfix/PSL-N-short-kebab-description` on the hotfix path. `PSL-N` is the Linear issue id (for example `feature/PSL-6-eval-poll-keepalive`). A pull request that closes the issue says `Fixes PSL-N`.
 
 | Work | Prefix | Commit subject |
 |------|--------|----------------|
@@ -20,6 +20,8 @@ Branch name: `{feature|fix|chore|docs}/PSL-N-short-kebab-description`.
 | Bug | `fix/` | `fix: … (PSL-N)` |
 | Chore | `chore/` | `chore: … (PSL-N)` |
 | Docs | `docs/` | `docs: … (PSL-N)` |
+
+A chore with no Linear issue yet omits `(PSL-N)`. Do not invent a key.
 
 The human approves commits and merges. The agent proposes the diff and a commit message, then waits. Do not commit, push, or merge until the human asks. A finished edit, a green test run, or an open pull request is not approval.
 

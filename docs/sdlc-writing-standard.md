@@ -1,8 +1,8 @@
 # SDLC writing standard (PersonaLearn)
 
-Canonical headings for GitHub Issues and Jira tickets. Fill those from [`.github/ISSUE_TEMPLATE/`](../.github/ISSUE_TEMPLATE/). PR bodies follow the `writing-prs` skill.
+Canonical headings for GitHub Issues and Linear issues. Fill those from [`.github/ISSUE_TEMPLATE/`](../.github/ISSUE_TEMPLATE/). PR bodies follow the `writing-prs` skill. `PSL-N` is a [Linear](https://linear.app/personalearn/team/PSL) id. Specs live in Notion.
 
-**Issue examples:** [PSL-110](https://nervustechnologies.atlassian.net/browse/PSL-110), [GitHub issue #129](https://github.com/raphaelmalims/personalearn/issues/129).
+**Issue examples:** [PSL-5](https://linear.app/personalearn/issue/PSL-5/reference-sdlc-label-vocabulary-do-not-delete), [GitHub issue #129](https://github.com/raphaelmalims/personalearn/issues/129).
 
 Process rules live in `.cursor/rules/sdlc.mdc`.
 
@@ -18,7 +18,7 @@ Use the **Bug report** issue form. Required sections map to these headings in th
 | **Environment** | Production / preview / local |
 | **Steps to reproduce** | Numbered |
 | **Expected / Actual behavior** | Clear contrast |
-| **Severity** | P0 / P1 / P2 → Jira priority at triage |
+| **Severity** | P0 / P1 / P2 → Linear priority at triage |
 | **Acceptance criteria** | `- [ ]` checklist |
 | **Likely cause / notes** | Optional investigation / related tickets |
 
@@ -41,13 +41,13 @@ Labels on create: `needs-triage`, `type-feature`.
 
 ---
 
-## Jira ticket description
+## Linear issue description
 
-Mirror the GitHub Issue content, plus this ready checklist:
+Mirror the GitHub Issue content, plus this ready checklist. Do not repeat labels, priority, assignee, milestone, or estimate; those are Linear fields.
 
 ```markdown
 ## Ready checklist
-- [ ] Confluence spec linked
+- [ ] Notion spec linked
 - [ ] Acceptance criteria defined
 …
 
@@ -55,12 +55,12 @@ Mirror the GitHub Issue content, plus this ready checklist:
 - [ ] …
 
 ## Spec
-Link to PLEARN Confluence page (Product requirements blueprint)
+Link to the Notion spec
 ```
 
-Copy **Severity** (bugs) into Jira **priority**. Keep the same `area-*` + `type-*` as GitHub.
+Copy **Severity** (bugs) into Linear **priority**. Keep the same `area-*` + `type-*` as GitHub.
 
-### Jira comment trail (minimum)
+### Linear comment trail (minimum)
 
 | When | Comment includes |
 |------|------------------|

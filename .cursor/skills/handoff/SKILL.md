@@ -19,7 +19,7 @@ Sections, in order. Drop one that has nothing to say.
 5. **Open risks.** Unknowns, flaky checks, things you did not look at.
 6. **Commands.** The exact commands to resume, such as `git switch <branch>` and `npm test -- <path>`, with the last result of each.
 
-Link to the Issue, Jira ticket, PR, and files instead of copying them. Do not repeat what the diff or the Issue already says. Name files by path. Keep the note under 1 KB when you can.
+Link to the Issue, Linear issue, PR, and files instead of copying them. Do not repeat what the diff or the Issue already says. Name files by path. Keep the note under 1 KB when you can.
 
 No secrets, tokens, or user data in the note.
 

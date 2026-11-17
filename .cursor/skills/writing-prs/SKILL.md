@@ -11,7 +11,7 @@ Sections, in order. Drop one that has nothing to say.
 
 1. `## Summary`: why and the approach in 2–5 sentences. Root cause for a bug. Plain verbs. Name a file or symbol only when it carries the change.
 2. `## Test plan`: only what you ran, with the result. A skipped step is `N/A` plus a few words, never a paragraph.
-3. Last line: `Closes #N · PSL-N`.
+3. Last line: `Closes #N · Fixes PSL-N` (`Fixes PSL-N` is the Linear close magic word). A change with no Linear issue ends with `Links: none yet`. Do not invent a `PSL-N`.
 
 - Say each fact once.
 - Labels, assignee, milestone, and reviewer are GitHub fields. Do not put them in the body.

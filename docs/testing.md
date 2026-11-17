@@ -30,7 +30,7 @@ Unit (Vitest)        — Zod schemas, parsers, pure functions
 
 ## Environments (MVP)
 
-For MVP we do **not** run a separate staging stack. Treat these as one pre-production lane; production uses a **dedicated** Supabase project ([PSL-40](https://nervustechnologies.atlassian.net/browse/PSL-40)):
+For MVP we do **not** run a separate staging stack. Treat these as one pre-production lane; production uses a **dedicated** Supabase project:
 
 | Layer | What it is |
 |-------|------------|
@@ -123,13 +123,13 @@ E2E is intentionally not in the default CI job yet — add when dev Supabase E2E
 
 ## Definition of done (going forward)
 
-For P0/P1 Jira stories, include in acceptance criteria:
+For P0/P1 Linear issues, include in acceptance criteria:
 
 > Automated tests added for new behavior; `npm test` passes in CI.
 
 ## Branching tests
 
-Branch by **Jira ticket and user value**, not by test type (unit vs E2E).
+Branch by **Linear issue and user value**, not by test type (unit vs E2E). The number in the branch is the Linear id (`feature/PSL-6-<slug>`, `hotfix/PSL-<n>-<slug>`).
 
 | Test work | Branch with | Example |
 |-----------|-------------|---------|
@@ -140,7 +140,7 @@ Branch by **Jira ticket and user value**, not by test type (unit vs E2E).
 
 **Rules:**
 
-- One Jira ticket → one branch → one PR. Tests for that ticket live in the same PR.
+- One Linear issue → one branch → one PR. Tests for that issue live in the same PR. The PR body includes `Fixes PSL-N`.
 - Colocate unit/integration tests next to source (`foo.ts` + `foo.test.ts`). Group E2E by user journey in `e2e/`.
 - Do not reopen closed feature tickets just to add tests — use a backfill chore ticket instead.
 - From Sprint 2 onward, ship features with their tests; do not defer tests to a separate PR.
