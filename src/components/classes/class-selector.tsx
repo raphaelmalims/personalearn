@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, GraduationCap, Plus } from "lucide-react";
+import { ChevronDown, GraduationCap, Pencil, Plus } from "lucide-react";
 import { useClasses } from "@/lib/hooks/use-classes";
 import { useActiveClassStore } from "@/lib/store/active-class";
 import { DropdownMenu, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { ClassCreateDialog } from "@/components/classes/class-create-dialog";
+import { ClassEditDialog } from "@/components/classes/class-edit-dialog";
 import { cn } from "@/lib/utils";
+import type { Class } from "@/types/database";
 
 type ClassSelectorProps = {
   /**
@@ -28,6 +30,7 @@ export function ClassSelector({ fill = false, rail = false }: ClassSelectorProps
   const setActiveClass = useActiveClassStore((state) => state.setActiveClass);
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
+  const [editClass, setEditClass] = useState<Class | null>(null);
 
   function selectClass(cls: NonNullable<typeof classes>[number]) {
     setActiveClass({
@@ -95,16 +98,25 @@ export function ClassSelector({ fill = false, rail = false }: ClassSelectorProps
         }
       >
         {classes?.map((cls) => (
-          <DropdownMenuItem
-            key={cls.id}
-            onClick={() => selectClass(cls)}
-            className={cn(
-              "min-w-0",
-              activeClass?.id === cls.id ? "bg-primary/10 text-primary" : undefined
-            )}
-          >
-            <span className="min-w-0 truncate font-medium">{shortLabel(cls)}</span>
-          </DropdownMenuItem>
+          <div key={cls.id} className="flex min-w-0 items-center">
+            <DropdownMenuItem
+              onClick={() => selectClass(cls)}
+              className={cn(
+                "min-w-0 flex-1",
+                activeClass?.id === cls.id ? "bg-primary/10 text-primary" : undefined
+              )}
+            >
+              <span className="min-w-0 truncate font-medium">{shortLabel(cls)}</span>
+            </DropdownMenuItem>
+            <button
+              type="button"
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+              aria-label={`Edit ${shortLabel(cls)}`}
+              onClick={() => setEditClass(cls)}
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+          </div>
         ))}
         {!classes?.length && !isLoading ? (
           <p className="px-3 py-2 text-xs text-muted-foreground">No classes yet</p>
@@ -120,6 +132,17 @@ export function ClassSelector({ fill = false, rail = false }: ClassSelectorProps
         onOpenChange={setCreateOpen}
         showDefaultTrigger={false}
       />
+      {editClass ? (
+        <ClassEditDialog
+          key={editClass.id}
+          cls={editClass}
+          open
+          showTrigger={false}
+          onOpenChange={(next) => {
+            if (!next) setEditClass(null);
+          }}
+        />
+      ) : null}
     </>
   );
 }
