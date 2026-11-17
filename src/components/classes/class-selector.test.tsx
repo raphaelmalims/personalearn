@@ -21,7 +21,7 @@ vi.mock("@/lib/hooks/use-classes", () => ({
       {
         id: "class-1",
         name: "Maths A",
-        grade_level: 5,
+        grade_level: "g5",
         subject: "Mathematics",
         section: "A",
         term: 1,
@@ -31,7 +31,7 @@ vi.mock("@/lib/hooks/use-classes", () => ({
       {
         id: "class-2",
         name: "Science B",
-        grade_level: 6,
+        grade_level: "g6",
         subject: "Science",
         section: "B",
         term: 2,
@@ -48,7 +48,7 @@ vi.mock("@/lib/store/active-class", () => ({
       activeClass: {
         id: string;
         name: string;
-        grade_level: number;
+        grade_level: string;
         subject: string;
         section: string | null;
         term: number;
@@ -60,7 +60,7 @@ vi.mock("@/lib/store/active-class", () => ({
       activeClass: {
         id: "class-1",
         name: "Maths A",
-        grade_level: 5,
+        grade_level: "g5",
         subject: "Mathematics",
         section: "A",
         term: 1,
@@ -91,7 +91,7 @@ describe("ClassSelector", () => {
 
     await user.click(screen.getByRole("button", { name: "Class: Maths A" }));
     const activeRow = screen.getByRole("menuitem", { name: /Maths A/ });
-    expect(activeRow).toHaveTextContent("G5 Mathematics · A");
+    expect(activeRow).toHaveTextContent("Grade 5 Mathematics · A");
     expect(activeRow.querySelector(".opacity-100")).toBeTruthy();
     expect(screen.getByRole("menuitem", { name: "New class" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Edit Science B" })).toBeInTheDocument();

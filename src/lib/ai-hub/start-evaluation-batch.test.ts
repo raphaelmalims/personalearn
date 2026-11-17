@@ -45,7 +45,7 @@ function deps(fromImpl: (table: string) => unknown) {
       id: "class-1",
       name: "7 East",
       subject: "Math",
-      grade_level: 7,
+      grade_level: "g7",
       term: 2,
       section: "East",
       academic_year: "2026",

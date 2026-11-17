@@ -14,7 +14,7 @@ const cls: Class = {
   id: "class-1",
   teacher_id: "teacher-1",
   name: "Maths A",
-  grade_level: 5,
+  grade_level: "g5",
   subject: "Mathematics",
   term: 1,
   academic_year: "2026",

@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ActiveClassHydrator } from "./active-class-hydrator";
 
 const setActiveClass = vi.fn();
-let classes: { id: string; name: string; grade_level: number; subject: string; section: string | null; term: number }[] = [];
+let classes: { id: string; name: string; grade_level: string; subject: string; section: string | null; term: number }[] = [];
 let isFetching = false;
 let activeId: string | null = "new-class";
 
@@ -27,7 +27,7 @@ afterEach(() => {
 describe("ActiveClassHydrator", () => {
   it("keeps the class just created while the list is still refetching", () => {
     classes = [
-      { id: "older", name: "QA 4", grade_level: 7, subject: "Mathematics", section: "A", term: 1 },
+      { id: "older", name: "QA 4", grade_level: "g7", subject: "Mathematics", section: "A", term: 1 },
     ];
     isFetching = true;
     activeId = "new-class";
@@ -39,8 +39,8 @@ describe("ActiveClassHydrator", () => {
 
   it("switches to the new class once that row is in the list", () => {
     classes = [
-      { id: "new-class", name: "QA 5", grade_level: 7, subject: "Mathematics", section: "A", term: 1 },
-      { id: "older", name: "QA 4", grade_level: 7, subject: "Mathematics", section: "B", term: 1 },
+      { id: "new-class", name: "QA 5", grade_level: "g7", subject: "Mathematics", section: "A", term: 1 },
+      { id: "older", name: "QA 4", grade_level: "g7", subject: "Mathematics", section: "B", term: 1 },
     ];
     isFetching = false;
     activeId = "new-class";

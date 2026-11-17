@@ -6,6 +6,7 @@ import { ingestResource, ingestTxtResource } from "@/lib/ai/ingest-resource";
 import { queryClassResources } from "@/lib/ai/rag";
 import { getImageGenerationModel } from "@/lib/ai/vision-model";
 import type { ClassContext } from "@/lib/ai-hub/class-context";
+import { classLevelLabel, curriculumForLevel } from "@/lib/classes/level";
 import {
   createAgentDraft,
   downloadDraftImageBytes,
@@ -348,12 +349,15 @@ export async function executeGenerateLearningResource(
       ? `\n\nTeacher instructions:\n${input.instructions.trim()}`
       : "";
 
+    const curriculum = curriculumForLevel(deps.classContext.grade_level);
+    const article = curriculum === "8-4-4 (KCSE)" ? "an" : "a";
     const { text } = await generateText({
       model: getChatModel(),
-      system: `You are a CBC teaching assistant for PersonaLearn. Create practical ${typeLabel} content for Kenyan classrooms. Use clear Markdown with headings and bullet lists where helpful. Output only the resource content — no preamble about being an AI.`,
+      system: `You are ${article} ${curriculum} teaching assistant for PersonaLearn. Create practical ${typeLabel} content for Kenyan classrooms. Use clear Markdown with headings and bullet lists where helpful. Output only the resource content — no preamble about being an AI.`,
       prompt: `Class: ${deps.classContext.name}${section}
 Subject: ${deps.classContext.subject}
-Grade: ${deps.classContext.grade_level}
+Level: ${classLevelLabel(deps.classContext.grade_level)}
+Curriculum: ${curriculum}
 Term: ${deps.classContext.term} (${deps.classContext.academic_year})
 
 Create a ${typeLabel} titled "${input.title}".${extra}`,
@@ -422,10 +426,12 @@ export async function executeGenerateTeachingImage(
     const section = deps.classContext.section
       ? `, ${deps.classContext.section}`
       : "";
-    const enrichedPrompt = `Educational teaching aid for Kenyan CBC classroom.
+    const curriculum = curriculumForLevel(deps.classContext.grade_level);
+    const enrichedPrompt = `Educational teaching aid for a Kenyan ${curriculum} classroom.
 Class: ${deps.classContext.name}${section}
 Subject: ${deps.classContext.subject}
-Grade: ${deps.classContext.grade_level}
+Level: ${classLevelLabel(deps.classContext.grade_level)}
+Curriculum: ${curriculum}
 Title: ${input.title}
 
 ${prompt}
