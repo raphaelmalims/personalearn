@@ -881,7 +881,9 @@ export function AiHubChat() {
         <p className="text-sm text-muted-foreground">
           Select an active class to use AI Hub.
         </p>
-        <ClassSelector />
+        <div className="md:hidden">
+          <ClassSelector />
+        </div>
       </div>
     );
   }

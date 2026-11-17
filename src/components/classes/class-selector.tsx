@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, GraduationCap, Pencil, Plus } from "lucide-react";
+import { Check, ChevronDown, Pencil, Plus } from "lucide-react";
 import { useClasses } from "@/lib/hooks/use-classes";
 import { useActiveClassStore } from "@/lib/store/active-class";
 import { DropdownMenu, DropdownMenuItem } from "@/components/ui/dropdown-menu";
@@ -18,11 +18,9 @@ type ClassSelectorProps = {
    * so the list cannot grow into the chat.
    */
   fill?: boolean;
-  /** Icon trigger for the narrow desktop rail. Always visible; menu portals. */
-  rail?: boolean;
 };
 
-export function ClassSelector({ fill = false, rail = false }: ClassSelectorProps) {
+export function ClassSelector({ fill = false }: ClassSelectorProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { data: classes, isLoading } = useClasses();
@@ -76,57 +74,58 @@ export function ClassSelector({ fill = false, rail = false }: ClassSelectorProps
         trigger={
           <button
             type="button"
-            aria-label={rail ? `Class: ${label}` : undefined}
+            aria-label={`Class: ${label}`}
             title={label}
             className={cn(
-              "flex items-center gap-1 text-xs font-medium text-muted-foreground hover:bg-muted",
-              rail
-                ? "h-11 w-11 justify-center rounded-2xl"
-                : "rounded-full border border-border bg-card px-3 py-1.5",
-              !rail && (fill ? "w-full max-w-full" : "max-w-[12rem] sm:max-w-[16rem]")
+              "flex min-h-10 items-center gap-2 rounded-full border border-border bg-card px-3 text-sm font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              fill ? "w-full max-w-full" : "max-w-[16rem]"
             )}
           >
-            {rail ? (
-              <GraduationCap className="h-5 w-5 shrink-0" />
-            ) : (
-              <>
-                <span className="min-w-0 truncate">{label}</span>
-                <ChevronDown className="h-3 w-3 shrink-0" />
-              </>
-            )}
+            <span className="min-w-0 flex-1 truncate text-left">{label}</span>
+            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
           </button>
         }
       >
-        {classes?.map((cls) => (
-          <div key={cls.id} className="flex min-w-0 items-center">
-            <DropdownMenuItem
-              onClick={() => selectClass(cls)}
-              className={cn(
-                "min-w-0 flex-1",
-                activeClass?.id === cls.id ? "bg-primary/10 text-primary" : undefined
-              )}
-            >
-              <span className="min-w-0">
-                <span className="block truncate font-medium">{cls.name}</span>
-                <span className="block truncate text-xs font-normal text-muted-foreground">
-                  {detailLabel(cls)}
+        {classes?.map((cls) => {
+          const selected = activeClass?.id === cls.id;
+          return (
+            <div key={cls.id} className="flex min-w-0 items-center gap-1">
+              <DropdownMenuItem
+                onClick={() => selectClass(cls)}
+                className={cn(
+                  "min-h-10 min-w-0 flex-1 gap-2",
+                  selected ? "bg-primary/10 text-primary" : undefined
+                )}
+              >
+                <Check
+                  className={cn(
+                    "h-4 w-4 shrink-0",
+                    selected ? "opacity-100" : "opacity-0"
+                  )}
+                  aria-hidden
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium">{cls.name}</span>
+                  <span className="block truncate text-xs font-normal text-muted-foreground">
+                    {detailLabel(cls)}
+                  </span>
                 </span>
-              </span>
-            </DropdownMenuItem>
-            <button
-              type="button"
-              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-              aria-label={`Edit ${cls.name}`}
-              onClick={() => setEditClass(cls)}
-            >
-              <Pencil className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        ))}
+              </DropdownMenuItem>
+              <button
+                type="button"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label={`Edit ${cls.name}`}
+                onClick={() => setEditClass(cls)}
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+            </div>
+          );
+        })}
         {!classes?.length && !isLoading ? (
           <p className="px-3 py-2 text-xs text-muted-foreground">No classes yet</p>
         ) : null}
-        <div className="my-1 border-t border-border" />
+        <div className="mx-1 my-1 border-t border-border" />
         <DropdownMenuItem onClick={() => setCreateOpen(true)}>
           <Plus className="mr-2 h-4 w-4 shrink-0" />
           New class

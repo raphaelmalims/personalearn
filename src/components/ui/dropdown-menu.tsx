@@ -55,7 +55,20 @@ export function DropdownMenu({
   useEffect(() => {
     if (!open) return;
     function handleKey(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") {
+        setOpen(false);
+        return;
+      }
+      if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+      const items = Array.from(
+        panelRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []
+      );
+      if (!items.length) return;
+      event.preventDefault();
+      const current = items.indexOf(document.activeElement as HTMLElement);
+      const delta = event.key === "ArrowDown" ? 1 : -1;
+      const next = items[(current + delta + items.length) % items.length];
+      next?.focus();
     }
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
@@ -80,7 +93,7 @@ export function DropdownMenu({
     setCoords({
       minWidth: Math.min(box.width, maxWidth),
       maxWidth,
-      maxHeight: Math.min(320, available),
+      maxHeight: Math.min(288, available),
       overflowY: "auto",
       ...(openUp
         ? { bottom: window.innerHeight - box.top + margin, top: "auto" }
@@ -109,7 +122,7 @@ export function DropdownMenu({
       style={portal ? coords ?? undefined : undefined}
       role="menu"
       className={cn(
-        "z-50 max-h-[min(20rem,70dvh)] w-max max-w-[calc(100vw-1rem)] overflow-x-hidden overflow-y-auto rounded-md bg-card p-1 shadow-lg",
+        "z-50 max-h-72 w-max max-w-[calc(100vw-1rem)] overflow-x-hidden overflow-y-auto rounded-md bg-card p-1 shadow-lg",
         portal
           ? "fixed"
           : cn(
