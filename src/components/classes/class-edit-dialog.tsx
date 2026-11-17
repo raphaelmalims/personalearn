@@ -33,6 +33,7 @@ export function ClassEditDialog({
 }: ClassEditDialogProps) {
   const router = useRouter();
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const [confirmArchive, setConfirmArchive] = useState(false);
   const isControlled = openProp !== undefined;
   const open = isControlled ? openProp : uncontrolledOpen;
   const updateClass = useUpdateClass();
@@ -81,11 +82,9 @@ export function ClassEditDialog({
   }
 
   async function handleArchive() {
-    if (!confirm(`Archive "${cls.name}"? Students will remain but the class will be hidden.`)) {
-      return;
-    }
     const wasActive = activeClass?.id === cls.id;
     await archiveClass.mutateAsync(cls.id);
+    setConfirmArchive(false);
     setOpen(false);
     if (!wasActive) return;
     const next = (classes ?? []).find((item) => item.id !== cls.id);
@@ -202,7 +201,7 @@ export function ClassEditDialog({
               variant="secondary"
               size="sm"
               className="text-destructive"
-              onClick={handleArchive}
+              onClick={() => setConfirmArchive(true)}
               disabled={archiveClass.isPending}
             >
               Archive class
@@ -222,6 +221,32 @@ export function ClassEditDialog({
             </div>
           </div>
         </form>
+      </Dialog>
+      <Dialog
+        open={confirmArchive}
+        onOpenChange={setConfirmArchive}
+        title="Archive class?"
+        description={`Hide "${cls.name}". Students stay.`}
+      >
+        <div className="flex justify-end gap-2 pt-2">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => setConfirmArchive(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={() => void handleArchive()}
+            disabled={archiveClass.isPending}
+          >
+            Archive
+          </Button>
+        </div>
       </Dialog>
     </>
   );

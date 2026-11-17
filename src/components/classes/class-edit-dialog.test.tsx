@@ -81,10 +81,11 @@ describe("ClassEditDialog", () => {
   it("selects the next active class after archive", async () => {
     const user = userEvent.setup();
     classes = [cls, { ...cls, id: "class-2", name: "Science B", subject: "Science" }];
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<ClassEditDialog cls={cls} open showTrigger={false} onOpenChange={vi.fn()} />);
 
     await user.click(screen.getByRole("button", { name: "Archive class" }));
+    expect(screen.getByRole("heading", { name: "Archive class?" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Archive" }));
 
     expect(archive).toHaveBeenCalledWith("class-1");
     expect(setActiveClass).toHaveBeenCalledWith(expect.objectContaining({ id: "class-2" }));
@@ -94,10 +95,10 @@ describe("ClassEditDialog", () => {
   it("sends the teacher to onboarding when no class remains", async () => {
     const user = userEvent.setup();
     classes = [cls];
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     render(<ClassEditDialog cls={cls} open showTrigger={false} onOpenChange={vi.fn()} />);
 
     await user.click(screen.getByRole("button", { name: "Archive class" }));
+    await user.click(screen.getByRole("button", { name: "Archive" }));
 
     expect(push).toHaveBeenCalledWith("/onboarding");
   });

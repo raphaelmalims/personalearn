@@ -38,6 +38,10 @@ export function DropdownMenu({
   matchTrigger = false,
 }: DropdownMenuProps) {
   const [open, setOpen] = useState(false);
+  function closeMenu() {
+    setOpen(false);
+    ref.current?.querySelector<HTMLElement>("[data-pl-dropdown-trigger]")?.focus();
+  }
   const [coords, setCoords] = useState<React.CSSProperties | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -62,10 +66,7 @@ export function DropdownMenu({
     if (!open) return;
     function handleKey(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        setOpen(false);
-        ref.current
-          ?.querySelector<HTMLElement>("[data-pl-dropdown-trigger]")
-          ?.focus();
+        closeMenu();
         return;
       }
       if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
@@ -125,7 +126,7 @@ export function DropdownMenu({
 
   if (!open) {
     return (
-      <DropdownMenuContext.Provider value={{ close: () => setOpen(false) }}>
+      <DropdownMenuContext.Provider value={{ close: closeMenu }}>
         <div className={cn("relative", rootClassName)} ref={ref}>
           <div aria-expanded={false} aria-haspopup="menu" onClick={() => setOpen((value) => !value)}>
             {trigger}
@@ -158,7 +159,7 @@ export function DropdownMenu({
   );
 
   return (
-    <DropdownMenuContext.Provider value={{ close: () => setOpen(false) }}>
+    <DropdownMenuContext.Provider value={{ close: closeMenu }}>
       <div className={cn("relative", rootClassName)} ref={ref}>
         <div aria-expanded aria-haspopup="menu" onClick={() => setOpen((value) => !value)}>
           {trigger}
