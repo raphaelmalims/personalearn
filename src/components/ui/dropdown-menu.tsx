@@ -18,6 +18,11 @@ type DropdownMenuProps = {
    * Use for hero headers where a later sibling stacking context steals clicks.
    */
   portal?: boolean;
+  /**
+   * Size the panel from the trigger control, clamped to 15–20rem.
+   * Ignores a full-width positioning wrapper.
+   */
+  matchTrigger?: boolean;
 };
 
 const DropdownMenuContext = createContext<{ close: () => void } | null>(null);
@@ -30,6 +35,7 @@ export function DropdownMenu({
   contentClassName,
   rootClassName,
   portal = false,
+  matchTrigger = false,
 }: DropdownMenuProps) {
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState<React.CSSProperties | null>(null);
@@ -57,6 +63,9 @@ export function DropdownMenu({
     function handleKey(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setOpen(false);
+        ref.current
+          ?.querySelector<HTMLElement>("[data-pl-dropdown-trigger]")
+          ?.focus();
         return;
       }
       if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
@@ -79,20 +88,21 @@ export function DropdownMenu({
       setCoords(null);
       return;
     }
-    const box = ref.current.getBoundingClientRect();
+    const triggerEl = ref.current.querySelector<HTMLElement>("[data-pl-dropdown-trigger]");
+    const box = (matchTrigger && triggerEl ? triggerEl : ref.current).getBoundingClientRect();
     const margin = 8;
     const spaceBelow = window.innerHeight - box.bottom - margin;
     const spaceAbove = box.top - margin;
     const openUp =
       side === "top" || (side === "bottom" && spaceBelow < 160 && spaceAbove > spaceBelow);
     const available = Math.max(120, openUp ? spaceAbove : spaceBelow);
-    const maxWidth = Math.max(
+    const room = Math.max(
       0,
       align === "end" ? box.right - margin : window.innerWidth - box.left - margin
     );
+    const width = Math.min(320, Math.max(240, box.width), room);
     setCoords({
-      minWidth: Math.min(box.width, maxWidth),
-      maxWidth,
+      ...(matchTrigger ? { width, minWidth: width, maxWidth: width } : { minWidth: Math.min(box.width, room), maxWidth: room }),
       maxHeight: Math.min(288, available),
       overflowY: "auto",
       ...(openUp
@@ -102,7 +112,16 @@ export function DropdownMenu({
         ? { right: window.innerWidth - box.right, left: "auto" }
         : { left: box.left, right: "auto" }),
     });
-  }, [portal, open, side, align]);
+  }, [portal, open, side, align, matchTrigger]);
+
+  useEffect(() => {
+    if (!open || !panelRef.current) return;
+    const active = panelRef.current.querySelector<HTMLElement>("[data-pl-active-item]");
+    if (active && typeof active.scrollIntoView === "function") {
+      active.scrollIntoView({ block: "nearest" });
+    }
+    active?.focus();
+  }, [open, coords]);
 
   if (!open) {
     return (
@@ -157,10 +176,13 @@ export function DropdownMenu({
 export function DropdownMenuItem({
   className,
   onClick,
+  active = false,
   children,
 }: {
   className?: string;
   onClick?: () => void;
+  /** Scroll this row into view and focus it when the menu opens. */
+  active?: boolean;
   children: React.ReactNode;
 }) {
   const menu = useContext(DropdownMenuContext);
@@ -169,6 +191,7 @@ export function DropdownMenuItem({
     <button
       type="button"
       role="menuitem"
+      data-pl-active-item={active ? "" : undefined}
       className={cn(
         "flex w-full min-w-0 items-center rounded-md px-3 py-2 text-left text-sm hover:bg-muted",
         className

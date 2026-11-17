@@ -15,7 +15,7 @@ describe("MobileHubToolbar", () => {
       />
     );
 
-    const toolbar = screen.getByText("Week 3 fractions").parentElement;
+    const toolbar = screen.getByText("Week 3 fractions").closest("[data-mobile-hub-toolbar]");
     expect(toolbar).toHaveAttribute("data-mobile-hub-toolbar");
     expect(toolbar).toHaveClass("fixed", "top-0", "inset-x-0", "md:hidden");
     expect(screen.getByRole("button", { name: "Open hub panel" })).toBeVisible();
@@ -36,9 +36,10 @@ describe("MobileHubToolbar", () => {
       />
     );
 
+    await user.click(screen.getByRole("button", { name: "Week 3 fractions" }));
     await user.click(screen.getByRole("button", { name: "Open hub panel" }));
     await user.click(screen.getByRole("button", { name: "New conversation" }));
-    expect(onOpenPanel).toHaveBeenCalledOnce();
+    expect(onOpenPanel).toHaveBeenCalledTimes(2);
     expect(onNewConversation).toHaveBeenCalledOnce();
   });
 });
