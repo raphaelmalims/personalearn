@@ -45,7 +45,7 @@ vi.mock("@/lib/ai-hub/class-context", () => ({
     id: "11111111-1111-4111-8111-111111111111",
     name: "Grade 7 Maths",
     subject: "Mathematics",
-    grade_level: 7,
+    grade_level: "g7",
     term: 1,
     section: null,
     academic_year: "2026",

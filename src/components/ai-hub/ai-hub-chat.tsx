@@ -32,6 +32,7 @@ import {
 } from "@/components/ai-hub/mobile-hub-toolbar";
 import { ThinkingBubble } from "@/components/ai-hub/thinking-bubble";
 import { ClassSelector } from "@/components/classes/class-selector";
+import { classLevelLabel } from "@/lib/classes/level";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -993,7 +994,7 @@ export function AiHubChat() {
                         How can I help with {activeClass.name}?
                       </p>
                       <p className="mt-1 text-sm text-muted-foreground">
-                        I already know your class is Grade {activeClass.grade_level}{" "}
+                        I already know your class is {classLevelLabel(activeClass.grade_level)}{" "}
                         {activeClass.subject}, Term {activeClass.term}. Ask about
                         planning, resources, or feedback.
                       </p>

@@ -1,8 +1,11 @@
+import type { ClassLevelCode } from "@/lib/classes/level";
+
 export type Class = {
   id: string;
   teacher_id: string;
   name: string;
-  grade_level: number;
+  /** Level code: pp1, pp2, g1–g12, f1–f4. */
+  grade_level: ClassLevelCode;
   subject: string;
   term: number;
   academic_year: string;

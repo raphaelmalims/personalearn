@@ -7,7 +7,7 @@ describe("buildClassAssistantSystemPrompt", () => {
       id: "class-1",
       name: "7 East",
       subject: "Mathematics",
-      grade_level: 7,
+      grade_level: "g7",
       term: 2,
       section: "East",
       academic_year: "2026",
@@ -15,7 +15,9 @@ describe("buildClassAssistantSystemPrompt", () => {
 
     expect(prompt).toContain("7 East");
     expect(prompt).toContain("Mathematics");
-    expect(prompt).toContain("Grade: 7");
+    expect(prompt).toContain("Level: Grade 7");
+    expect(prompt).toContain("Curriculum: CBC");
+    expect(prompt).toContain("You are a CBC teaching assistant");
     expect(prompt).toContain("Never ask which class");
     expect(prompt).toContain("search_class_resources");
     expect(prompt).toContain("generate_teaching_image");
@@ -33,5 +35,35 @@ describe("buildClassAssistantSystemPrompt", () => {
     expect(prompt).toContain("Never show database ids");
     expect(prompt).toContain("interests/passions");
     expect(prompt).toContain("never show UUIDs");
+    expect(prompt).not.toContain("8-4-4");
+  });
+
+  it("uses CBC for pre-primary and 8-4-4 for form", () => {
+    const base = {
+      id: "class-1",
+      name: "7 East",
+      subject: "Mathematics",
+      term: 2,
+      section: null,
+      academic_year: "2026",
+    };
+
+    const pp = buildClassAssistantSystemPrompt({
+      ...base,
+      grade_level: "pp1",
+    });
+    expect(pp).toContain("You are a CBC teaching assistant");
+    expect(pp).toContain("Level: PP1");
+    expect(pp).toContain("Curriculum: CBC");
+
+    const form = buildClassAssistantSystemPrompt({
+      ...base,
+      name: "Form 1",
+      grade_level: "f1",
+    });
+    expect(form).toContain("You are an 8-4-4 (KCSE) teaching assistant");
+    expect(form).toContain("Level: Form 1");
+    expect(form).toContain("Curriculum: 8-4-4 (KCSE)");
+    expect(form).not.toContain("CBC");
   });
 });
