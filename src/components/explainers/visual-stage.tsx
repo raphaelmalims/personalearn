@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { DiagramStudio } from "@/components/diagrams/diagram-studio";
 import { ExplainerStage } from "@/components/explainers/explainer-stage";
 import { MediaControls } from "@/components/explainers/media-controls";
 import { ScenePlate } from "@/components/explainers/scene-plate";
-import type { DiagramContent } from "@/lib/diagrams/content";
 import type { DiagramAnswer, PartTally } from "@/lib/diagrams/tally";
 import { toWaterCycleDiagram } from "@/lib/diagrams/water-cycle-parts";
 import {
@@ -52,23 +50,22 @@ export function VisualStage({
     );
   }
 
-  const water = spec.block === "scene" ? toWaterCycleDiagram(artifact.topic, spec) : null;
-  if (water) return <WaterCycleStage artifact={artifact} content={water} />;
-
-  return <StaticFigure spec={spec} language={artifact.language} />;
+  return <PictureStage artifact={artifact} spec={spec} />;
 }
 
-function WaterCycleStage({
+function PictureStage({
   artifact,
-  content,
+  spec,
 }: {
   artifact: VisualArtifact;
-  content: DiagramContent;
+  spec: Exclude<VisualSpec, { block: "process-flow" }>;
 }) {
+  const water = spec.block === "scene" ? toWaterCycleDiagram(artifact.topic, spec) : null;
   const [tally, setTally] = useState<PartTally[] | null>(null);
-  const tallyKey = `${artifact.topic}|${artifact.grade}|${artifact.language}`;
+  const tallyKey = `${artifact.topic}|${artifact.grade}|${artifact.language}|${water ? "water" : "plain"}`;
 
   useEffect(() => {
+    if (!tallyKey.endsWith("|water")) return;
     let cancelled = false;
     void loadDiagramTally(artifact).then((rows) => {
       if (!cancelled && rows) setTally(rows);
@@ -81,20 +78,29 @@ function WaterCycleStage({
   const recorded = tally?.some((row) => row.correct > 0 || row.incorrect > 0) ?? false;
 
   return (
-    <figure className="overflow-hidden rounded-2xl border border-border bg-surface-1">
-      <figcaption className="px-4 pt-4 text-[15px] font-medium tracking-tight text-foreground">
-        {content.title}
-      </figcaption>
-      <DiagramStudio
-        content={content}
-        onAnswer={(answer) => {
-          void recordDiagramAnswer(artifact, answer).then((rows) => {
-            if (rows) setTally(rows);
-          });
-        }}
+    <div>
+      <StaticFigure
+        spec={spec}
+        language={artifact.language}
+        onScenePart={
+          water
+            ? (part) => {
+                const mapped = water.parts.find((item) => item.label === part.label);
+                if (!mapped) return;
+                const correct = sameText(part.label, spec.quiz.answer);
+                void recordDiagramAnswer(artifact, {
+                  partId: mapped.id,
+                  mode: "find",
+                  correct,
+                }).then((rows) => {
+                  if (rows) setTally(rows);
+                });
+              }
+            : undefined
+        }
       />
-      {recorded && tally ? (
-        <ul className="px-4 pb-4 text-xs text-muted-foreground">
+      {water && recorded && tally ? (
+        <ul className="px-4 pb-3 text-xs text-muted-foreground">
           {tally.map((row) => (
             <li key={row.partId}>
               {row.partId}: {row.incorrect} wrong, {row.correct} right
@@ -102,7 +108,7 @@ function WaterCycleStage({
           ))}
         </ul>
       ) : null}
-    </figure>
+    </div>
   );
 }
 
@@ -140,9 +146,11 @@ function recordDiagramAnswer(artifact: VisualArtifact, answer: DiagramAnswer) {
 function StaticFigure({
   spec,
   language,
+  onScenePart,
 }: {
   spec: Exclude<VisualSpec, { block: "process-flow" }>;
   language: string;
+  onScenePart?: (part: Extract<VisualSpec, { block: "scene" }>["parts"][number]) => void;
 }) {
   const narration = useNarration(visualCaptions(spec), language);
   const [prompt, setPrompt] = useState<Prompt>({ id: "quiz", text: spec.quiz.prompt });
@@ -183,6 +191,7 @@ function StaticFigure({
             quizOpen={quizOpen}
             onQuiz={answerQuiz}
             onAdvance={advance}
+            onPart={onScenePart}
           />
         ) : null}
         {spec.block === "comparison" ? (
