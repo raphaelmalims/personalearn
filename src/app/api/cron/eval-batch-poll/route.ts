@@ -1,5 +1,7 @@
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { pollPendingBatchJobs } from "@/lib/evaluation/poll-batches";
+import { getSupabaseEnv } from "@/lib/supabase/env";
 import { createServiceClient } from "@/lib/supabase/service";
 
 export const dynamic = "force-dynamic";
@@ -19,9 +21,25 @@ export async function GET(request: Request) {
   }
 
   try {
+    const { url, anonKey } = getSupabaseEnv();
+    const anon = createSupabaseClient(url, anonKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data: probe, error: probeError } = await anon.rpc(
+      "eval_batch_poll_probe"
+    );
+    if (probeError) throw new Error(probeError.message);
+
+    const pending = Number(
+      (probe as { pending?: number } | null)?.pending ?? 0
+    );
+    if (pending === 0) {
+      return NextResponse.json({ ok: true, processed: 0, keepAlive: probe });
+    }
+
     const supabase = createServiceClient();
     const processed = await pollPendingBatchJobs(supabase);
-    return NextResponse.json({ ok: true, processed });
+    return NextResponse.json({ ok: true, processed, keepAlive: probe });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Poll failed";
     return NextResponse.json({ error: message }, { status: 500 });
