@@ -4,6 +4,7 @@ import { buildClassInsights } from "@/lib/evaluation/class-insights-build";
 import {
   formatClassInsightsChatMessage,
   messageIsForBatch,
+  presentClassInsights,
   shouldPostClassInsights,
 } from "@/lib/evaluation/class-insights-message";
 
@@ -17,7 +18,7 @@ export async function publishClassInsightsMessage(
 ): Promise<void> {
   const { data: batch, error } = await supabase
     .from("evaluation_batches")
-    .select("id, conversation_id, status")
+    .select("id, class_id, conversation_id")
     .eq("id", batchId)
     .maybeSingle();
 
@@ -53,13 +54,12 @@ export async function publishClassInsightsMessage(
       content: formatClassInsightsChatMessage(insights),
       tool_calls: {
         classInsightsBatchId: batchId,
-        evalSessions: [
-          {
-            batchId,
-            conversationId: batch.conversation_id,
-            status: batch.status,
-          },
-        ],
+        classInsights: presentClassInsights(
+          insights,
+          batch.class_id
+            ? `/classes/${batch.class_id}/evaluations/${batchId}`
+            : ""
+        ),
       },
     },
   ]);

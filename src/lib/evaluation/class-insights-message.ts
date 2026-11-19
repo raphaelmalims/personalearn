@@ -52,39 +52,125 @@ export function messageIsForBatch(
   );
 }
 
+export type ClassInsightsCardView = {
+  title: string;
+  percentUnderHalf: number | null;
+  questionNumbers: string;
+  reteachStep: string;
+};
+
+/** The same cards the panel and the Hub message render. */
+export type ClassInsightsView = {
+  scriptCount: number;
+  cards: ClassInsightsCardView[];
+  note: string | null;
+  reviewPath: string;
+};
+
+const FALLBACK_RETEACH = "Talk through this question with one worked example.";
+
+function oneLine(text: string): string {
+  const line = text.replace(/\s+/g, " ").trim();
+  if (line.length <= 140) return line;
+  return `${line.slice(0, 139).trimEnd()}…`;
+}
+
+function percentAcross(
+  questions: QuestionInsight[],
+  keys: string[]
+): number | null {
+  const matched = questions.filter((question) => keys.includes(question.key));
+  const scored = matched.reduce((sum, question) => sum + question.scored, 0);
+  if (scored <= 0) return null;
+  const below = matched.reduce((sum, question) => sum + question.belowHalf, 0);
+  return Math.round((below / scored) * 100);
+}
+
+function numbersFor(questions: QuestionInsight[], keys: string[]): string {
+  const labels = keys.map(
+    (key) => questions.find((question) => question.key === key)?.label ?? key
+  );
+  return labels.filter(Boolean).join(", ");
+}
+
 /**
- * One Hub assistant message. Topics and the table both come from the insights
- * payload, so the chat cannot describe a different set than the panel.
+ * Cards for the panel and the Hub message. Both call this, so they cannot
+ * describe a different set.
+ */
+export function presentClassInsights(
+  payload: ClassInsightsPayload,
+  reviewPath = ""
+): ClassInsightsView {
+  if (payload.source === "llm" && payload.topics.length > 0) {
+    return {
+      scriptCount: payload.scriptCount,
+      reviewPath,
+      note: "From this set. Not a strand label.",
+      cards: payload.topics.slice(0, 3).map((topic) => ({
+        title: oneLine(topic.title),
+        percentUnderHalf: percentAcross(payload.questions, topic.questionKeys),
+        questionNumbers: numbersFor(payload.questions, topic.questionKeys),
+        reteachStep: oneLine(topic.reteachStep),
+      })),
+    };
+  }
+
+  const weak = payload.questions
+    .filter((question) => (question.percentBelowHalf ?? 0) > 0)
+    .slice(0, 3);
+
+  return {
+    scriptCount: payload.scriptCount,
+    reviewPath,
+    note: null,
+    cards: weak.map((question) => ({
+      title: `Question ${question.label}`,
+      percentUnderHalf: question.percentBelowHalf,
+      questionNumbers: question.label,
+      reteachStep: oneLine(question.commonMistakes[0]?.text ?? FALLBACK_RETEACH),
+    })),
+  };
+}
+
+export function isClassInsightsView(value: unknown): value is ClassInsightsView {
+  if (!value || typeof value !== "object") return false;
+  const view = value as ClassInsightsView;
+  return (
+    typeof view.scriptCount === "number" &&
+    typeof view.reviewPath === "string" &&
+    Array.isArray(view.cards)
+  );
+}
+
+/**
+ * Compact fallback text. The chat renders the card view from tool_calls
+ * instead of this paragraph.
  */
 export function formatClassInsightsChatMessage(
   payload: ClassInsightsPayload
 ): string {
+  const view = presentClassInsights(payload);
   const countLabel =
-    payload.scriptCount === 1 ? "1 script" : `${payload.scriptCount} scripts`;
+    view.scriptCount === 1 ? "1 script" : `${view.scriptCount} scripts`;
   const lines = ["Class insights", "", `Based on ${countLabel}.`, ""];
 
-  if (payload.source === "llm" && payload.topics.length > 0) {
-    for (const topic of payload.topics.slice(0, 3)) {
-      lines.push(`**${topic.title}**`, topic.reteachStep, "");
-    }
-    lines.push("Inferred from this set. Not a CBC strand alignment.");
-  } else if (payload.questions.length === 0) {
-    lines.push("No question scores yet for these scripts.");
+  if (view.cards.length === 0) {
+    lines.push("Nothing stands out on this set.");
   } else {
-    for (const question of payload.questions) {
+    for (const card of view.cards) {
       const score =
-        question.percentBelowHalf === null
-          ? "no score"
-          : `${question.percentBelowHalf}% below 50%`;
-      const mistake = question.commonMistakes[0]?.text;
+        card.percentUnderHalf === null
+          ? "No score yet"
+          : `${card.percentUnderHalf}% under half`;
       lines.push(
-        `**${question.label}** — ${question.learnersMarked} learners, ${score}.${
-          mistake ? ` ${mistake}` : ""
-        }`
+        card.title,
+        `${score} · Questions ${card.questionNumbers}`,
+        card.reteachStep,
+        ""
       );
     }
   }
 
-  lines.push("", "Open the review workspace below.");
-  return lines.join("\n");
+  if (view.note) lines.push(view.note);
+  return lines.join("\n").trim();
 }

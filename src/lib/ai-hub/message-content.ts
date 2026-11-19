@@ -5,6 +5,10 @@ import {
   isEvalSessionArtifact,
   type EvalSessionArtifact,
 } from "@/lib/ai-hub/eval-session";
+import {
+  isClassInsightsView,
+  type ClassInsightsView,
+} from "@/lib/evaluation/class-insights-message";
 
 export type ConversationMessageRole = "user" | "assistant" | "tool";
 
@@ -81,7 +85,8 @@ export function getVisibleDrafts(
 export type AssistantDisplayBlock =
   | { type: "text"; text: string }
   | { type: "draft"; draft: VisibleDraft }
-  | { type: "eval_session"; session: EvalSessionArtifact };
+  | { type: "eval_session"; session: EvalSessionArtifact }
+  | { type: "class_insights"; view: ClassInsightsView };
 
 export function getAssistantDisplayBlocks(
   message: Pick<UIMessage, "parts">
@@ -89,6 +94,12 @@ export function getAssistantDisplayBlocks(
   const blocks: AssistantDisplayBlock[] = [];
 
   for (const part of message.parts) {
+    const insights = classInsightsFromPart(part);
+    if (insights) {
+      blocks.push({ type: "class_insights", view: insights });
+      continue;
+    }
+
     if (isTextUIPart(part)) {
       const text = stripDatabaseIdsFromTeacherText(part.text);
       if (text) {
@@ -157,6 +168,9 @@ export function getAssistantPersistContent(
       if (block.type === "text") return block.text;
       if (block.type === "draft") {
         return `## ${block.draft.title}\n\n${block.draft.content}`;
+      }
+      if (block.type === "class_insights") {
+        return `Class insights\n\nBased on ${block.view.scriptCount} scripts.`;
       }
       return evalSessionPersistLine(block.session);
     })
@@ -249,6 +263,16 @@ export function toUIMessageFromRow(row: {
 }): UIMessage {
   const role = row.role === "user" ? "user" : "assistant";
   const metadata = answerMetadata(row);
+
+  const classInsights = extractSavedClassInsights(row.tool_calls);
+  if (role === "assistant" && classInsights) {
+    return {
+      id: row.id,
+      role,
+      parts: [createClassInsightsPart(classInsights)],
+      ...(metadata ? { metadata } : {}),
+    };
+  }
 
   const savedDrafts = extractSavedDrafts(row.tool_calls);
   const savedSessions = extractSavedEvalSessions(row.tool_calls);
@@ -361,6 +385,31 @@ function rebuiltPartsWithDrafts(
   }
 
   return parts;
+}
+
+function extractSavedClassInsights(
+  toolCalls: unknown
+): ClassInsightsView | null {
+  if (!toolCalls || typeof toolCalls !== "object") return null;
+  const view = (toolCalls as { classInsights?: unknown }).classInsights;
+  return isClassInsightsView(view) ? view : null;
+}
+
+function createClassInsightsPart(
+  view: ClassInsightsView
+): UIMessage["parts"][number] {
+  return {
+    type: "text",
+    text: "",
+    _classInsights: view,
+  } as unknown as UIMessage["parts"][number];
+}
+
+function classInsightsFromPart(
+  part: UIMessage["parts"][number]
+): ClassInsightsView | null {
+  const record = part as Record<string, unknown>;
+  return isClassInsightsView(record._classInsights) ? record._classInsights : null;
 }
 
 function extractSavedEvalSessions(toolCalls: unknown): EvalSessionArtifact[] {
