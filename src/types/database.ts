@@ -130,6 +130,8 @@ export type EvaluationBatch = {
   mode: EvaluationBatchMode;
   status: EvaluationBatchStatus;
   created_at: string;
+  /** Saved class insights for this batch. Null until the first result is stored. */
+  class_insights?: unknown | null;
 };
 
 /** Normalized vertical scroll region on a page (0–1). */
