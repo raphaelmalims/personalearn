@@ -275,6 +275,15 @@ function hasToken(text: string, value: number): boolean {
   return new RegExp(`(?<!\\d)${value}(?!\\d)`).test(text);
 }
 
+/** Bare sums such as "3200 + 40 + 8", ignoring products written as 50×8. */
+function additionTerms(text: string): number[][] {
+  const found: number[][] = [];
+  for (const match of text.matchAll(/(?<!\d)(\d+(?:\s*\+\s*\d+)+)(?!\d)/g)) {
+    found.push(match[1].split("+").map((part) => Number(part.trim())));
+  }
+  return found;
+}
+
 function placeValues(factor: number): number[] {
   const digits = String(Math.abs(factor)).split("");
   return digits.map(
@@ -399,6 +408,27 @@ function missCause(correct: string, written: string): MissCause {
     };
   }
   if (steps.length > 1 && correctSum === right) {
+    const writtenSum = additionTerms(written).find(
+      (terms) => terms.reduce((total, value) => total + value, 0) === wrong
+    );
+    if (writtenSum) {
+      const remaining = [...steps];
+      const unmatched: number[] = [];
+      for (const term of writtenSum) {
+        const index = remaining.findIndex((step) => step.product === term);
+        if (index >= 0) remaining.splice(index, 1);
+        else unmatched.push(term);
+      }
+      if (unmatched.length === 1 && remaining.length === 1) {
+        const step = remaining[0];
+        return {
+          kind: "partial",
+          wrong,
+          text: `${step.a} × ${step.b} taken as ${unmatched[0]} (should be ${step.product}), answer ${right}`,
+        };
+      }
+      return { kind: "off", text: `answer off by ${Math.abs(right - wrong)}, check working` };
+    }
     for (const kind of ["bare", "shift", "digit"] as const) {
       const hits = steps.filter((step) => {
         const taken = wrong - (correctSum - step.product);

@@ -188,25 +188,63 @@ describe("repairArithmetic", () => {
     expect(repaired.checkIns[0]?.gap).toContain("4 × 9 written as 32");
   });
 
-  it("names the one partial product that makes the written total", () => {
+  it("names the partial product on B.3 when 120 + 48 = 168", () => {
     expect(explainMiss("38 × 6 = 228", "38 × 6 = (30×6)+(8×6)=168")).toBe(
       "30 × 6 taken as 120 (should be 180), answer 228"
     );
-    expect(explainMiss("451 × 8 = 3608", "451 × 8 = 3248")).toBe(
+    expect(explainMiss("38 × 6 = 228", "120 + 48 = 168")).toBe(
+      "30 × 6 taken as 120 (should be 180), answer 228"
+    );
+  });
+
+  it("names the partial product on C.3 when 3200 + 40 + 8 = 3248", () => {
+    expect(explainMiss("451 × 8 = 3608", "451 × 8 = (400×8)+(50×8)+(1×8)=3248")).toBe(
       "50 × 8 taken as 40 (should be 400), answer 3608"
     );
-    expect(explainMiss("245 × 7 = 1715", "245 × 7 = 1795")).toBe(
+    expect(explainMiss("451 × 8 = 3608", "3200 + 40 + 8 = 3248")).toBe(
+      "50 × 8 taken as 40 (should be 400), answer 3608"
+    );
+  });
+
+  it("names the partial product on D.2 when 1400 + 360 + 35 = 1795", () => {
+    expect(explainMiss("245 × 7 = 1715 bottles", "245×7=(200×7)+(40×7)+(5×7)=1795")).toBe(
       "40 × 7 taken as 360 (should be 280), answer 1715"
     );
-    expect(explainMiss("138 × 6 = 828", "138×6=(100×6)+(30×6)+(8×6)=822")).toBe(
+    expect(explainMiss("245 × 7 = 1715 bottles", "1400 + 360 + 35 = 1795")).toBe(
+      "40 × 7 taken as 360 (should be 280), answer 1715"
+    );
+  });
+
+  it("names the partial product on D.3 when 600 + 180 + 42 = 822", () => {
+    expect(explainMiss("138 × 6 = 828 pages", "138×6=(100×6)+(30×6)+(8×6)=822")).toBe(
       "8 × 6 taken as 42 (should be 48), answer 828"
     );
-    expect(explainMiss("9 × 45 = 405", "9×45=(9×40)+(9×5)=365")).toBe(
+    expect(explainMiss("138 × 6 = 828 pages", "600 + 180 + 42 = 822")).toBe(
+      "8 × 6 taken as 42 (should be 48), answer 828"
+    );
+  });
+
+  it("names the partial product on D.1 when 360 + 5 = 365", () => {
+    expect(explainMiss("9 × 45 = 405 plants", "9×45=(9×40)+(9×5)=365")).toBe(
       "9 × 5 taken as 5 (should be 45), answer 405"
     );
+    expect(explainMiss("9 × 45 = 405 plants", "360 + 5 = 365")).toBe(
+      "9 × 5 taken as 5 (should be 45), answer 405"
+    );
+  });
+
+  it("calls it an adding slip only when the written partials are already right", () => {
     expect(explainMiss("38 × 6 = 228", "180 + 48 = 168")).toBe(
       "Slip when adding the partial products (180 + 48 = 228)."
     );
-    expect(explainMiss("38 × 6 = 228", "28 × 6 = 168")).toContain("20 × 6");
+  });
+
+  it("says check working when no single partial product fits", () => {
+    expect(explainMiss("38 × 6 = 228", "38 × 6 = 200")).toBe(
+      "answer off by 28, check working"
+    );
+    expect(explainMiss("38 × 6 = 228", "100 + 40 + 8 = 148")).toBe(
+      "answer off by 80, check working"
+    );
   });
 });
