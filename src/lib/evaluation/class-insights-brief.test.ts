@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { groundClassBrief } from "@/lib/evaluation/class-insights-llm";
 import {
   fallbackBrief,
   missedQuestionGroups,
   readableAnswer,
   renderClassInsightsMarkdown,
+  workedExampleMarkdownLines,
   type ClassInsightsBrief,
   type ClassInsightsDossier,
 } from "@/lib/evaluation/class-insights-brief";
@@ -55,6 +57,35 @@ describe("renderClassInsightsMarkdown", () => {
 
     const blocks = splitCollapsibleMarkdown(text);
     expect(blocks.some((block) => block.kind === "collapse")).toBe(true);
+  });
+
+  it("renders the worked example as a title line and one list item per step", () => {
+    const steps = workedExampleMarkdownLines("451 × 8\n400 × 8: 4 × 8 = 32\n50 × 8: 5 × 8 = 40\n1 × 8 = 8\n3200 + 400 + 8 = 3608");
+    expect(steps[0]).toBe("451 × 8");
+    expect(steps.filter((line) => line.startsWith("- "))).toHaveLength(4);
+
+  const demoDossier: ClassInsightsDossier = {
+      assessmentTitle: "Multiplication",
+      schemeText: null,
+      learnerTotals: [
+        { learner: "Learner 2682", awarded: 9, max: 15 },
+        { learner: "Learner 6267", awarded: 9, max: 15 },
+      ],
+      questions: [
+        {
+          label: "C.3",
+          correct: "451 × 8 = 3608",
+          answers: [
+            { learner: "Learner 2682", awarded: 0, max: 1, answer: "3200 + 40 + 8 = 3248" },
+            { learner: "Learner 6267", awarded: 0, max: 1, answer: "451 × 8 = 3248" },
+          ],
+        },
+      ],
+    };
+    const text = renderClassInsightsMarkdown(demoDossier, groundClassBrief(demoDossier));
+    const example = text.slice(text.indexOf("**Worked example**"));
+    expect(example).toMatch(/\n451 × 8\n\n- /);
+    expect(example.match(/^- /gm)?.length ?? 0).toBeGreaterThanOrEqual(3);
   });
 
   it("counts each question when different learners missed them", () => {
