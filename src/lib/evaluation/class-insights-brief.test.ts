@@ -82,7 +82,6 @@ describe("renderClassInsightsMarkdown", () => {
     };
     const brief: ClassInsightsBrief = {
       ...fallbackBrief(split),
-      struggled: missedQuestionGroups(split).filter((group) => group.labels[0]?.startsWith("A")),
       practice: [
         { question: "6 × 7", answer: "42" },
         { question: "8 × 4", answer: "32" },
