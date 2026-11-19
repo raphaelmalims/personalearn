@@ -29,6 +29,25 @@ const STILL_MARKING = new Set([
   "identity_cleared",
 ]);
 
+export function isScriptStillMarking(status: string): boolean {
+  return STILL_MARKING.has(status);
+}
+
+/**
+ * The open review workspace refetches insights when another script is marked
+ * or when the last in-flight script finishes. The first paint fetches on its own.
+ */
+export function shouldRefreshClassInsights(input: {
+  previousMarked: number;
+  marked: number;
+  wasStillMarking: boolean;
+  stillMarking: boolean;
+}): boolean {
+  if (input.marked < 2) return false;
+  if (input.marked > input.previousMarked) return true;
+  return input.wasStillMarking && !input.stillMarking;
+}
+
 export function shouldPostClassInsights(input: {
   statuses: string[];
   alreadyPosted: boolean;
