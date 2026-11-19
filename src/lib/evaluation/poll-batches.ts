@@ -15,7 +15,10 @@ import {
 import { loadMarkingSchemeText } from "@/lib/evaluation/load-marking-scheme";
 import { parseEvaluateResult } from "@/lib/evaluation/evaluate-schema";
 import { parseIndexResult } from "@/lib/evaluation/index-schema";
-import { mimeFromStoragePath } from "@/lib/evaluation/page-images";
+import {
+  comparePagesForGrading,
+  mimeFromStoragePath,
+} from "@/lib/evaluation/page-images";
 import {
   persistEvaluateResults,
   persistIndexResults,
@@ -72,6 +75,17 @@ export const PROVIDER_BATCH_STALL_MS = 90_000;
 
 /** Direct grading runs inside the open-session poll. Keep the set small. */
 export const DIRECT_GRADE_PAGE_LIMIT = 8;
+
+/** Sets this size skip the provider batch and grade on the sync API. */
+export function shouldGradeSmallSetImmediately(pageCount: number): boolean {
+  return pageCount >= 1 && pageCount <= DIRECT_GRADE_PAGE_LIMIT;
+}
+
+function orderedForGrading<T extends { fileName: string; uploadIndex: number }>(
+  pages: T[]
+): T[] {
+  return [...pages].sort(comparePagesForGrading);
+}
 
 export function shouldGradeProviderBatchDirectly(input: {
   phase: "index" | "evaluate";
@@ -130,6 +144,10 @@ export async function startOrResumeBatchProcessing(
       phase: "index",
     });
     if (inflightIndex) return { job: inflightIndex, phase: "index" };
+    const pageCount = await countBatchPages(supabase, batch.id);
+    if (shouldGradeSmallSetImmediately(pageCount)) {
+      return gradeSmallSetDirectly(supabase, batch, pageCount, true);
+    }
     const job = await submitIndexBatch(supabase, batch);
     return { job, phase: "index" };
   }
@@ -149,6 +167,11 @@ export async function startOrResumeBatchProcessing(
     .in("status", ["ready", "failed", "evaluating"]);
 
   if (resetError) throw new Error(resetError.message);
+
+  const pageCount = await countBatchPages(supabase, batch.id);
+  if (shouldGradeSmallSetImmediately(pageCount)) {
+    return gradeSmallSetDirectly(supabase, batch, pageCount, false);
+  }
 
   const job = await submitEvaluateBatch(supabase, batch);
   if (!job) {
@@ -321,6 +344,70 @@ async function groupIndexedPagesIntoScripts(
   }
 }
 
+async function countBatchPages(
+  supabase: SupabaseClient,
+  batchId: string
+): Promise<number> {
+  const { count, error } = await supabase
+    .from("evaluation_pages")
+    .select("*", { count: "exact", head: true })
+    .eq("batch_id", batchId);
+  if (error) throw new Error(error.message);
+  return count ?? 0;
+}
+
+/**
+ * Index, group, and grade without a provider batch. Used for sets of
+ * DIRECT_GRADE_PAGE_LIMIT pages or fewer so the teacher does not wait out
+ * the stall timer.
+ */
+async function gradeSmallSetDirectly(
+  supabase: SupabaseClient,
+  batch: EvaluationBatch,
+  pageCount: number,
+  indexFirst: boolean
+): Promise<{ job: GeminiBatchJob; phase: "evaluate" }> {
+  await supabase
+    .from("evaluation_batches")
+    .update({ status: "processing" })
+    .eq("id", batch.id);
+
+  if (indexFirst) {
+    await indexUnindexedPagesDirectly(supabase, batch);
+    await groupIndexedPagesIntoScripts(supabase, batch);
+  }
+  await evaluateScriptsDirectly(supabase, batch);
+
+  const { count: scriptCount, error } = await supabase
+    .from("evaluated_scripts")
+    .select("*", { count: "exact", head: true })
+    .eq("batch_id", batch.id);
+  if (error) throw new Error(error.message);
+
+  const inserted = await insertGeminiBatchJob(supabase, {
+    batch_id: batch.id,
+    phase: "evaluate",
+    provider_batch_name: "sync:small-set",
+    state: "submitted",
+    page_count: pageCount,
+    script_count: scriptCount ?? 0,
+    submitted_at: new Date().toISOString(),
+  });
+
+  await supabase
+    .from("gemini_batch_jobs")
+    .update({
+      state: "completed",
+      completed_at: new Date().toISOString(),
+    })
+    .eq("id", inserted.id);
+
+  return {
+    job: { ...inserted, state: "completed" },
+    phase: "evaluate",
+  };
+}
+
 async function indexUnindexedPagesDirectly(
   supabase: SupabaseClient,
   batch: EvaluationBatch
@@ -336,7 +423,7 @@ async function indexUnindexedPagesDirectly(
   if (error) throw new Error(error.message);
 
   const cache = new Map<string, { base64: string; mimeType: string }>();
-  for (const page of pages ?? []) {
+  await mapWithConcurrency(pages ?? [], DOWNLOAD_CONCURRENCY, async (page) => {
     const img = await downloadPageBase64(supabase, page.storage_path, cache);
     const { result, modelId } = await syncIndexPage({
       images: [{ mimeType: img.mimeType, base64: img.base64 }],
@@ -348,7 +435,7 @@ async function indexUnindexedPagesDirectly(
       index: result,
       modelId,
     });
-  }
+  });
 }
 
 async function evaluateScriptsDirectly(
@@ -366,11 +453,15 @@ async function evaluateScriptsDirectly(
   if (error) throw new Error(error.message);
 
   const cache = new Map<string, { base64: string; mimeType: string }>();
-  for (const script of scripts ?? []) {
-    const pageOrder = (script.page_order ?? []) as Array<{
-      storagePath: string;
-    }>;
-    if (!pageOrder.length) continue;
+  await mapWithConcurrency(scripts ?? [], DOWNLOAD_CONCURRENCY, async (script) => {
+    const pageOrder = orderedForGrading(
+      (script.page_order ?? []) as Array<{
+        storagePath: string;
+        fileName: string;
+        uploadIndex: number;
+      }>
+    );
+    if (!pageOrder.length) return;
     const images = [];
     for (const page of pageOrder) {
       const img = await downloadPageBase64(supabase, page.storagePath, cache);
@@ -395,7 +486,7 @@ async function evaluateScriptsDirectly(
         e instanceof Error ? e.message : "Direct evaluate failed"
       );
     }
-  }
+  });
 
   await refreshBatchStatusRollup(supabase, batch.id);
 }
@@ -462,9 +553,13 @@ export async function submitEvaluateBatch(
   });
   const lines = (
     await mapWithConcurrency(scripts, DOWNLOAD_CONCURRENCY, async (script) => {
-      const pageOrder = (script.page_order ?? []) as Array<{
-        storagePath: string;
-      }>;
+      const pageOrder = orderedForGrading(
+        (script.page_order ?? []) as Array<{
+          storagePath: string;
+          fileName: string;
+          uploadIndex: number;
+        }>
+      );
       if (!pageOrder.length) return null;
       const images = await mapWithConcurrency(
         pageOrder,

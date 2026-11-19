@@ -54,6 +54,7 @@ function responsesBody(input: {
 }): Record<string, unknown> {
   return {
     model: input.modelId,
+    temperature: 0,
     prompt_cache_key: input.promptCacheKey,
     input: [
       // Stable prefix first (system + identical user text) → higher cache hit rate.

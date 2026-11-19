@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+
+export const maxDuration = 300;
 import { requireTeacherClass } from "@/lib/auth/require-teacher-class";
 import { requireTeacherEvaluationBatch } from "@/lib/evaluation/batches";
 import { startOrResumeBatchProcessing } from "@/lib/evaluation/poll-batches";
