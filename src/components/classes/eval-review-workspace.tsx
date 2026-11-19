@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -27,12 +28,17 @@ import { formatQuestionDisplayLabel } from "@/lib/evaluation/question-identity";
 import { scriptReviewPath } from "@/lib/evaluation/review-routes";
 import { computeScriptTotal } from "@/lib/evaluation/script-totals";
 import {
+  classInsightsQueryKey,
   useAssessments,
   useEvaluationScripts,
   useReevaluateQuestion,
   useSignOffScript,
   useUpdateQuestionEvaluation,
 } from "@/lib/hooks/use-evaluation";
+import {
+  isScriptStillMarking,
+  shouldRefreshClassInsights,
+} from "@/lib/evaluation/class-insights-message";
 import type { QuestionEvaluation } from "@/types/database";
 import { cn } from "@/lib/utils";
 import type { UseMutationResult } from "@tanstack/react-query";
@@ -709,6 +715,7 @@ export function EvalReviewWorkspace({
   compact = false,
 }: EvalReviewWorkspaceProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { data, isLoading, error, refetch } = useEvaluationScripts(batchId);
   useEvalScriptRealtime(batchId);
   const { data: assessments } = useAssessments(classId);
@@ -753,6 +760,34 @@ export function EvalReviewWorkspace({
       ),
     [allScripts]
   );
+
+  const stillMarking = allScripts.some((script) =>
+    isScriptStillMarking(script.status)
+  );
+  const insightsRefreshRef = useRef<{
+    marked: number;
+    stillMarking: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    const marked = readyScripts.length;
+    const previous = insightsRefreshRef.current;
+    insightsRefreshRef.current = { marked, stillMarking };
+    if (!previous) return;
+    if (
+      !shouldRefreshClassInsights({
+        previousMarked: previous.marked,
+        marked,
+        wasStillMarking: previous.stillMarking,
+        stillMarking,
+      })
+    ) {
+      return;
+    }
+    void queryClient.invalidateQueries({
+      queryKey: classInsightsQueryKey(batchId),
+    });
+  }, [batchId, queryClient, readyScripts.length, stillMarking]);
 
   const awaitingIdentity = useMemo(
     () =>

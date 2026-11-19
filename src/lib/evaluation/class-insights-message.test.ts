@@ -5,6 +5,7 @@ import {
   messageIsForBatch,
   presentClassInsights,
   shouldPostClassInsights,
+  shouldRefreshClassInsights,
   type ClassInsightsPayload,
 } from "./class-insights-message";
 
@@ -135,6 +136,43 @@ describe("shouldPostClassInsights", () => {
       shouldPostClassInsights({
         statuses: ["signed_off", "signed_off"],
         alreadyPosted: true,
+      })
+    ).toBe(false);
+  });
+});
+
+describe("shouldRefreshClassInsights", () => {
+  it("refetches when another script is marked and when marking ends", () => {
+    expect(
+      shouldRefreshClassInsights({
+        previousMarked: 1,
+        marked: 2,
+        wasStillMarking: true,
+        stillMarking: true,
+      })
+    ).toBe(true);
+    expect(
+      shouldRefreshClassInsights({
+        previousMarked: 2,
+        marked: 2,
+        wasStillMarking: true,
+        stillMarking: false,
+      })
+    ).toBe(true);
+    expect(
+      shouldRefreshClassInsights({
+        previousMarked: 2,
+        marked: 2,
+        wasStillMarking: false,
+        stillMarking: false,
+      })
+    ).toBe(false);
+    expect(
+      shouldRefreshClassInsights({
+        previousMarked: 0,
+        marked: 1,
+        wasStillMarking: true,
+        stillMarking: true,
       })
     ).toBe(false);
   });

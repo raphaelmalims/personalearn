@@ -81,6 +81,8 @@ import {
 } from "@/lib/hooks/use-conversations";
 import { useIsMobile } from "@/lib/hooks/use-is-mobile";
 import { resourcesQueryKey, useResources } from "@/lib/hooks/use-resources";
+import { mergeIncomingConversationMessage } from "@/lib/ai-hub/merge-conversation-messages";
+import { useConversationMessagesRealtime } from "@/lib/hooks/use-conversation-messages-realtime";
 import { assessmentsQueryKey } from "@/lib/hooks/use-evaluation";
 import { useActiveClassStore } from "@/lib/store/active-class";
 import { useHubEvalSessionStore } from "@/lib/store/hub-eval-session";
@@ -440,6 +442,24 @@ export function AiHubChat() {
         });
       }
     },
+  });
+
+  useConversationMessagesRealtime(selectedConversationId, (incoming) => {
+    const conversationId = conversationIdRef.current;
+    if (!conversationId) return;
+    const streaming = status === "streaming" || status === "submitted";
+    setMessages((current) => {
+      const next = mergeIncomingConversationMessage(current, incoming, {
+        streaming,
+      });
+      if (next !== current) {
+        queryClient.setQueryData(
+          conversationMessagesQueryKey(conversationId),
+          next
+        );
+      }
+      return next;
+    });
   });
 
   useEffect(() => {
