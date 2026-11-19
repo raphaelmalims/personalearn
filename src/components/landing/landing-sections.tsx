@@ -8,7 +8,7 @@ import type { LandingCtas } from "@/lib/auth/post-login-path";
 import { cn } from "@/lib/utils";
 
 const capabilities = [
-  { value: "Grades 1–9", label: "CBC coverage" },
+  { value: "PP1–Form 4", label: "CBC coverage" },
   { value: "Class-scoped", label: "Answers stay with the roster" },
   { value: "Scheme first", label: "Your plan, not a generic one" },
   { value: "In the chat", label: "Marking without a second app" },
@@ -191,7 +191,7 @@ export function TrustSection() {
   const points = [
     {
       title: "Competency-Based Curriculum",
-      body: "Grades 1–9, competencies, and the scheme of work are the frame. The Hub does not invent a different syllabus.",
+      body: "PP1 through Form 4, competencies, and the scheme of work are the frame. The Hub does not invent a different syllabus.",
     },
     {
       title: "A Kenyan classroom",
