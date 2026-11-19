@@ -746,7 +746,10 @@ export function AiHubChat() {
       const imageFiles = files.filter((file) =>
         (file.type || "").startsWith("image/")
       );
-      evalScanFilesRef.current = imageFiles;
+      // A follow-up with no new photos must keep the scans from the earlier message.
+      if (imageFiles.length > 0) {
+        evalScanFilesRef.current = imageFiles;
+      }
       const hasFiles = files.length > 0;
 
     if (
