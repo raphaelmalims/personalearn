@@ -462,6 +462,49 @@ export function AiHubChat() {
     });
   });
 
+  const chatStatusRef = useRef(status);
+  chatStatusRef.current = status;
+
+  useEffect(() => {
+    if (!selectedConversationId) return;
+    const conversationId = selectedConversationId;
+    let stopped = false;
+
+    async function pullMarkedInsights() {
+      if (stopped) return;
+      const chatStatus = chatStatusRef.current;
+      if (chatStatus === "streaming" || chatStatus === "submitted") return;
+      try {
+        const loaded = await fetchConversationMessages(conversationId);
+        if (stopped || conversationIdRef.current !== conversationId) return;
+        setMessages((current) => {
+          let next = current;
+          for (const message of loaded) {
+            next = mergeIncomingConversationMessage(next, message);
+          }
+          if (next !== current) {
+            queryClient.setQueryData(
+              conversationMessagesQueryKey(conversationId),
+              next
+            );
+          }
+          return next;
+        });
+      } catch {
+        // The open chat keeps the messages it already has.
+      }
+    }
+
+    void pullMarkedInsights();
+    const timer = setInterval(() => {
+      void pullMarkedInsights();
+    }, 12_000);
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+    };
+  }, [queryClient, selectedConversationId, setMessages]);
+
   useEffect(() => {
     conversationIdRef.current = selectedConversationId;
     if (typeof window === "undefined") return;
