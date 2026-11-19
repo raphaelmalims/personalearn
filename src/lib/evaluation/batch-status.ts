@@ -65,5 +65,14 @@ export async function refreshBatchStatusRollup(
 
   if (updateError) throw new Error(updateError.message);
 
+  try {
+    const { publishClassInsightsMessage } = await import(
+      "@/lib/evaluation/class-insights-hub"
+    );
+    await publishClassInsightsMessage(supabase, batchId);
+  } catch (error) {
+    console.error("Class insights message skipped", error);
+  }
+
   return next;
 }

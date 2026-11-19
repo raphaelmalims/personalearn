@@ -174,6 +174,8 @@ describe("resolvePageNumberMode", () => {
   it("parses sheet page from admission.page filenames", () => {
     expect(sheetPageFromFileName("1196.1.jpg")).toBe(1);
     expect(sheetPageFromFileName("1990.2.jpg")).toBe(2);
+    expect(sheetPageFromFileName("adm6267-p1.jpg")).toBe(1);
+    expect(sheetPageFromFileName("adm6267-p2.jpg")).toBe(2);
   });
 });
 

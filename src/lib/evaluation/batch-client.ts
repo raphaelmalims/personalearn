@@ -70,6 +70,7 @@ export function buildIndexBatchLine(input: {
         },
       ],
       generationConfig: {
+        temperature: 0,
         responseMimeType: "application/json",
         responseSchema: indexGeminiSchema,
       },
@@ -106,6 +107,7 @@ export function buildEvaluateBatchLine(input: {
         },
       ],
       generationConfig: {
+        temperature: 0,
         responseMimeType: "application/json",
         responseSchema: evaluateGeminiSchema,
       },
