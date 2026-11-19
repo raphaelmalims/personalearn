@@ -25,12 +25,33 @@ function sameRenderedText(current: UIMessage[], incoming: UIMessage): boolean {
  * Plain echoes that arrive while the teacher is still streaming are ignored.
  * A class insights card is not an echo: it is inserted by marking, not by the stream.
  */
+function sameInsightsCard(current: UIMessage, incoming: UIMessage): boolean {
+  const left = classInsightsKey(current);
+  const right = classInsightsKey(incoming);
+  if (!left || !right) return false;
+  const leftView = getAssistantDisplayBlocks(current).find(
+    (item) => item.type === "class_insights"
+  );
+  const rightView = getAssistantDisplayBlocks(incoming).find(
+    (item) => item.type === "class_insights"
+  );
+  return JSON.stringify(leftView) === JSON.stringify(rightView);
+}
+
 export function mergeIncomingConversationMessage(
   current: UIMessage[],
   incoming: UIMessage,
   options?: { streaming?: boolean }
 ): UIMessage[] {
-  if (current.some((message) => message.id === incoming.id)) return current;
+  const existing = current.find((message) => message.id === incoming.id);
+  if (existing) {
+    if (classInsightsKey(incoming) && !sameInsightsCard(existing, incoming)) {
+      return current.map((message) =>
+        message.id === incoming.id ? incoming : message
+      );
+    }
+    return current;
+  }
 
   const insightsKey = classInsightsKey(incoming);
   if (insightsKey) {
