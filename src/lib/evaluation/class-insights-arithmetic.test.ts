@@ -148,7 +148,7 @@ describe("repairArithmetic", () => {
 
     const repaired = repairArithmetic(brief, dossier);
     expect(repaired.struggled[0]?.misconception).toContain(
-      "Slip when adding the partial products (180 + 48 = 228)"
+      "wrote 168: 30 × 6 taken as 120 (should be 180), answer 228"
     );
     expect(repaired.struggled[0]?.misconception).not.toContain("20 × 6");
     expect(repaired.checkIns[0]?.gap).toContain(
@@ -156,7 +156,7 @@ describe("repairArithmetic", () => {
     );
     expect(repaired.checkIns[0]?.gap).not.toContain("doubling");
     expect(repaired.checkIns[0]?.gap).toContain(
-      "Slip when adding the partial products (180 + 48 = 228)"
+      "30 × 6 taken as 120 (should be 180), answer 228"
     );
   });
 
@@ -184,17 +184,28 @@ describe("repairArithmetic", () => {
     };
 
     const repaired = repairArithmetic(brief, dossier);
-    expect(repaired.struggled[0]?.misconception).toContain("180 + 48 = 228");
-    expect(repaired.struggled[0]?.misconception).not.toContain("wrote");
+    expect(repaired.struggled[0]?.misconception).toContain("30 × 6 taken as 120");
     expect(repaired.checkIns[0]?.gap).toContain("4 × 9 written as 32");
   });
 
-  it("does not call a shown operand a misread digit", () => {
-    expect(
-      explainMiss("38 × 6 = 228", "38 × 6 = (30×6)+(8×6)=168")
-    ).toBe("Slip when adding the partial products (180 + 48 = 228).");
+  it("names the one partial product that makes the written total", () => {
+    expect(explainMiss("38 × 6 = 228", "38 × 6 = (30×6)+(8×6)=168")).toBe(
+      "30 × 6 taken as 120 (should be 180), answer 228"
+    );
+    expect(explainMiss("451 × 8 = 3608", "451 × 8 = 3248")).toBe(
+      "50 × 8 taken as 40 (should be 400), answer 3608"
+    );
+    expect(explainMiss("245 × 7 = 1715", "245 × 7 = 1795")).toBe(
+      "40 × 7 taken as 360 (should be 280), answer 1715"
+    );
     expect(explainMiss("138 × 6 = 828", "138×6=(100×6)+(30×6)+(8×6)=822")).toBe(
-      "Slip when adding the partial products (600 + 180 + 48 = 828)."
+      "8 × 6 taken as 42 (should be 48), answer 828"
+    );
+    expect(explainMiss("9 × 45 = 405", "9×45=(9×40)+(9×5)=365")).toBe(
+      "9 × 5 taken as 5 (should be 45), answer 405"
+    );
+    expect(explainMiss("38 × 6 = 228", "180 + 48 = 168")).toBe(
+      "Slip when adding the partial products (180 + 48 = 228)."
     );
     expect(explainMiss("38 × 6 = 228", "28 × 6 = 168")).toContain("20 × 6");
   });
