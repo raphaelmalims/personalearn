@@ -3,9 +3,11 @@ import { z } from "zod";
 import { getChatModelId, getChatProvider } from "@/lib/ai/env";
 import { getChatModel, getChatModelForSettings } from "@/lib/ai/llm";
 import {
-  explainMiss,
+  checkInFocus,
   explainTopic,
   reteachFromMarks,
+  teachingHeadline,
+  teachingWentWell,
 } from "@/lib/evaluation/class-insights-arithmetic";
 import {
   classAverageLine,
@@ -204,33 +206,22 @@ function withMarkFacts(
   }));
   const reteach = reteachFromMarks(dossier);
   const checkIns = dossier.learnerTotals.flatMap((row) => {
-    const parts = dossier.questions.flatMap((question) => {
-      const answer = question.answers.find(
+    const missed = dossier.questions.some((question) =>
+      question.answers.some(
         (item) => item.learner === row.learner && item.max > 0 && item.awarded < item.max
-      );
-      return answer
-        ? [`${question.label}: ${explainMiss(question.correct, answer.answer).replace(/\.$/, "")}`]
-        : [];
-    });
-    return parts.length > 0 ? [{ learner: row.learner, gap: `${parts.join(". ")}.` }] : [];
-  });
-  const secure = dossier.questions.filter((question) => {
-    const scored = question.answers.filter((answer) => answer.max > 0);
-    return scored.length > 0 && scored.every((answer) => answer.awarded >= answer.max);
+      )
+    );
+    return missed ? [{ learner: row.learner, gap: checkInFocus(dossier, row.learner) }] : [];
   });
   return {
     ...brief,
-    headline:
-      "The misses are a partial product evaluated wrongly, or a times-table fact one step off.",
-    wentWell:
-      secure.length > 0
-        ? `The marked scripts were right on ${secure.map((question) => question.label).join(", ")}.`
-        : brief.wentWell,
+    headline: teachingHeadline(dossier),
+    wentWell: teachingWentWell(dossier) || brief.wentWell,
     struggled,
     checkIns,
     moves: reteach.moves,
     workedExample: reteach.workedExample,
-    practice: reteach.practice.length >= 2 ? reteach.practice : brief.practice,
+    practice: reteach.practice.length >= 4 ? reteach.practice : brief.practice,
   };
 }
 

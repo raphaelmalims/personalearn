@@ -3,6 +3,8 @@ import {
   arithmeticFailures,
   exactWrongRoute,
   explainMiss,
+  missSkill,
+  reteachFromMarks,
   repairArithmetic,
 } from "@/lib/evaluation/class-insights-arithmetic";
 import type { ClassInsightsBrief, ClassInsightsDossier } from "@/lib/evaluation/class-insights-brief";
@@ -147,17 +149,12 @@ describe("repairArithmetic", () => {
     };
 
     const repaired = repairArithmetic(brief, dossier);
-    expect(repaired.struggled[0]?.misconception).toContain(
-      "wrote 168: 30 × 6 taken as 120 (should be 180), answer 228"
-    );
+    expect(repaired.struggled[0]?.misconception).toContain("3 × 6 was taken as 12");
+    expect(repaired.struggled[0]?.misconception).toContain("120");
     expect(repaired.struggled[0]?.misconception).not.toContain("20 × 6");
-    expect(repaired.checkIns[0]?.gap).toContain(
-      "4 × 9 written as 32 (that’s 4 × 8; answer 36)"
-    );
+    expect(repaired.checkIns[0]?.gap).toContain("Focus on");
     expect(repaired.checkIns[0]?.gap).not.toContain("doubling");
-    expect(repaired.checkIns[0]?.gap).toContain(
-      "30 × 6 taken as 120 (should be 180), answer 228"
-    );
+    expect(repaired.checkIns[0]?.gap).not.toContain("180 + 6");
   });
 
   it("replaces a vague reason when a sum equal to the written answer is missing", () => {
@@ -184,8 +181,8 @@ describe("repairArithmetic", () => {
     };
 
     const repaired = repairArithmetic(brief, dossier);
-    expect(repaired.struggled[0]?.misconception).toContain("30 × 6 taken as 120");
-    expect(repaired.checkIns[0]?.gap).toContain("4 × 9 written as 32");
+    expect(repaired.struggled[0]?.misconception).toContain("3 × 6 was taken as 12");
+    expect(repaired.checkIns[0]?.gap).toContain("Focus on");
   });
 
   it("names the partial product on B.3 when 120 + 48 = 168", () => {
@@ -246,5 +243,59 @@ describe("repairArithmetic", () => {
     expect(explainMiss("38 × 6 = 228", "100 + 40 + 8 = 148")).toBe(
       "answer off by 80, check working"
     );
+  });
+
+  it("classifies a dropped zero, a fact with the zero kept, and a copied digit", () => {
+    expect(missSkill("451 × 8 = 3608", "3200 + 40 + 8 = 3248")).toBe("place");
+    expect(missSkill("9 × 45 = 405", "360 + 5 = 365")).toBe("fact");
+    expect(missSkill("38 × 6 = 228", "120 + 48 = 168")).toBe("fact-zero");
+    expect(missSkill("245 × 7 = 1715", "1400 + 360 + 35 = 1795")).toBe("fact-zero");
+    expect(missSkill("138 × 6 = 828", "600 + 180 + 42 = 822")).toBe("fact");
+    expect(missSkill("4 × 9 = 36", "4 × 9 = 32")).toBe("fact");
+    expect(missSkill("3 × 15 = 45", "3 × 15 = 42")).toBe("fact");
+  });
+
+  it("computes new practice answers and does not reuse the paper questions", () => {
+    const lesson: ClassInsightsDossier = {
+      assessmentTitle: "Multiplication",
+      schemeText: null,
+      learnerTotals: [{ learner: "Learner 2682", awarded: 9, max: 15 }],
+      questions: [
+        {
+          label: "B.3",
+          correct: "38 × 6 = 228",
+          answers: [{ learner: "Learner 2682", awarded: 0, max: 1, answer: "120 + 48 = 168" }],
+        },
+        {
+          label: "C.3",
+          correct: "451 × 8 = 3608",
+          answers: [{ learner: "Learner 2682", awarded: 0, max: 1, answer: "3200 + 40 + 8 = 3248" }],
+        },
+        {
+          label: "D.1",
+          correct: "9 × 45 = 405 plants",
+          answers: [{ learner: "Learner 2682", awarded: 0, max: 1, answer: "360 + 5 = 365" }],
+        },
+        {
+          label: "D.2",
+          correct: "245 × 7 = 1715 bottles",
+          answers: [{ learner: "Learner 2682", awarded: 0, max: 1, answer: "1400 + 360 + 35 = 1795" }],
+        },
+        {
+          label: "D.3",
+          correct: "138 × 6 = 828 pages",
+          answers: [{ learner: "Learner 2682", awarded: 0, max: 1, answer: "600 + 180 + 42 = 822" }],
+        },
+      ],
+    };
+    const practice = reteachFromMarks(lesson).practice;
+    const products = practice.map((item) => {
+      const factors = item.question.match(/(\d+)\s*×\s*(\d+)/);
+      return factors ? Number(factors[1]) * Number(factors[2]) : 240;
+    });
+    expect(practice.map((item) => item.answer)).toEqual(["420", "282", "2816", "49", "240 pages"]);
+    expect(products).toEqual([420, 282, 2816, 49, 240]);
+    expect(practice.map((item) => item.question)).not.toContain("38 × 6");
+    expect(practice.map((item) => item.question)).not.toContain("451 × 8");
   });
 });

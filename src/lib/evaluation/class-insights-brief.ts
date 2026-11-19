@@ -1,3 +1,5 @@
+import { sharedWrongNote } from "@/lib/evaluation/class-insights-arithmetic";
+
 export type LearnerAnswer = {
   learner: string;
   awarded: number;
@@ -293,13 +295,15 @@ export function renderClassInsightsMarkdown(
   });
   lines.push("", "**Worked example**", "", cleanProse(brief.workedExample), "");
   lines.push("**Practice for the board**", "");
-  brief.practice.slice(0, 3).forEach((item, index) => {
+  brief.practice.slice(0, 5).forEach((item, index) => {
     lines.push(
       `${index + 1}. ${cleanProse(item.question)} **Answer:** ${cleanProse(item.answer)}`
     );
   });
   lines.push("");
 
+  const shared = sharedWrongNote(dossier);
+  if (shared) lines.push(shared, "");
   lines.push("## Learners to check in with", "");
   const knownLearners = new Set(roster(dossier));
   const checkIns = brief.checkIns.filter((row) => knownLearners.has(row.learner));
