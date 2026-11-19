@@ -1,6 +1,7 @@
 import { generateText, Output } from "ai";
 import { z } from "zod";
-import { getChatModel } from "@/lib/ai/llm";
+import { getChatModelId, getChatProvider } from "@/lib/ai/env";
+import { getChatModel, getChatModelForSettings } from "@/lib/ai/llm";
 import {
   collectArithmeticFailures,
   repairArithmetic,
@@ -146,12 +147,27 @@ function promptFor(dossier: ClassInsightsDossier): string {
     .join("\n\n");
 }
 
+function insightsModel() {
+  const provider = getChatProvider();
+  if (provider === "deepseek") {
+    // Thinking mode drops temperature. Disable it here so the brief stays at 0.
+    return getChatModelForSettings({
+      provider,
+      modelId: getChatModelId(),
+      thinking: "disabled",
+      reasoningEffort: "low",
+    });
+  }
+  return getChatModel();
+}
+
 async function requestBrief(
   dossier: ClassInsightsDossier,
   correction: string
 ): Promise<ClassInsightsBrief | null> {
   const { output } = await generateText({
-    model: getChatModel(),
+    model: insightsModel(),
+    temperature: 0,
     output: Output.object({
       schema: briefSchema,
       name: "ClassInsightsBrief",

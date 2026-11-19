@@ -81,13 +81,26 @@ export type ScriptPageUrl = {
   url: string | null;
 };
 
-/** Sheet page from names like `1196.1.jpg` / `1990_2.png`. */
+/** Sheet page from names like `1196.1.jpg`, `1990_2.png`, or `adm6267-p1.jpg`. */
 export function sheetPageFromFileName(fileName: string): number | null {
   const base = fileName.split(/[/\\]/).pop() ?? fileName;
-  const match = base.match(/(?:^|[._-])(\d+)\.[a-z0-9]+$/i);
+  const match =
+    base.match(/(?:^|[._-])(\d+)\.[a-z0-9]+$/i) ??
+    base.match(/[._-]p(\d+)\.[a-z0-9]+$/i);
   if (!match) return null;
   const n = Number(match[1]);
   return Number.isInteger(n) && n >= 1 ? n : null;
+}
+
+/** Booklet order for a grade packet. Filename sheet page wins over upload order. */
+export function comparePagesForGrading(
+  a: { fileName: string; uploadIndex: number },
+  b: { fileName: string; uploadIndex: number }
+): number {
+  const fa = sheetPageFromFileName(a.fileName);
+  const fb = sheetPageFromFileName(b.fileName);
+  if (fa != null && fb != null && fa !== fb) return fa - fb;
+  return a.uploadIndex - b.uploadIndex;
 }
 
 export type PageNumberMode = "packet" | "sheet";

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { canonicalizeEvaluateQuestions } from "@/lib/evaluation/question-identity";
+import { reconcileBinaryNumericMark } from "@/lib/evaluation/reconcile-numeric-mark";
 
 export const verticalBoundsSchema = z.object({
   top_percent: z.number().min(0).max(1),
@@ -170,6 +171,8 @@ export function parseEvaluateResult(raw: unknown): EvaluateResult {
   // Section-aware unique identity (A.1 vs B.1; restart without headers → BLK*).
   return {
     ...parsed,
-    questions: canonicalizeEvaluateQuestions(parsed.questions),
+    questions: canonicalizeEvaluateQuestions(parsed.questions).map(
+      reconcileBinaryNumericMark
+    ),
   };
 }

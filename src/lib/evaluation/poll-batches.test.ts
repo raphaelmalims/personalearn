@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   shouldGradeProviderBatchDirectly,
+  shouldGradeSmallSetImmediately,
   startOrResumeBatchProcessing,
   submitEvaluateBatch,
 } from "./poll-batches";
@@ -91,6 +92,18 @@ function resolved(value: unknown) {
   ) => Promise.resolve(value).then(onFulfilled, onRejected);
   return builder;
 }
+
+describe("shouldGradeSmallSetImmediately", () => {
+  it("sends a 4-page set straight to the sync API", () => {
+    expect(shouldGradeSmallSetImmediately(4)).toBe(true);
+    expect(shouldGradeSmallSetImmediately(8)).toBe(true);
+  });
+
+  it("leaves a larger set on the provider batch", () => {
+    expect(shouldGradeSmallSetImmediately(9)).toBe(false);
+    expect(shouldGradeSmallSetImmediately(0)).toBe(false);
+  });
+});
 
 describe("shouldGradeProviderBatchDirectly", () => {
   const submittedAt = "2026-11-19T11:58:53.696Z";
