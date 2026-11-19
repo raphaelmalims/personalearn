@@ -309,45 +309,122 @@ function factEdit(left: number, right: number, wrong: number): string | null {
   return tryEdit(right, left, false) ?? tryEdit(left, right, true);
 }
 
-/**
- * Explain one learner's wrong answer from their own writing.
- * A misread digit is used only when that writing does not already show the
- * correct operand. Otherwise it is an adding slip, or the written product
- * named as a different fact.
- */
-export function explainMiss(correct: string, written: string): string {
+type Step = { a: number; b: number; product: number };
+
+function stepsFor(left: number, right: number): Step[] {
+  const splitLeft = placeValues(left).filter((place) => place > 0);
+  const splitRight = placeValues(right).filter((place) => place > 0);
+  const split = left >= right ? splitLeft : splitRight;
+  const other = left >= right ? right : left;
+  const bigOnLeft = left >= right;
+  if (split.length < 2) return [];
+  return split.map((place) => ({
+    a: bigOnLeft ? place : other,
+    b: bigOnLeft ? other : place,
+    product: place * other,
+  }));
+}
+
+function digitEdits(factor: number): number[] {
+  const original = String(factor);
+  const edited: number[] = [];
+  for (let index = 0; index < original.length; index += 1) {
+    for (let digit = 0; digit <= 9; digit += 1) {
+      if (String(digit) === original[index]) continue;
+      if (index === 0 && digit === 0 && original.length > 1) continue;
+      edited.push(Number(original.slice(0, index) + String(digit) + original.slice(index + 1)));
+    }
+  }
+  return edited;
+}
+
+function errorClass(step: Step, taken: number): "bare" | "shift" | "digit" | null {
+  if (taken === step.product) return null;
+  if (taken === step.a || taken === step.b) return "bare";
+  if (
+    (step.a % 10 === 0 && (step.a / 10) * step.b === taken) ||
+    (step.b % 10 === 0 && step.a * (step.b / 10) === taken)
+  ) {
+    return "shift";
+  }
+  const digitHit =
+    digitEdits(step.a).some((value) => value * step.b === taken) ||
+    digitEdits(step.b).some((value) => step.a * value === taken);
+  return digitHit ? "digit" : null;
+}
+
+type MissCause =
+  | { kind: "fact"; text: string }
+  | { kind: "partial"; wrong: number; text: string }
+  | { kind: "adding"; text: string }
+  | { kind: "off"; text: string }
+  | { kind: "route"; text: string };
+
+function missCause(correct: string, written: string): MissCause {
   const factors = multiplication(correct);
   const wrong = resultNumber(written);
   const right = factors ? factors.left * factors.right : resultNumber(correct);
   if (!factors || wrong === null || right === null || wrong === right) {
-    return `The answer is ${correct}.`;
+    return { kind: "route", text: `The answer is ${correct}.` };
   }
   const { left, right: other } = factors;
-  const factorsShown = hasToken(written, left) && hasToken(written, other);
-  const splitShown =
-    showsPlaceSplit(written, left, other) || showsPlaceSplit(written, other, left);
-  if (factorsShown || splitShown) {
-    const alt = factorsShown ? factEdit(left, other, wrong) : null;
-    if (alt && Math.max(left, other) <= 15) {
-      return `${left} × ${other} written as ${wrong} (that’s ${alt}; answer ${right}).`;
-    }
-    const big = left >= other ? left : other;
-    const small = left >= other ? other : left;
-    if (big >= 10) {
-      const parts = placeValues(big)
-        .filter((place) => place > 0)
-        .map((place) => place * small);
-      const sum = parts.reduce((total, value) => total + value, 0);
-      if (sum === right) {
-        return `Slip when adding the partial products (${parts.join(" + ")} = ${sum}).`;
-      }
-    }
-    if (alt) {
-      return `${left} × ${other} written as ${wrong} (that’s ${alt}; answer ${right}).`;
-    }
-    return `The answer is ${correct}.`;
+  const writtenFactors = multiplication(written);
+  const showsCorrectFactors = hasToken(written, left) && hasToken(written, other);
+  if (
+    writtenFactors &&
+    (writtenFactors.left !== left || writtenFactors.right !== other) &&
+    !showsCorrectFactors
+  ) {
+    return { kind: "route", text: exactWrongRoute(correct, written) ?? `The answer is ${correct}.` };
   }
-  return exactWrongRoute(correct, written) ?? `The answer is ${correct}.`;
+  const alt = factEdit(left, other, wrong);
+  if (alt && Math.max(left, other) <= 15) {
+    return {
+      kind: "fact",
+      text: `${left} × ${other} written as ${wrong} (that’s ${alt}; answer ${right}).`,
+    };
+  }
+  const steps = stepsFor(left, other);
+  const products = steps.map((step) => step.product);
+  const correctSum = products.reduce((total, value) => total + value, 0);
+  if (
+    steps.length > 1 &&
+    correctSum === right &&
+    products.every((product) => hasToken(written, product)) &&
+    wrong !== correctSum
+  ) {
+    return {
+      kind: "adding",
+      text: `Slip when adding the partial products (${products.join(" + ")} = ${correctSum}).`,
+    };
+  }
+  if (steps.length > 1 && correctSum === right) {
+    for (const kind of ["bare", "shift", "digit"] as const) {
+      const hits = steps.filter((step) => {
+        const taken = wrong - (correctSum - step.product);
+        return taken >= 0 && errorClass(step, taken) === kind;
+      });
+      if (hits.length === 1) {
+        const step = hits[0];
+        const taken = wrong - (correctSum - step.product);
+        return {
+          kind: "partial",
+          wrong,
+          text: `${step.a} × ${step.b} taken as ${taken} (should be ${step.product}), answer ${right}`,
+        };
+      }
+      if (hits.length > 1) break;
+    }
+  }
+  if (steps.length > 1 && wrong !== right) {
+    return { kind: "off", text: `answer off by ${Math.abs(right - wrong)}, check working` };
+  }
+  return { kind: "route", text: exactWrongRoute(correct, written) ?? `The answer is ${correct}.` };
+}
+
+/** Explain one wrong answer from the partial products, without naming a learner. */
+export function explainMiss(correct: string, written: string): string {
+  return missCause(correct, written).text;
 }
 
 /** A route that equals the written answer, or null when none is exact. */
@@ -420,14 +497,95 @@ export function explainTopic(
   for (const label of labels) {
     const question = dossier.questions.find((item) => item.label === label);
     if (!question) continue;
+    const groups = new Map<string, { cause: MissCause; names: string[] }>();
     for (const answer of question.answers) {
       if (!(answer.max > 0 && answer.awarded < answer.max)) continue;
-      lines.push(
-        `${answer.learner}, ${label}: ${explainMiss(question.correct, answer.answer)}`
-      );
+      const cause = missCause(question.correct, answer.answer);
+      const key = `${cause.kind}:${cause.kind === "partial" ? cause.wrong : ""}:${cause.text}`;
+      const group = groups.get(key) ?? { cause, names: [] };
+      group.names.push(answer.learner);
+      groups.set(key, group);
+    }
+    for (const group of groups.values()) {
+      const who = group.names.length === 2 ? "Both learners" : group.names.join(" and ");
+      if (group.cause.kind === "partial") {
+        lines.push(`${who} wrote ${group.cause.wrong}: ${group.cause.text}.`);
+      } else if (group.names.length === 1) {
+        lines.push(`${group.names[0]}: ${group.cause.text}`);
+      } else {
+        lines.push(`${who}: ${group.cause.text}`);
+      }
     }
   }
   return lines.join(" ");
+}
+
+function lostOnlyTheUnit(correct: string, written: string): boolean {
+  const right = resultNumber(correct);
+  const wrong = resultNumber(written);
+  if (right === null || wrong === null || right !== wrong) return false;
+  return /[A-Za-z]/.test(correct) && !/[A-Za-z]/.test(written);
+}
+
+/** Reteach lines from the diagnosed misses. No unit reminder unless a unit was the miss. */
+export function reteachFromMarks(dossier: ClassInsightsDossier): {
+  moves: string[];
+  workedExample: string;
+  practice: { question: string; answer: string }[];
+} {
+  const partials: string[] = [];
+  const facts: string[] = [];
+  let example = "";
+  let unit = false;
+  for (const question of dossier.questions) {
+    for (const answer of question.answers) {
+      if (!(answer.max > 0 && answer.awarded < answer.max)) continue;
+      if (lostOnlyTheUnit(question.correct, answer.answer)) unit = true;
+      const cause = missCause(question.correct, answer.answer);
+      if (cause.kind === "partial" && !partials.includes(cause.text)) {
+        partials.push(cause.text);
+        if (!example) {
+          const factors = multiplication(question.correct);
+          example = factors
+            ? `${factors.left} × ${factors.right}. ${cause.text}.`
+            : cause.text;
+        }
+      }
+      if (cause.kind === "fact" && !facts.includes(cause.text)) facts.push(cause.text);
+    }
+  }
+  const moves = [
+    partials.length > 0
+      ? `Re-teach the partial products that were evaluated wrongly: ${partials.join("; ")}.`
+      : "",
+    facts.length > 0
+      ? `Drill the facts that slipped: ${facts.map((fact) => fact.replace(/\.$/, "")).join("; ")}.`
+      : "",
+    unit ? "Ask for the unit when the number is already right." : "",
+  ].filter(Boolean);
+  while (moves.length < 2) {
+    moves.push("Put one missed question on the board and mark it with the class.");
+  }
+  const practice = partials.slice(0, 2).map((text) => {
+    const match = text.match(/(\d+) × (\d+) taken as \d+ \(should be (\d+)\)/);
+    return match
+      ? { question: `${match[1]} × ${match[2]}`, answer: match[3] }
+      : { question: "One partial product from the lesson", answer: "Use the board working" };
+  });
+  if (example) {
+    const factors = example.match(/^(\d+) × (\d+)/);
+    if (factors && practice.length < 3) {
+      practice.push({
+        question: `${factors[1]} × ${factors[2]}`,
+        answer: String(Number(factors[1]) * Number(factors[2])),
+      });
+    }
+  }
+  return {
+    moves: moves.slice(0, 3),
+    workedExample: example || "Work one missed question to the scheme answer.",
+    practice: practice.slice(0, 3),
+  };
 }
 
 function repairedTopic(

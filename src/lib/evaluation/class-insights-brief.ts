@@ -209,10 +209,14 @@ function knownQuote(
   quote: { learner: string; answer: string }
 ): { learner: string; answer: string } | null {
   const answer = quote.answer.trim();
-  if (!answer || !roster(dossier).includes(quote.learner)) return null;
+  const names = quote.learner.split(" and ").map((name) => name.trim());
+  const knownNames = roster(dossier);
+  if (!answer || names.length === 0 || names.some((name) => !knownNames.includes(name))) {
+    return null;
+  }
   for (const question of dossier.questions) {
     for (const row of question.answers) {
-      if (row.learner !== quote.learner || !isWrong(row)) continue;
+      if (!names.includes(row.learner) || !isWrong(row)) continue;
       const stored = readableAnswer(row.answer).trim();
       if (!stored) continue;
       const same =

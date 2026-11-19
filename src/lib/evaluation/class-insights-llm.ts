@@ -5,9 +5,11 @@ import { getChatModel, getChatModelForSettings } from "@/lib/ai/llm";
 import {
   explainMiss,
   explainTopic,
+  reteachFromMarks,
 } from "@/lib/evaluation/class-insights-arithmetic";
 import {
   classAverageLine,
+  fallbackBrief,
   missedQuestionGroups,
   readableAnswer,
   type ClassInsightsBrief,
@@ -198,43 +200,79 @@ function withMarkFacts(
     title: group.title,
     questionLabels: group.labels,
     misconception: explainTopic(dossier, group.labels),
-    quotes: group.labels.flatMap((label) => {
-      const question = dossier.questions.find((item) => item.label === label);
-      if (!question) return [];
-      return question.answers
-        .filter((answer) => answer.max > 0 && answer.awarded < answer.max)
-        .map((answer) => ({
-          learner: answer.learner,
-          answer: readableAnswer(answer.answer),
-        }));
-    }),
+    quotes: distinctWrongAnswers(dossier, group.labels),
   }));
+  const reteach = reteachFromMarks(dossier);
   const checkIns = dossier.learnerTotals.flatMap((row) => {
     const parts = dossier.questions.flatMap((question) => {
       const answer = question.answers.find(
         (item) => item.learner === row.learner && item.max > 0 && item.awarded < item.max
       );
       return answer
-        ? [`${question.label}: ${explainMiss(question.correct, answer.answer)}`]
+        ? [`${question.label}: ${explainMiss(question.correct, answer.answer).replace(/\.$/, "")}`]
         : [];
     });
-    return parts.length > 0 ? [{ learner: row.learner, gap: parts.join(" ") }] : [];
+    return parts.length > 0 ? [{ learner: row.learner, gap: `${parts.join(". ")}.` }] : [];
   });
-  return { ...brief, struggled, checkIns };
+  const secure = dossier.questions.filter((question) => {
+    const scored = question.answers.filter((answer) => answer.max > 0);
+    return scored.length > 0 && scored.every((answer) => answer.awarded >= answer.max);
+  });
+  return {
+    ...brief,
+    headline:
+      "The misses are a partial product evaluated wrongly, or a times-table fact one step off.",
+    wentWell:
+      secure.length > 0
+        ? `The marked scripts were right on ${secure.map((question) => question.label).join(", ")}.`
+        : brief.wentWell,
+    struggled,
+    checkIns,
+    moves: reteach.moves,
+    workedExample: reteach.workedExample,
+    practice: reteach.practice.length >= 2 ? reteach.practice : brief.practice,
+  };
 }
 
-/** One call. Counts, groups, and the reason for each miss come from the marks. */
+function distinctWrongAnswers(
+  dossier: ClassInsightsDossier,
+  labels: string[]
+): { learner: string; answer: string }[] {
+  const byAnswer = new Map<string, string[]>();
+  for (const label of labels) {
+    const question = dossier.questions.find((item) => item.label === label);
+    if (!question) continue;
+    for (const answer of question.answers) {
+      if (!(answer.max > 0 && answer.awarded < answer.max)) continue;
+      const text = readableAnswer(answer.answer);
+      if (!text) continue;
+      const names = byAnswer.get(text) ?? [];
+      if (!names.includes(answer.learner)) names.push(answer.learner);
+      byAnswer.set(text, names);
+    }
+  }
+  return [...byAnswer.entries()].map(([answer, names]) => ({
+    learner: names.length === 1 ? names[0] : names.join(" and "),
+    answer,
+  }));
+}
+
+/** Counts, groups, reasons, and the reteach plan, with no model call. */
+export function groundClassBrief(dossier: ClassInsightsDossier): ClassInsightsBrief {
+  return withMarkFacts(fallbackBrief(dossier), dossier);
+}
+
+/** One call for the draft, then the marks replace counts, reasons, and the reteach plan. */
 export async function writeClassInsightsBrief(
   dossier: ClassInsightsDossier
 ): Promise<ClassInsightsBrief | null> {
   if (dossier.questions.length === 0) return null;
   try {
     const brief = await requestBrief(dossier, "");
-    if (!brief) return null;
-    return withMarkFacts(brief, dossier);
+    return withMarkFacts(brief ?? fallbackBrief(dossier), dossier);
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";
     console.error(message.replace(/sk-[A-Za-z0-9_-]+/g, "[redacted]").slice(0, 400));
-    return null;
+    return groundClassBrief(dossier);
   }
 }
