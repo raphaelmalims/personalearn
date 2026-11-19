@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { buttonVariants } from "@/components/ui/button-variants";
 import { useClassInsights } from "@/lib/hooks/use-evaluation";
 import {
+  formatStruggleLine,
   presentClassInsights,
   type ClassInsightsCardView,
   type ClassInsightsView,
@@ -36,6 +37,7 @@ export function ClassInsightsPanel({
       <h2 className="text-base font-semibold tracking-tight">
         Based on {scriptCount} {scriptCount === 1 ? "script" : "scripts"}
       </h2>
+      <p className="text-caption text-muted-foreground">Based on this class set</p>
 
       {isLoading ? (
         <LoadingState />
@@ -50,9 +52,6 @@ export function ClassInsightsPanel({
               <InsightCard key={`${card.title}-${card.questionNumbers}`} card={card} />
             ))}
           </ul>
-          {view.note ? (
-            <p className="mt-3 text-caption text-muted-foreground">{view.note}</p>
-          ) : null}
         </>
       ) : (
         <EmptyState />
@@ -74,6 +73,7 @@ export function ClassInsightsChatCard({ view }: { view: ClassInsightsView }) {
       <h3 className="text-sm font-semibold tracking-tight">
         Based on {countLabel}
       </h3>
+      <p className="text-caption text-muted-foreground">Based on this class set</p>
       {view.cards.length > 0 ? (
         <ul className="mt-2 space-y-2">
           {view.cards.map((card) => (
@@ -108,10 +108,7 @@ function InsightCard({
   card: ClassInsightsCardView;
   compact?: boolean;
 }) {
-  const score =
-    card.percentUnderHalf === null
-      ? "No score yet"
-      : `${card.percentUnderHalf}% under half`;
+  const score = formatStruggleLine(card);
 
   return (
     <li className="rounded-lg border border-border bg-muted/30 px-3 py-2.5">

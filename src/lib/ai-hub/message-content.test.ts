@@ -269,17 +269,18 @@ describe("toUIMessageFromRow", () => {
     const message = toUIMessageFromRow({
       id: "m-insights",
       role: "assistant",
-      content: "Class insights\n\nBased on 4 scripts.\n\nFractions\n100% under half",
+      content: "Class insights\n\nBased on 4 scripts.\n\nFractions\n2 of 2 learners struggled",
       tool_calls: {
         classInsightsBatchId: "batch-1",
         classInsights: {
           scriptCount: 4,
           reviewPath: "/classes/class-1/evaluations/batch-1",
-          note: "From this set. Not a strand label.",
+          note: null,
           cards: [
             {
               title: "Fractions",
-              percentUnderHalf: 100,
+              struggled: 2,
+              scored: 2,
               questionNumbers: "1",
               reteachStep: "Redo one fraction with a shared diagram.",
             },
@@ -294,11 +295,12 @@ describe("toUIMessageFromRow", () => {
         view: {
           scriptCount: 4,
           reviewPath: "/classes/class-1/evaluations/batch-1",
-          note: "From this set. Not a strand label.",
+          note: null,
           cards: [
             {
               title: "Fractions",
-              percentUnderHalf: 100,
+              struggled: 2,
+              scored: 2,
               questionNumbers: "1",
               reteachStep: "Redo one fraction with a shared diagram.",
             },

@@ -20,7 +20,8 @@ const insights = toUIMessageFromRow({
       cards: [
         {
           title: "Fractions",
-          percentUnderHalf: 75,
+          struggled: 3,
+          scored: 4,
           questionNumbers: "1",
           reteachStep: "Shade one shared diagram.",
         },
