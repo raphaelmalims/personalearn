@@ -88,7 +88,7 @@ export async function buildClassInsights(
   const cached = reuseCachedInsights(batch?.class_insights, fingerprint);
   if (cached?.markdown) {
     const payload = { ...cached, conversationPath };
-    await syncInsightMessage(supabase, batch?.conversation_id, batchId, payload.markdown);
+    await syncInsightMessage(supabase, batch?.conversation_id, batchId, cached.markdown);
     return payload;
   }
 
