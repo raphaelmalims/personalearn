@@ -2,6 +2,10 @@ import { generateText, Output } from "ai";
 import { z } from "zod";
 import { getChatModel } from "@/lib/ai/llm";
 import {
+  collectArithmeticFailures,
+  repairArithmetic,
+} from "@/lib/evaluation/class-insights-arithmetic";
+import {
   classAverageLine,
   readableAnswer,
   type ClassInsightsBrief,
@@ -75,7 +79,7 @@ export function sanitizeClassInsightsBrief(
       questionLabels: [
         ...new Set(topic.questionLabels.map((label) => label.trim())),
       ].filter((label) => labels.has(label)),
-      misconception: oneLine(topic.misconception, 400),
+      misconception: oneLine(topic.misconception, 800),
       quotes: topic.quotes
         .filter((quote) => learners.has(quote.learner.trim()))
         .map((quote) => ({
@@ -92,7 +96,7 @@ export function sanitizeClassInsightsBrief(
   const checkIns = raw.checkIns
     .map((row) => ({
       learner: row.learner.trim(),
-      gap: oneLine(row.gap, 220),
+      gap: oneLine(row.gap, 1200),
     }))
     .filter((row) => learners.has(row.learner) && row.gap);
 
@@ -133,6 +137,7 @@ function promptFor(dossier: ClassInsightsDossier): string {
     "Reteach plan: 2 or 3 concrete moves for the next lesson, one worked example, and 2 or 3 practice questions in the same style as the paper, each with an answer a teacher can put on the board.",
     "Check-ins: one line per learner who missed something, naming their actual gap.",
     "Quote an answer only if that learner wrote it.",
+    "If you explain a wrong answer, the sum or product you name must equal the number that learner wrote. Check the arithmetic. If it does not land on their answer, quote the wrong answer and the correct answer and do not guess the slip.",
     dossier.assessmentTitle ? `Assessment: ${dossier.assessmentTitle}` : "",
     dossier.schemeText ? `Marking scheme:\n${dossier.schemeText.slice(0, 6000)}` : "No marking scheme text was stored.",
     JSON.stringify({ learners: dossier.learnerTotals, questions }),
@@ -141,24 +146,41 @@ function promptFor(dossier: ClassInsightsDossier): string {
     .join("\n\n");
 }
 
-/** One grounded call. Null when the model fails, so the caller can use the marks alone. */
+async function requestBrief(
+  dossier: ClassInsightsDossier,
+  correction: string
+): Promise<ClassInsightsBrief | null> {
+  const { output } = await generateText({
+    model: getChatModel(),
+    output: Output.object({
+      schema: briefSchema,
+      name: "ClassInsightsBrief",
+      description:
+        "A head-of-department brief after marking: headline, strengths, misconceptions with quotes, a reteach plan, and check-ins.",
+    }),
+    prompt: `${promptFor(dossier)}${correction}`,
+  });
+  if (!output) return null;
+  return sanitizeClassInsightsBrief(output, dossier);
+}
+
+/** One grounded call, plus a single retry when a sum does not match the written answer. */
 export async function writeClassInsightsBrief(
   dossier: ClassInsightsDossier
 ): Promise<ClassInsightsBrief | null> {
   if (dossier.questions.length === 0) return null;
   try {
-    const { output } = await generateText({
-      model: getChatModel(),
-      output: Output.object({
-        schema: briefSchema,
-        name: "ClassInsightsBrief",
-        description:
-          "A head-of-department brief after marking: headline, strengths, misconceptions with quotes, a reteach plan, and check-ins.",
-      }),
-      prompt: promptFor(dossier),
-    });
-    if (!output) return null;
-    return sanitizeClassInsightsBrief(output, dossier);
+    let brief = await requestBrief(dossier, "");
+    if (!brief) return null;
+    const failures = collectArithmeticFailures(brief, dossier);
+    if (failures.length > 0) {
+      const retry = await requestBrief(
+        dossier,
+        `\n\nThe previous draft failed an arithmetic check. A reason is usable only when the sum or product equals the written wrong answer. Otherwise quote the wrong answer and the correct answer.\n${failures.join("\n")}`
+      );
+      if (retry) brief = retry;
+    }
+    return repairArithmetic(brief, dossier);
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";
     console.error(message.replace(/sk-[A-Za-z0-9_-]+/g, "[redacted]").slice(0, 400));
