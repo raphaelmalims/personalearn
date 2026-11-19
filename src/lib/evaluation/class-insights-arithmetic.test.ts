@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   arithmeticFailures,
   exactWrongRoute,
+  explainMiss,
   repairArithmetic,
 } from "@/lib/evaluation/class-insights-arithmetic";
 import type { ClassInsightsBrief, ClassInsightsDossier } from "@/lib/evaluation/class-insights-brief";
@@ -146,11 +147,17 @@ describe("repairArithmetic", () => {
     };
 
     const repaired = repairArithmetic(brief, dossier);
-    expect(repaired.struggled[0]?.misconception).toContain("28 × 6 = 168");
-    expect(repaired.struggled[0]?.misconception).not.toContain("186");
-    expect(repaired.checkIns[0]?.gap).toContain("4 × 8 = 32");
+    expect(repaired.struggled[0]?.misconception).toContain(
+      "Slip when adding the partial products (180 + 48 = 228)"
+    );
+    expect(repaired.struggled[0]?.misconception).not.toContain("20 × 6");
+    expect(repaired.checkIns[0]?.gap).toContain(
+      "4 × 9 written as 32 (that’s 4 × 8; answer 36)"
+    );
     expect(repaired.checkIns[0]?.gap).not.toContain("doubling");
-    expect(repaired.checkIns[0]?.gap).toContain("20 × 6 instead of 30 × 6");
+    expect(repaired.checkIns[0]?.gap).toContain(
+      "Slip when adding the partial products (180 + 48 = 228)"
+    );
   });
 
   it("replaces a vague reason when a sum equal to the written answer is missing", () => {
@@ -177,7 +184,18 @@ describe("repairArithmetic", () => {
     };
 
     const repaired = repairArithmetic(brief, dossier);
-    expect(repaired.struggled[0]?.misconception).toContain("20 × 6 instead of 30 × 6");
-    expect(repaired.checkIns[0]?.gap).toContain("4 × 8 = 32");
+    expect(repaired.struggled[0]?.misconception).toContain("180 + 48 = 228");
+    expect(repaired.struggled[0]?.misconception).not.toContain("wrote");
+    expect(repaired.checkIns[0]?.gap).toContain("4 × 9 written as 32");
+  });
+
+  it("does not call a shown operand a misread digit", () => {
+    expect(
+      explainMiss("38 × 6 = 228", "38 × 6 = (30×6)+(8×6)=168")
+    ).toBe("Slip when adding the partial products (180 + 48 = 228).");
+    expect(explainMiss("138 × 6 = 828", "138×6=(100×6)+(30×6)+(8×6)=822")).toBe(
+      "Slip when adding the partial products (600 + 180 + 48 = 828)."
+    );
+    expect(explainMiss("38 × 6 = 228", "28 × 6 = 168")).toContain("20 × 6");
   });
 });

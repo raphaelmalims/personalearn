@@ -271,6 +271,85 @@ function partialChange(factor: number, other: number, wrong: number): string | n
   return null;
 }
 
+function hasToken(text: string, value: number): boolean {
+  return new RegExp(`(?<!\\d)${value}(?!\\d)`).test(text);
+}
+
+function placeValues(factor: number): number[] {
+  const digits = String(Math.abs(factor)).split("");
+  return digits.map(
+    (digit, index) => Number(digit) * 10 ** (digits.length - 1 - index)
+  );
+}
+
+function showsPlaceSplit(text: string, factor: number, other: number): boolean {
+  if (factor < 10) return false;
+  const places = placeValues(factor).filter((place) => place > 0);
+  return places.length > 1 && places.every((place) => hasToken(text, place)) && hasToken(text, other);
+}
+
+/** A one-digit edit that reproduces the written product, for a times-table fact. */
+function factEdit(left: number, right: number, wrong: number): string | null {
+  const tryEdit = (factor: number, other: number, factorFirst: boolean): string | null => {
+    if (factor > 15) return null;
+    const original = String(factor);
+    for (let index = 0; index < original.length; index += 1) {
+      for (let digit = 0; digit <= 9; digit += 1) {
+        if (String(digit) === original[index]) continue;
+        if (index === 0 && digit === 0 && original.length > 1) continue;
+        const edited = Number(
+          original.slice(0, index) + String(digit) + original.slice(index + 1)
+        );
+        if (edited * other !== wrong) continue;
+        return factorFirst ? `${edited} × ${other}` : `${other} × ${edited}`;
+      }
+    }
+    return null;
+  };
+  return tryEdit(right, left, false) ?? tryEdit(left, right, true);
+}
+
+/**
+ * Explain one learner's wrong answer from their own writing.
+ * A misread digit is used only when that writing does not already show the
+ * correct operand. Otherwise it is an adding slip, or the written product
+ * named as a different fact.
+ */
+export function explainMiss(correct: string, written: string): string {
+  const factors = multiplication(correct);
+  const wrong = resultNumber(written);
+  const right = factors ? factors.left * factors.right : resultNumber(correct);
+  if (!factors || wrong === null || right === null || wrong === right) {
+    return `The answer is ${correct}.`;
+  }
+  const { left, right: other } = factors;
+  const factorsShown = hasToken(written, left) && hasToken(written, other);
+  const splitShown =
+    showsPlaceSplit(written, left, other) || showsPlaceSplit(written, other, left);
+  if (factorsShown || splitShown) {
+    const alt = factorsShown ? factEdit(left, other, wrong) : null;
+    if (alt && Math.max(left, other) <= 15) {
+      return `${left} × ${other} written as ${wrong} (that’s ${alt}; answer ${right}).`;
+    }
+    const big = left >= other ? left : other;
+    const small = left >= other ? other : left;
+    if (big >= 10) {
+      const parts = placeValues(big)
+        .filter((place) => place > 0)
+        .map((place) => place * small);
+      const sum = parts.reduce((total, value) => total + value, 0);
+      if (sum === right) {
+        return `Slip when adding the partial products (${parts.join(" + ")} = ${sum}).`;
+      }
+    }
+    if (alt) {
+      return `${left} × ${other} written as ${wrong} (that’s ${alt}; answer ${right}).`;
+    }
+    return `The answer is ${correct}.`;
+  }
+  return exactWrongRoute(correct, written) ?? `The answer is ${correct}.`;
+}
+
 /** A route that equals the written answer, or null when none is exact. */
 export function exactWrongRoute(correct: string, wrong: string): string | null {
   const factors = multiplication(correct);
@@ -333,34 +412,29 @@ function questionWrongAnswers(
   return { wrong, correct: correct.join("; ") };
 }
 
-function repairedTopic(
+export function explainTopic(
   dossier: ClassInsightsDossier,
-  labels: string[],
-  quotes: { learner: string; answer: string }[]
+  labels: string[]
 ): string {
-  const routes: string[] = [];
-  const spoken: string[] = [];
+  const lines: string[] = [];
   for (const label of labels) {
     const question = dossier.questions.find((item) => item.label === label);
     if (!question) continue;
     for (const answer of question.answers) {
       if (!(answer.max > 0 && answer.awarded < answer.max)) continue;
-      const route = exactWrongRoute(question.correct, answer.answer);
-      if (route && !routes.includes(route)) routes.push(route);
-      spoken.push(`${answer.learner} wrote “${answer.answer}”.`);
+      lines.push(
+        `${answer.learner}, ${label}: ${explainMiss(question.correct, answer.answer)}`
+      );
     }
   }
-  const quoted = quotes.length
-    ? quotes.map((quote) => `${quote.learner} wrote “${quote.answer}”.`)
-    : spoken;
-  const uniqueQuotes = [...new Set(quoted)];
-  if (routes.length === 0) {
-    const { correct } = questionWrongAnswers(dossier, labels);
-    return [...uniqueQuotes, correct ? `The answer is ${correct}.` : ""]
-      .filter(Boolean)
-      .join(" ");
-  }
-  return [...routes, ...uniqueQuotes].join(" ");
+  return lines.join(" ");
+}
+
+function repairedTopic(
+  dossier: ClassInsightsDossier,
+  labels: string[]
+): string {
+  return explainTopic(dossier, labels);
 }
 
 function repairedCheckIn(dossier: ClassInsightsDossier, learner: string): string {
@@ -370,12 +444,7 @@ function repairedCheckIn(dossier: ClassInsightsDossier, learner: string): string
       (row) => row.learner === learner && row.max > 0 && row.awarded < row.max
     );
     if (!answer) continue;
-    const route = exactWrongRoute(question.correct, answer.answer);
-    parts.push(
-      route
-        ? `${question.label}: ${route}`
-        : `${question.label}: wrote “${answer.answer}”. The answer is ${question.correct}.`
-    );
+    parts.push(`${question.label}: ${explainMiss(question.correct, answer.answer)}`);
   }
   return parts.join(" ");
 }
@@ -440,7 +509,7 @@ export function repairArithmetic(
       if (failures.length === 0) return topic;
       return {
         ...topic,
-        misconception: repairedTopic(dossier, topic.questionLabels, topic.quotes),
+        misconception: repairedTopic(dossier, topic.questionLabels),
       };
     }),
     checkIns: brief.checkIns.map((row) => {
