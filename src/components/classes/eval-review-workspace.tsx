@@ -37,6 +37,7 @@ import type { QuestionEvaluation } from "@/types/database";
 import { cn } from "@/lib/utils";
 import type { UseMutationResult } from "@tanstack/react-query";
 import { Breadcrumbs } from "@/components/layout/breadcrumbs";
+import { ClassInsightsPanel } from "@/components/classes/class-insights-panel";
 import { EvalQueueSummaryBar } from "@/components/classes/eval-queue-summary";
 import { EvalUploadGradingBanner } from "@/components/classes/eval-upload-grading-banner";
 import { EvalSessionToolbar } from "@/components/classes/eval-session-toolbar";
@@ -821,6 +822,7 @@ export function EvalReviewWorkspace({
 
   return (
     <div className="space-y-3">
+      <ClassInsightsPanel batchId={batchId} markedCount={readyScripts.length} />
       {compact ? null : <Breadcrumbs items={breadcrumbItems} />}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
