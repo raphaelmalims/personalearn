@@ -1,8 +1,5 @@
 import type { ClassInsightRow, QuestionInsight } from "@/lib/evaluation/class-insights";
-import type {
-  ClassInsightsPayload,
-  ClassInsightsTopic,
-} from "@/lib/evaluation/class-insights-message";
+import type { ClassInsightsPayload } from "@/lib/evaluation/class-insights-message";
 
 export type StoredClassInsights = {
   fingerprint: string;
@@ -34,17 +31,6 @@ export function marksFingerprint(
   return `${scripts}\u001d${marks}`;
 }
 
-function isTopic(value: unknown): value is ClassInsightsTopic {
-  if (!value || typeof value !== "object") return false;
-  const topic = value as ClassInsightsTopic;
-  return (
-    typeof topic.title === "string" &&
-    typeof topic.reteachStep === "string" &&
-    typeof topic.nextActivity === "string" &&
-    Array.isArray(topic.questionKeys)
-  );
-}
-
 export function isClassInsightsPayload(
   value: unknown
 ): value is ClassInsightsPayload {
@@ -53,9 +39,8 @@ export function isClassInsightsPayload(
   return (
     typeof payload.scriptCount === "number" &&
     (payload.source === "llm" || payload.source === "table") &&
-    Array.isArray(payload.questions) &&
-    Array.isArray(payload.topics) &&
-    payload.topics.every(isTopic)
+    typeof payload.markdown === "string" &&
+    payload.markdown.startsWith("Class insights")
   );
 }
 

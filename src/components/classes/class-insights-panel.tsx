@@ -6,7 +6,6 @@ import { buttonVariants } from "@/components/ui/button-variants";
 import { useClassInsights } from "@/lib/hooks/use-evaluation";
 import {
   formatStruggleLine,
-  presentClassInsights,
   type ClassInsightsCardView,
   type ClassInsightsView,
 } from "@/lib/evaluation/class-insights-message";
@@ -25,9 +24,6 @@ export function ClassInsightsPanel({
 
   if (!enabled) return null;
 
-  const scriptCount = data?.scriptCount ?? markedCount;
-  const view = data ? presentClassInsights(data) : null;
-
   return (
     <section
       aria-label="Class insights"
@@ -35,7 +31,7 @@ export function ClassInsightsPanel({
     >
       <p className="text-caption text-muted-foreground">Class insights</p>
       <h2 className="text-base font-semibold tracking-tight">
-        Based on {scriptCount} {scriptCount === 1 ? "script" : "scripts"}
+        {data?.headline || "The brief is in the Hub chat."}
       </h2>
       <p className="text-caption text-muted-foreground">Based on this class set</p>
 
@@ -45,17 +41,14 @@ export function ClassInsightsPanel({
         <p className="mt-3 text-sm text-muted-foreground">
           These insights did not load. You can still review each script.
         </p>
-      ) : view && view.cards.length > 0 ? (
-        <>
-          <ul className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
-            {view.cards.map((card) => (
-              <InsightCard key={`${card.title}-${card.questionNumbers}`} card={card} />
-            ))}
-          </ul>
-        </>
-      ) : (
-        <EmptyState />
-      )}
+      ) : data?.conversationPath ? (
+        <Link
+          href={data.conversationPath}
+          className={`${buttonVariants({ variant: "secondary", size: "sm" })} mt-3`}
+        >
+          Open the full brief
+        </Link>
+      ) : null}
     </section>
   );
 }
@@ -132,16 +125,7 @@ function LoadingState() {
   return (
     <div className="mt-3 space-y-2" aria-busy="true">
       <p className="text-sm text-muted-foreground">Reading the marked scripts.</p>
-      <Skeleton className="h-20 w-full rounded-lg" />
-      <Skeleton className="h-20 w-full rounded-lg" />
+      <Skeleton className="h-16 w-full rounded-lg" />
     </div>
-  );
-}
-
-function EmptyState() {
-  return (
-    <p className="mt-3 rounded-lg border border-dashed border-border bg-muted/20 px-3 py-4 text-sm text-muted-foreground">
-      Nothing stands out on this set.
-    </p>
   );
 }
