@@ -1,5 +1,8 @@
 import type { ClassInsightRow, QuestionInsight } from "@/lib/evaluation/class-insights";
-import type { ClassInsightsPayload } from "@/lib/evaluation/class-insights-message";
+import type {
+  ClassInsightsPayload,
+  ClassInsightsTopic,
+} from "@/lib/evaluation/class-insights-message";
 
 export type StoredClassInsights = {
   fingerprint: string;
