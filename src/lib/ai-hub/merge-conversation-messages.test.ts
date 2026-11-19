@@ -40,6 +40,33 @@ describe("mergeIncomingConversationMessage", () => {
     expect(again).toBe(added);
   });
 
+  it("replaces the same class insights card when the stored counts arrive", () => {
+    const legacy = toUIMessageFromRow({
+      id: "insights-1",
+      role: "assistant",
+      content: "Class insights\n\nBased on 4 scripts.\n\n50% under half",
+      tool_calls: {
+        classInsightsBatchId: "batch-1",
+        classInsights: {
+          scriptCount: 4,
+          reviewPath: "/classes/class-1/evaluations/batch-1",
+          note: "From this set. Not a strand label.",
+          cards: [
+            {
+              title: "Fractions",
+              percentUnderHalf: 50,
+              questionNumbers: "1",
+              reteachStep: "Shade one shared diagram.",
+            },
+          ],
+        },
+      },
+    });
+    const replaced = mergeIncomingConversationMessage([legacy], insights);
+    expect(replaced).toHaveLength(1);
+    expect(replaced[0]).toBe(insights);
+  });
+
   it("does not add a second class insights card for the same review", () => {
     const duplicate = toUIMessageFromRow({
       id: "insights-2",
