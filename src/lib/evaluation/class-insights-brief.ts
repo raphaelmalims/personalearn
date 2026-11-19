@@ -182,6 +182,17 @@ function cleanProse(text: string): string {
     .trim();
 }
 
+/** Title on its own line; each partial step is a markdown list item so it is not one paragraph. */
+export function workedExampleMarkdownLines(example: string): string[] {
+  const parts = cleanProse(example)
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (parts.length <= 1) return parts;
+  const [title, ...steps] = parts;
+  return [title, "", ...steps.map((step) => `- ${step}`)];
+}
+
 function groundedQuotes(
   dossier: ClassInsightsDossier,
   topic: StruggleTopic,
@@ -293,7 +304,11 @@ export function renderClassInsightsMarkdown(
   brief.moves.slice(0, 3).forEach((move, index) => {
     lines.push(`${index + 1}. ${cleanProse(move)}`);
   });
-  lines.push("", "**Worked example**", "", cleanProse(brief.workedExample), "");
+  lines.push("", "**Worked example**", "");
+  for (const line of workedExampleMarkdownLines(brief.workedExample)) {
+    lines.push(line);
+  }
+  lines.push("");
   lines.push("**Practice for the board**", "");
   brief.practice.slice(0, 5).forEach((item, index) => {
     lines.push(
