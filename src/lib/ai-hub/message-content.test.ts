@@ -265,6 +265,49 @@ describe("toUIMessageFromRow", () => {
     });
   });
 
+  it("renders a class insights card instead of the stored paragraph", () => {
+    const message = toUIMessageFromRow({
+      id: "m-insights",
+      role: "assistant",
+      content: "Class insights\n\nBased on 4 scripts.\n\nFractions\n100% under half",
+      tool_calls: {
+        classInsightsBatchId: "batch-1",
+        classInsights: {
+          scriptCount: 4,
+          reviewPath: "/classes/class-1/evaluations/batch-1",
+          note: "From this set. Not a strand label.",
+          cards: [
+            {
+              title: "Fractions",
+              percentUnderHalf: 100,
+              questionNumbers: "1",
+              reteachStep: "Redo one fraction with a shared diagram.",
+            },
+          ],
+        },
+      },
+    });
+
+    expect(getAssistantDisplayBlocks(message)).toEqual([
+      {
+        type: "class_insights",
+        view: {
+          scriptCount: 4,
+          reviewPath: "/classes/class-1/evaluations/batch-1",
+          note: "From this set. Not a strand label.",
+          cards: [
+            {
+              title: "Fractions",
+              percentUnderHalf: 100,
+              questionNumbers: "1",
+              reteachStep: "Redo one fraction with a shared diagram.",
+            },
+          ],
+        },
+      },
+    ]);
+  });
+
   it("reconstructs drafts from tool_calls as valid tool parts", async () => {
     const { convertToModelMessages } = await import("ai");
     const row = {

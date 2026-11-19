@@ -3,6 +3,7 @@ import type { QuestionInsight } from "./class-insights";
 import {
   formatClassInsightsChatMessage,
   messageIsForBatch,
+  presentClassInsights,
   shouldPostClassInsights,
   type ClassInsightsPayload,
 } from "./class-insights-message";
@@ -40,19 +41,46 @@ const topicsPayload: ClassInsightsPayload = {
   ],
 };
 
+describe("presentClassInsights", () => {
+  it("turns topics into cards with a share under half and question numbers", () => {
+    const view = presentClassInsights(
+      {
+        ...topicsPayload,
+        questions: [
+          question({ key: "1", label: "1", scored: 4, belowHalf: 3 }),
+          question({ key: "2", label: "2a", scored: 4, belowHalf: 1 }),
+        ],
+      },
+      "/classes/class-1/evaluations/batch-1"
+    );
+    expect(view.scriptCount).toBe(4);
+    expect(view.reviewPath).toBe("/classes/class-1/evaluations/batch-1");
+    expect(view.cards[0]).toMatchObject({
+      title: "Fractions",
+      percentUnderHalf: 75,
+      questionNumbers: "1",
+      reteachStep: "Redo one fraction with a shared diagram.",
+    });
+    expect(view.cards[1]?.percentUnderHalf).toBe(25);
+    expect(view.note).toContain("Not a strand label");
+  });
+});
+
 describe("formatClassInsightsChatMessage", () => {
   it("uses the insights topics, one reteach step each, and the script count", () => {
     const text = formatClassInsightsChatMessage(topicsPayload);
+    expect(text.startsWith("Class insights")).toBe(true);
     expect(text).toContain("Based on 4 scripts.");
-    expect(text).toContain("**Fractions**");
+    expect(text).toContain("Fractions");
     expect(text).toContain("Redo one fraction with a shared diagram.");
-    expect(text).toContain("**Place value**");
+    expect(text).toContain("Place value");
     expect(text).toContain("Show the tens and ones with counters.");
-    expect(text).toContain("Not a CBC strand alignment.");
+    expect(text).toContain("Not a strand label.");
     expect(text).not.toContain("linked_strand");
+    expect(text).not.toContain("Next:");
   });
 
-  it("falls back to the question table from the same payload", () => {
+  it("falls back to the weakest questions from the same payload", () => {
     const text = formatClassInsightsChatMessage({
       scriptCount: 2,
       source: "table",
@@ -67,9 +95,19 @@ describe("formatClassInsightsChatMessage", () => {
       ],
     });
     expect(text).toContain("Based on 2 scripts.");
-    expect(text).toContain("**1** — 2 learners, 50% below 50%.");
+    expect(text).toContain("Question 1");
+    expect(text).toContain("50% under half");
     expect(text).toContain("Dropped the denominator");
-    expect(text).not.toContain("Reteach");
+  });
+
+  it("stays calm when nothing is under half", () => {
+    const text = formatClassInsightsChatMessage({
+      scriptCount: 3,
+      source: "table",
+      topics: [],
+      questions: [question({ key: "1", label: "1", percentBelowHalf: 0, belowHalf: 0 })],
+    });
+    expect(text).toContain("Nothing stands out on this set.");
   });
 });
 

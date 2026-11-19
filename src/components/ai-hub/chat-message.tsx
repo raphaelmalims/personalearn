@@ -20,6 +20,7 @@ import {
 } from "@/lib/resources/format";
 import { useActiveClassStore } from "@/lib/store/active-class";
 import { useHubEvalSessionStore } from "@/lib/store/hub-eval-session";
+import { ClassInsightsChatCard } from "@/components/classes/class-insights-panel";
 import { cn } from "@/lib/utils";
 
 type ChatMessageProps = {
@@ -44,6 +45,7 @@ export function ChatMessage({
   const displayBlocks = isUser ? [] : getAssistantDisplayBlocks(message);
   const fileParts = message.parts.filter(isFileUIPart);
   const evalBlocks = displayBlocks.filter((block) => block.type === "eval_session");
+  const insightsBlock = displayBlocks.find((block) => block.type === "class_insights");
   const classId = useActiveClassStore((s) => s.activeClass?.id);
   const openBatch = useHubEvalSessionStore((s) => s.openBatch);
 
@@ -52,6 +54,7 @@ export function ChatMessage({
     fileParts.length === 0 &&
     drafts.length === 0 &&
     evalBlocks.length === 0 &&
+    !insightsBlock &&
     !reasoning
   ) {
     return null;
@@ -109,6 +112,9 @@ export function ChatMessage({
             ) : null
           ) : (
             <div className="space-y-3">
+              {insightsBlock ? (
+                <ClassInsightsChatCard view={insightsBlock.view} />
+              ) : null}
               {reasoning ? (
                 <ThoughtProcess
                   reasoning={reasoning}
@@ -122,6 +128,7 @@ export function ChatMessage({
                 />
               ) : null}
               {displayBlocks.map((block, index) => {
+                if (block.type === "class_insights") return null;
                 if (block.type === "text") {
                   return (
                     <MarkdownContent
