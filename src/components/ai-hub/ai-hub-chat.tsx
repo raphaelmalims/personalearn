@@ -81,6 +81,8 @@ import {
 } from "@/lib/hooks/use-conversations";
 import { useIsMobile } from "@/lib/hooks/use-is-mobile";
 import { resourcesQueryKey, useResources } from "@/lib/hooks/use-resources";
+import { mergeIncomingConversationMessage } from "@/lib/ai-hub/merge-conversation-messages";
+import { useConversationMessagesRealtime } from "@/lib/hooks/use-conversation-messages-realtime";
 import { assessmentsQueryKey } from "@/lib/hooks/use-evaluation";
 import { useActiveClassStore } from "@/lib/store/active-class";
 import { useHubEvalSessionStore } from "@/lib/store/hub-eval-session";
@@ -442,6 +444,67 @@ export function AiHubChat() {
     },
   });
 
+  useConversationMessagesRealtime(selectedConversationId, (incoming) => {
+    const conversationId = conversationIdRef.current;
+    if (!conversationId) return;
+    const streaming = status === "streaming" || status === "submitted";
+    setMessages((current) => {
+      const next = mergeIncomingConversationMessage(current, incoming, {
+        streaming,
+      });
+      if (next !== current) {
+        queryClient.setQueryData(
+          conversationMessagesQueryKey(conversationId),
+          next
+        );
+      }
+      return next;
+    });
+  });
+
+  const chatStatusRef = useRef(status);
+  chatStatusRef.current = status;
+
+  useEffect(() => {
+    if (!selectedConversationId) return;
+    const conversationId = selectedConversationId;
+    let stopped = false;
+
+    async function pullMarkedInsights() {
+      if (stopped) return;
+      const chatStatus = chatStatusRef.current;
+      if (chatStatus === "streaming" || chatStatus === "submitted") return;
+      try {
+        const loaded = await fetchConversationMessages(conversationId);
+        if (stopped || conversationIdRef.current !== conversationId) return;
+        setMessages((current) => {
+          let next = current;
+          for (const message of loaded) {
+            next = mergeIncomingConversationMessage(next, message);
+          }
+          if (next !== current) {
+            queryClient.setQueryData(
+              conversationMessagesQueryKey(conversationId),
+              next
+            );
+          }
+          return next;
+        });
+      } catch {
+        // The open chat keeps the messages it already has.
+      }
+    }
+
+    void pullMarkedInsights();
+    const timer = setInterval(() => {
+      void pullMarkedInsights();
+    }, 12_000);
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+    };
+  }, [queryClient, selectedConversationId, setMessages]);
+
   useEffect(() => {
     conversationIdRef.current = selectedConversationId;
     if (typeof window === "undefined") return;
@@ -726,7 +789,10 @@ export function AiHubChat() {
       const imageFiles = files.filter((file) =>
         (file.type || "").startsWith("image/")
       );
-      evalScanFilesRef.current = imageFiles;
+      // A follow-up with no new photos must keep the scans from the earlier message.
+      if (imageFiles.length > 0) {
+        evalScanFilesRef.current = imageFiles;
+      }
       const hasFiles = files.length > 0;
 
     if (

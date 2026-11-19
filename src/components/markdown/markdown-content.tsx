@@ -6,6 +6,7 @@ import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import "katex/dist/katex.min.css";
+import { splitCollapsibleMarkdown } from "@/lib/ai-hub/collapsible-markdown";
 import { normalizeMarkdown } from "@/lib/ai-hub/normalize-markdown";
 
 export const markdownComponents: Components = {
@@ -96,15 +97,38 @@ type MarkdownContentProps = {
 };
 
 export function MarkdownContent({ content, className }: MarkdownContentProps) {
+  const blocks = splitCollapsibleMarkdown(content);
   return (
     <div className={className}>
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeKatex]}
-        components={markdownComponents}
-      >
-        {normalizeMarkdown(content)}
-      </ReactMarkdown>
+      {blocks.map((block, index) =>
+        block.kind === "collapse" ? (
+          <details
+            key={`collapse-${index}`}
+            className="my-3 rounded-lg border border-border bg-muted/30 px-3 py-2"
+          >
+            <summary className="cursor-pointer text-sm font-semibold">
+              {block.title}
+            </summary>
+            <div className="mt-2">
+              <MarkdownBody content={block.body} />
+            </div>
+          </details>
+        ) : (
+          <MarkdownBody key={`md-${index}`} content={block.text} />
+        )
+      )}
     </div>
+  );
+}
+
+function MarkdownBody({ content }: { content: string }) {
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm, remarkMath]}
+      rehypePlugins={[rehypeKatex]}
+      components={markdownComponents}
+    >
+      {normalizeMarkdown(content)}
+    </ReactMarkdown>
   );
 }

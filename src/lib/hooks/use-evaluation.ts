@@ -36,6 +36,54 @@ export const evaluationBatchesQueryKey = (classId: string) =>
 export const evaluationScriptsQueryKey = (batchId: string) =>
   ["evaluation-scripts", batchId] as const;
 
+export const classInsightsQueryKey = (batchId: string) =>
+  ["class-insights", batchId] as const;
+
+export type ClassInsightsPayload = {
+  scriptCount: number;
+  source: "llm" | "table";
+  questions: {
+    key: string;
+    label: string;
+    learnersMarked: number;
+    scored: number;
+    belowHalf: number;
+    percentBelowHalf: number | null;
+    commonMistakes: { text: string; count: number }[];
+  }[];
+  topics: {
+    title: string;
+    questionKeys: string[];
+    reteachStep: string;
+    nextActivity: string;
+  }[];
+  headline?: string;
+  markdown?: string;
+  conversationPath?: string | null;
+};
+
+export function useClassInsights(
+  batchId: string | undefined,
+  enabled: boolean
+) {
+  return useQuery({
+    queryKey: classInsightsQueryKey(batchId ?? ""),
+    enabled: Boolean(batchId) && enabled,
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/evaluation-batches/${encodeURIComponent(batchId!)}/insights`
+      );
+      const payload = (await response.json()) as ClassInsightsPayload & {
+        error?: string;
+      };
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to load class insights");
+      }
+      return payload;
+    },
+  });
+}
+
 async function fetchAssessments(classId: string) {
   const response = await fetch(
     `/api/assessments?classId=${encodeURIComponent(classId)}`
@@ -579,6 +627,9 @@ export function useUpdateQuestionEvaluation(classId: string, batchId: string) {
         queryKey: evaluationBatchesQueryKey(classId),
       });
       queryClient.invalidateQueries({ queryKey: ["script-review"] });
+      queryClient.invalidateQueries({
+        queryKey: classInsightsQueryKey(batchId),
+      });
     },
   });
 }
@@ -618,6 +669,9 @@ export function useReevaluateQuestion(classId: string, batchId: string) {
         queryKey: evaluationBatchesQueryKey(classId),
       });
       queryClient.invalidateQueries({ queryKey: ["script-review"] });
+      queryClient.invalidateQueries({
+        queryKey: classInsightsQueryKey(batchId),
+      });
     },
   });
 }
@@ -662,6 +716,9 @@ export function useSignOffScript(classId: string, batchId: string) {
         queryKey: ["student-eval-profile", classId],
       });
       queryClient.invalidateQueries({ queryKey: ["script-review"] });
+      queryClient.invalidateQueries({
+        queryKey: classInsightsQueryKey(batchId),
+      });
     },
   });
 }

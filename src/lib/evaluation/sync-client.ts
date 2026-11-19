@@ -62,6 +62,7 @@ async function generateGeminiStructuredJson<T>(input: {
           },
         ],
         config: {
+          temperature: 0,
           responseMimeType: "application/json",
           responseSchema: input.responseSchema,
         },
