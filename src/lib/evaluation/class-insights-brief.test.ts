@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   fallbackBrief,
+  missedQuestionGroups,
   readableAnswer,
   renderClassInsightsMarkdown,
+  type ClassInsightsBrief,
   type ClassInsightsDossier,
 } from "@/lib/evaluation/class-insights-brief";
 import { splitCollapsibleMarkdown } from "@/lib/ai-hub/collapsible-markdown";
@@ -53,5 +55,51 @@ describe("renderClassInsightsMarkdown", () => {
 
     const blocks = splitCollapsibleMarkdown(text);
     expect(blocks.some((block) => block.kind === "collapse")).toBe(true);
+  });
+
+  it("counts each question when different learners missed them", () => {
+    const split: ClassInsightsDossier = {
+      ...dossier,
+      questions: [
+        ...dossier.questions,
+        {
+          label: "A.4",
+          correct: "4 × 9 = 36",
+          answers: [
+            { learner: "Learner 2682", awarded: 1, max: 1, answer: "4 × 9 = 36" },
+            { learner: "Learner 6267", awarded: 0, max: 1, answer: "4 × 9 = 32" },
+          ],
+        },
+        {
+          label: "A.5",
+          correct: "3 × 15 = 45",
+          answers: [
+            { learner: "Learner 2682", awarded: 0, max: 1, answer: "3 × 15 = 42" },
+            { learner: "Learner 6267", awarded: 1, max: 1, answer: "3 × 15 = 45" },
+          ],
+        },
+      ],
+    };
+    const brief: ClassInsightsBrief = {
+      ...fallbackBrief(split),
+      struggled: missedQuestionGroups(split).filter((group) => group.labels[0]?.startsWith("A")),
+      practice: [
+        { question: "6 × 7", answer: "42" },
+        { question: "8 × 4", answer: "32" },
+      ],
+    };
+    brief.struggled = missedQuestionGroups(split)
+      .filter((group) => group.labels[0]?.startsWith("A"))
+      .map((group) => ({
+        title: group.title,
+        questionLabels: group.labels,
+        misconception: "Keep the fact in mind.",
+        quotes: [],
+      }));
+    const text = renderClassInsightsMarkdown(split, brief);
+    expect(text).toContain("**1 of 2 learners** missed A.4.");
+    expect(text).toContain("**1 of 2 learners** missed A.5.");
+    expect(text).not.toContain("missed A.4, A.5");
+    expect(text).toContain("1. 6 × 7 **Answer:** 42\n2. 8 × 4 **Answer:** 32");
   });
 });

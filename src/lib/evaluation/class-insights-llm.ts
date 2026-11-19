@@ -3,11 +3,12 @@ import { z } from "zod";
 import { getChatModelId, getChatProvider } from "@/lib/ai/env";
 import { getChatModel, getChatModelForSettings } from "@/lib/ai/llm";
 import {
-  collectArithmeticFailures,
-  repairArithmetic,
+  explainMiss,
+  explainTopic,
 } from "@/lib/evaluation/class-insights-arithmetic";
 import {
   classAverageLine,
+  missedQuestionGroups,
   readableAnswer,
   type ClassInsightsBrief,
   type ClassInsightsDossier,
@@ -131,10 +132,13 @@ function promptFor(dossier: ClassInsightsDossier): string {
     "Use only the assessment, the marking scheme, and the answers below.",
     "Do not invent CBC strand codes, competencies, or syllabus codes. If the scheme does not name one, do not add one.",
     "Do not use percentages. Do not write 'under half' or 'strand label'.",
-    `The class average is ${classAverageLine(dossier).replace(/\*/g, "")} Use that figure in the headline.`,
+    `The class average is ${classAverageLine(dossier).replace(/\*/g, "")} The headline must not repeat that figure.`,
     "Headline: one sentence on how the class did, what was strong, and what needs reteaching.",
     "What went well: the topics most learners got right, briefly.",
-    "Where they struggled: up to 4 topics, ranked, with the question labels, the misconception you can see in the wrong answers, and exact quotes of those wrong answers.",
+    "Do not state a count. Do not write 'N of M'. Counts are added from the marks. Do not repeat the class average.",
+    "The reasons below are fixed from the written working. Use them. Do not call a shown number a misread digit, and do not call a fact error a doubling slip.",
+    fixedReasons(dossier),
+    "Where they struggled: the topics below are fixed. Write one short teaching sentence for each. Do not quote the learner and do not invent a different sum.",
     "Reteach plan: 2 or 3 concrete moves for the next lesson, one worked example, and 2 or 3 practice questions in the same style as the paper, each with an answer a teacher can put on the board.",
     "Check-ins: one line per learner who missed something, naming their actual gap.",
     "Quote an answer only if that learner wrote it.",
@@ -161,6 +165,12 @@ function insightsModel() {
   return getChatModel();
 }
 
+function fixedReasons(dossier: ClassInsightsDossier): string {
+  return missedQuestionGroups(dossier)
+    .map((group) => `${group.title}: ${explainTopic(dossier, group.labels)}`)
+    .join("\n");
+}
+
 async function requestBrief(
   dossier: ClassInsightsDossier,
   correction: string
@@ -180,23 +190,48 @@ async function requestBrief(
   return sanitizeClassInsightsBrief(output, dossier);
 }
 
-/** One grounded call, plus a single retry when a sum does not match the written answer. */
+function withMarkFacts(
+  brief: ClassInsightsBrief,
+  dossier: ClassInsightsDossier
+): ClassInsightsBrief {
+  const struggled = missedQuestionGroups(dossier).map((group) => ({
+    title: group.title,
+    questionLabels: group.labels,
+    misconception: explainTopic(dossier, group.labels),
+    quotes: group.labels.flatMap((label) => {
+      const question = dossier.questions.find((item) => item.label === label);
+      if (!question) return [];
+      return question.answers
+        .filter((answer) => answer.max > 0 && answer.awarded < answer.max)
+        .map((answer) => ({
+          learner: answer.learner,
+          answer: readableAnswer(answer.answer),
+        }));
+    }),
+  }));
+  const checkIns = dossier.learnerTotals.flatMap((row) => {
+    const parts = dossier.questions.flatMap((question) => {
+      const answer = question.answers.find(
+        (item) => item.learner === row.learner && item.max > 0 && item.awarded < item.max
+      );
+      return answer
+        ? [`${question.label}: ${explainMiss(question.correct, answer.answer)}`]
+        : [];
+    });
+    return parts.length > 0 ? [{ learner: row.learner, gap: parts.join(" ") }] : [];
+  });
+  return { ...brief, struggled, checkIns };
+}
+
+/** One call. Counts, groups, and the reason for each miss come from the marks. */
 export async function writeClassInsightsBrief(
   dossier: ClassInsightsDossier
 ): Promise<ClassInsightsBrief | null> {
   if (dossier.questions.length === 0) return null;
   try {
-    let brief = await requestBrief(dossier, "");
+    const brief = await requestBrief(dossier, "");
     if (!brief) return null;
-    const failures = collectArithmeticFailures(brief, dossier);
-    if (failures.length > 0) {
-      const retry = await requestBrief(
-        dossier,
-        `\n\nThe previous draft failed an arithmetic check. A reason is usable only when the sum or product equals the written wrong answer. Otherwise quote the wrong answer and the correct answer.\n${failures.join("\n")}`
-      );
-      if (retry) brief = retry;
-    }
-    return repairArithmetic(brief, dossier);
+    return withMarkFacts(brief, dossier);
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";
     console.error(message.replace(/sk-[A-Za-z0-9_-]+/g, "[redacted]").slice(0, 400));

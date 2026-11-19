@@ -120,6 +120,57 @@ function countLine(missed: number, scored: number): string {
   return `${missed} of ${scored} ${noun}`;
 }
 
+const SECTION_TITLES: Record<string, string> = {
+  A: "Multiplication facts",
+  B: "Two-digit multiplication",
+  C: "Three-digit multiplication",
+  D: "Word problems",
+};
+
+/** Missed questions grouped by section. The model does not choose this list. */
+export function missedQuestionGroups(
+  dossier: ClassInsightsDossier
+): { title: string; labels: string[] }[] {
+  const groups = new Map<string, string[]>();
+  for (const question of dossier.questions) {
+    if (!question.answers.some(isWrong)) continue;
+    const section = question.label.split(".")[0] || question.label;
+    const labels = groups.get(section) ?? [];
+    labels.push(question.label);
+    groups.set(section, labels);
+  }
+  return [...groups.entries()].slice(0, 4).map(([section, labels]) => ({
+    title: SECTION_TITLES[section] ?? `Section ${section}`,
+    labels,
+  }));
+}
+
+function missedNames(question: DossierQuestion): string[] {
+  return question.answers.filter(isWrong).map((answer) => answer.learner).sort();
+}
+
+function countLinesFor(
+  dossier: ClassInsightsDossier,
+  labels: string[]
+): string[] {
+  const questions = labels
+    .map((label) => questionByLabel(dossier, label))
+    .filter((question): question is DossierQuestion => question != null);
+  if (questions.length === 0) return ["No score yet."];
+  const sets = questions.map((question) => missedNames(question).join("\0"));
+  const sameMiss = sets.every((set) => set === sets[0]);
+  if (sameMiss) {
+    const scored = questions[0].answers.filter((answer) => answer.max > 0).length;
+    return [
+      `**${countLine(missedNames(questions[0]).length, scored)}** missed ${labels.join(", ")}.`,
+    ];
+  }
+  return questions.map((question) => {
+    const scored = question.answers.filter((answer) => answer.max > 0).length;
+    return `**${countLine(missedNames(question).length, scored)}** missed ${question.label}.`;
+  });
+}
+
 function cleanProse(text: string): string {
   return text
     .replace(/not a strand label\.?/gi, "")
@@ -139,7 +190,7 @@ function groundedQuotes(
     .filter((quote): quote is { learner: string; answer: string } => quote !== null);
   const unique = new Map<string, { learner: string; answer: string }>();
   for (const quote of known) unique.set(`${quote.learner}\0${quote.answer}`, quote);
-  if (unique.size > 0) return [...unique.values()].slice(0, 3);
+  if (unique.size > 0) return [...unique.values()].slice(0, 12);
   for (const label of labels) {
     const question = questionByLabel(dossier, label);
     if (!question) continue;
@@ -150,7 +201,7 @@ function groundedQuotes(
       unique.set(`${answer.learner}\0${text}`, { learner: answer.learner, answer: text });
     }
   }
-  return [...unique.values()].slice(0, 3);
+  return [...unique.values()].slice(0, 12);
 }
 
 function knownQuote(
@@ -177,10 +228,14 @@ function knownQuote(
 
 function headlineAfterAverage(headline: string, averageLine: string): string {
   const cleaned = cleanProse(headline);
-  const plain = averageLine.replace(/\*/g, "").replace(/\.$/, "").trim();
-  if (!plain || !cleaned.toLowerCase().startsWith(plain.toLowerCase())) return cleaned;
-  const rest = cleaned.slice(plain.length).replace(/^[\s—–:;,-]+/, "");
-  if (!rest) return cleaned;
+  const numbers = averageLine.match(/(\d+)\s+of\s+(\d+)/);
+  if (!numbers) return cleaned;
+  const lead = new RegExp(
+    `^(?:the\\s+)?class average(?:\\s+was)?\\s*:?\\s*${numbers[1]}\\s+of\\s+${numbers[2]}\\.?\\s*[;:,.\\u2014\\u2013-]*\\s*`,
+    "i"
+  );
+  const rest = cleaned.replace(lead, "");
+  if (!rest || rest === cleaned) return cleaned;
   return rest.charAt(0).toUpperCase() + rest.slice(1);
 }
 
@@ -212,17 +267,15 @@ export function renderClassInsightsMarkdown(
       const labels = topic.questionLabels.filter((label) =>
         questionByLabel(dossier, label)
       );
-      const counts = learnersWhoMissed(dossier, labels);
-      lines.push(
-        `### ${cleanProse(topic.title)}`,
-        "",
-        `**${countLine(counts.missed, counts.scored)}** missed ${
-          labels.length > 0 ? labels.join(", ") : "these questions"
-        }.`,
-        "",
-        cleanProse(topic.misconception),
+      lines.push(`### ${cleanProse(topic.title)}`, "");
+      for (const count of countLinesFor(dossier, labels)) {
+        lines.push(count, "");
+      }
+      const why = cleanProse(topic.misconception).replace(
+        /\b\d+\s+of\s+\d+\s+learners?\b[^.]*\.?/gi,
         ""
       );
+      if (why.trim()) lines.push(why.trim(), "");
       const quotes = groundedQuotes(dossier, topic, labels);
       for (const known of quotes) {
         lines.push(`> ${known.learner} wrote “${known.answer}”.`, "");
@@ -238,12 +291,10 @@ export function renderClassInsightsMarkdown(
   lines.push("**Practice for the board**", "");
   brief.practice.slice(0, 3).forEach((item, index) => {
     lines.push(
-      `${index + 1}. ${cleanProse(item.question)}`,
-      "",
-      `   **Answer:** ${cleanProse(item.answer)}`,
-      ""
+      `${index + 1}. ${cleanProse(item.question)} **Answer:** ${cleanProse(item.answer)}`
     );
   });
+  lines.push("");
 
   lines.push("## Learners to check in with", "");
   const knownLearners = new Set(roster(dossier));
