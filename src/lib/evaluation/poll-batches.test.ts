@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { startOrResumeBatchProcessing, submitEvaluateBatch } from "./poll-batches";
+import {
+  shouldGradeProviderBatchDirectly,
+  startOrResumeBatchProcessing,
+  submitEvaluateBatch,
+} from "./poll-batches";
 import { findInflightGeminiJob } from "./batch-jobs";
 import type { EvaluationBatch, GeminiBatchJob } from "@/types/database";
 
@@ -87,6 +91,47 @@ function resolved(value: unknown) {
   ) => Promise.resolve(value).then(onFulfilled, onRejected);
   return builder;
 }
+
+describe("shouldGradeProviderBatchDirectly", () => {
+  const submittedAt = "2026-11-19T11:58:53.696Z";
+  const stalled = Date.parse(submittedAt) + 90_000;
+
+  it("grades a small index job that is still pending", () => {
+    expect(
+      shouldGradeProviderBatchDirectly({
+        phase: "index",
+        submittedAt,
+        pageCount: 4,
+        scriptCount: 0,
+        now: stalled,
+      })
+    ).toBe(true);
+  });
+
+  it("keeps waiting during the first minute", () => {
+    expect(
+      shouldGradeProviderBatchDirectly({
+        phase: "index",
+        submittedAt,
+        pageCount: 4,
+        scriptCount: 0,
+        now: Date.parse(submittedAt) + 30_000,
+      })
+    ).toBe(false);
+  });
+
+  it("leaves a large batch on the provider", () => {
+    expect(
+      shouldGradeProviderBatchDirectly({
+        phase: "index",
+        submittedAt,
+        pageCount: 40,
+        scriptCount: 0,
+        now: stalled,
+      })
+    ).toBe(false);
+  });
+});
 
 describe("startOrResumeBatchProcessing", () => {
   beforeEach(() => {

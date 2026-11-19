@@ -67,6 +67,26 @@ async function downloadPageBase64(
 /** Parallelize storage downloads; LLM batch submit remains the only wait-till-complete step. */
 const DOWNLOAD_CONCURRENCY = 6;
 
+/** Wait this long for the provider batch, then grade a small set directly. */
+export const PROVIDER_BATCH_STALL_MS = 90_000;
+
+/** Direct grading runs inside the open-session poll. Keep the set small. */
+export const DIRECT_GRADE_PAGE_LIMIT = 8;
+
+export function shouldGradeProviderBatchDirectly(input: {
+  phase: "index" | "evaluate";
+  submittedAt: string | null;
+  pageCount: number;
+  scriptCount: number;
+  now?: number;
+}): boolean {
+  const units = input.phase === "index" ? input.pageCount : input.scriptCount;
+  if (units < 1 || units > DIRECT_GRADE_PAGE_LIMIT) return false;
+  const started = Date.parse(input.submittedAt ?? "");
+  if (!Number.isFinite(started)) return false;
+  return (input.now ?? Date.now()) - started >= PROVIDER_BATCH_STALL_MS;
+}
+
 async function mapWithConcurrency<T, R>(
   items: T[],
   concurrency: number,
@@ -239,6 +259,23 @@ async function processCompletedIndexBatch(
     }
   }
 
+  await groupIndexedPagesIntoScripts(supabase, batch);
+
+  await supabase
+    .from("gemini_batch_jobs")
+    .update({
+      state: "completed",
+      completed_at: new Date().toISOString(),
+    })
+    .eq("id", job.id);
+
+  await submitEvaluateBatch(supabase, batch);
+}
+
+async function groupIndexedPagesIntoScripts(
+  supabase: SupabaseClient,
+  batch: EvaluationBatch
+): Promise<void> {
   const { data: pages, error } = await supabase
     .from("evaluation_pages")
     .select("*")
@@ -282,16 +319,116 @@ async function processCompletedIndexBatch(
   for (const group of groups) {
     await upsertScriptFromGroup(supabase, { batchId: batch.id, group });
   }
+}
 
-  await supabase
+async function indexUnindexedPagesDirectly(
+  supabase: SupabaseClient,
+  batch: EvaluationBatch
+): Promise<void> {
+  const { syncIndexPage } = await import("@/lib/evaluation/sync-client");
+  const { data: pages, error } = await supabase
+    .from("evaluation_pages")
+    .select("*")
+    .eq("batch_id", batch.id)
+    .is("admission_number", null)
+    .order("upload_index");
+
+  if (error) throw new Error(error.message);
+
+  const cache = new Map<string, { base64: string; mimeType: string }>();
+  for (const page of pages ?? []) {
+    const img = await downloadPageBase64(supabase, page.storage_path, cache);
+    const { result, modelId } = await syncIndexPage({
+      images: [{ mimeType: img.mimeType, base64: img.base64 }],
+      cacheBatchId: batch.id,
+    });
+    await persistIndexResults(supabase, {
+      batchId: batch.id,
+      pageId: page.id,
+      index: result,
+      modelId,
+    });
+  }
+}
+
+async function evaluateScriptsDirectly(
+  supabase: SupabaseClient,
+  batch: EvaluationBatch
+): Promise<void> {
+  const { syncEvaluateScript } = await import("@/lib/evaluation/sync-client");
+  const markingScheme = await loadMarkingSchemeText(supabase, batch);
+  const { data: scripts, error } = await supabase
+    .from("evaluated_scripts")
+    .select("id, status, page_order")
+    .eq("batch_id", batch.id)
+    .eq("status", "evaluating");
+
+  if (error) throw new Error(error.message);
+
+  const cache = new Map<string, { base64: string; mimeType: string }>();
+  for (const script of scripts ?? []) {
+    const pageOrder = (script.page_order ?? []) as Array<{
+      storagePath: string;
+    }>;
+    if (!pageOrder.length) continue;
+    const images = [];
+    for (const page of pageOrder) {
+      const img = await downloadPageBase64(supabase, page.storagePath, cache);
+      images.push({ mimeType: img.mimeType, base64: img.base64 });
+    }
+    try {
+      const { result, modelId } = await syncEvaluateScript({
+        images,
+        markingScheme,
+        cacheBatchId: batch.id,
+      });
+      await persistEvaluateResults(supabase, {
+        scriptId: script.id,
+        result,
+        modelId,
+        hasMarkingScheme: Boolean(markingScheme),
+      });
+    } catch (e) {
+      await markScriptFailed(
+        supabase,
+        script.id,
+        e instanceof Error ? e.message : "Direct evaluate failed"
+      );
+    }
+  }
+
+  await refreshBatchStatusRollup(supabase, batch.id);
+}
+
+/**
+ * The provider accepted the batch and the page keeps polling, but the job
+ * never reaches pending=0. Grade a small set on the sync API instead.
+ */
+async function gradeStalledProviderBatch(
+  supabase: SupabaseClient,
+  batch: EvaluationBatch,
+  job: GeminiBatchJob
+): Promise<boolean> {
+  const { data: claimed, error } = await supabase
     .from("gemini_batch_jobs")
     .update({
-      state: "completed",
+      state: "cancelled",
+      error: "Provider batch still pending. Graded directly.",
       completed_at: new Date().toISOString(),
     })
-    .eq("id", job.id);
+    .eq("id", job.id)
+    .in("state", ["submitted", "running"])
+    .select("id");
 
-  await submitEvaluateBatch(supabase, batch);
+  if (error) throw new Error(error.message);
+  if (!claimed?.length) return false;
+
+  if (job.phase === "index") {
+    await indexUnindexedPagesDirectly(supabase, batch);
+    await groupIndexedPagesIntoScripts(supabase, batch);
+  }
+  await evaluateScriptsDirectly(supabase, batch);
+  return true;
 }
 
 export async function submitEvaluateBatch(
@@ -432,6 +569,22 @@ export async function pollPendingBatchJobs(
     );
 
     if (!status.done) {
+      if (
+        shouldGradeProviderBatchDirectly({
+          phase: job.phase,
+          submittedAt: job.submitted_at,
+          pageCount: job.page_count,
+          scriptCount: job.script_count,
+        })
+      ) {
+        const graded = await gradeStalledProviderBatch(
+          supabase,
+          job.evaluation_batches,
+          job
+        );
+        if (graded) processed++;
+        continue;
+      }
       if (job.state === "submitted") {
         await supabase
           .from("gemini_batch_jobs")
