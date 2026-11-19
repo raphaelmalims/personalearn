@@ -24,6 +24,9 @@ function row(overrides: Partial<ClassInsightRow>): ClassInsightRow {
 const payload: ClassInsightsPayload = {
   scriptCount: 2,
   source: "llm",
+  headline: "The class held the facts and lost the long multiplication.",
+  markdown: "Class insights\n\nBased on this class set.",
+  conversationPath: null,
   questions: [],
   topics: [
     {
@@ -51,8 +54,8 @@ describe("marksFingerprint", () => {
 describe("reuseCachedInsights", () => {
   it("returns the first result only while the fingerprint matches", () => {
     const stored = { fingerprint: "same", payload };
-    expect(reuseCachedInsights(stored, "same")?.topics[0]?.title).toBe(
-      "Basic multiplication facts"
+    expect(reuseCachedInsights(stored, "same")?.headline).toBe(
+      "The class held the facts and lost the long multiplication."
     );
     expect(reuseCachedInsights(stored, "moved")).toBeNull();
     expect(reuseCachedInsights({ fingerprint: "same", payload: {} }, "same")).toBeNull();

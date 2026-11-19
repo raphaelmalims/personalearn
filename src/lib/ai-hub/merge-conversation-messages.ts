@@ -45,7 +45,11 @@ export function mergeIncomingConversationMessage(
 ): UIMessage[] {
   const existing = current.find((message) => message.id === incoming.id);
   if (existing) {
-    if (classInsightsKey(incoming) && !sameInsightsCard(existing, incoming)) {
+    const textChanged = getMessageText(existing) !== getMessageText(incoming);
+    const insightsChanged =
+      Boolean(classInsightsKey(existing) || classInsightsKey(incoming)) &&
+      !sameInsightsCard(existing, incoming);
+    if (textChanged || insightsChanged) {
       return current.map((message) =>
         message.id === incoming.id ? incoming : message
       );

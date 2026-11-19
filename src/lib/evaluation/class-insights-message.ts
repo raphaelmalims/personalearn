@@ -10,12 +10,17 @@ export type ClassInsightsTopic = {
   nextActivity: string;
 };
 
-/** Same payload as GET /api/evaluation-batches/[batchId]/insights. */
+/** The brief the panel and the Hub message share. */
 export type ClassInsightsPayload = {
   scriptCount: number;
   source: "llm" | "table";
   questions: QuestionInsight[];
   topics: ClassInsightsTopic[];
+  /** One-sentence class result for the workspace summary. */
+  headline?: string;
+  /** Full Hub brief. Present once a result has been saved. */
+  markdown?: string;
+  conversationPath?: string | null;
 };
 
 const STILL_MARKING = new Set([
@@ -196,6 +201,7 @@ export function isClassInsightsView(value: unknown): value is ClassInsightsView 
 export function formatClassInsightsChatMessage(
   payload: ClassInsightsPayload
 ): string {
+  if (payload.markdown?.trim()) return payload.markdown.trim();
   const view = presentClassInsights(payload);
   const countLabel =
     view.scriptCount === 1 ? "1 script" : `${view.scriptCount} scripts`;

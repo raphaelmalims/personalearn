@@ -57,6 +57,9 @@ export type ClassInsightsPayload = {
     reteachStep: string;
     nextActivity: string;
   }[];
+  headline?: string;
+  markdown?: string;
+  conversationPath?: string | null;
 };
 
 export function useClassInsights(

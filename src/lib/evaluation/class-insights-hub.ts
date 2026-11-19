@@ -4,13 +4,13 @@ import { buildClassInsights } from "@/lib/evaluation/class-insights-build";
 import {
   formatClassInsightsChatMessage,
   messageIsForBatch,
-  presentClassInsights,
   shouldPostClassInsights,
 } from "@/lib/evaluation/class-insights-message";
 
 /**
  * After marking finishes, post one assistant message on the Hub conversation
  * that owns the batch. Further rollups do not post again.
+ * The message is markdown. buildClassInsights refreshes an existing row.
  */
 export async function publishClassInsightsMessage(
   supabase: SupabaseClient,
@@ -44,23 +44,15 @@ export async function publishClassInsightsMessage(
   const alreadyPosted = (existing ?? []).some((row) =>
     messageIsForBatch(row.tool_calls, batchId)
   );
+  const insights = await buildClassInsights(supabase, batchId);
   const statuses = (scripts ?? []).map((script) => script.status as string);
   if (!shouldPostClassInsights({ statuses, alreadyPosted })) return;
 
-  const insights = await buildClassInsights(supabase, batchId);
   await appendConversationMessages(supabase, batch.conversation_id, [
     {
       role: "assistant",
       content: formatClassInsightsChatMessage(insights),
-      tool_calls: {
-        classInsightsBatchId: batchId,
-        classInsights: presentClassInsights(
-          insights,
-          batch.class_id
-            ? `/classes/${batch.class_id}/evaluations/${batchId}`
-            : ""
-        ),
-      },
+      tool_calls: { classInsightsBatchId: batchId },
     },
   ]);
 }
