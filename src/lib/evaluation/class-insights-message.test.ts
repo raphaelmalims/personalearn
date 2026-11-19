@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { QuestionInsight } from "./class-insights";
 import {
   formatClassInsightsChatMessage,
+  formatStruggleLine,
   messageIsForBatch,
   presentClassInsights,
   shouldPostClassInsights,
@@ -42,8 +43,22 @@ const topicsPayload: ClassInsightsPayload = {
   ],
 };
 
+describe("formatStruggleLine", () => {
+  it("uses a plain count", () => {
+    expect(formatStruggleLine({ struggled: 5, scored: 8 })).toBe(
+      "5 of 8 learners struggled"
+    );
+    expect(formatStruggleLine({ struggled: 1, scored: 1 })).toBe(
+      "1 of 1 learner struggled"
+    );
+    expect(formatStruggleLine({ struggled: null, scored: null })).toBe(
+      "No score yet"
+    );
+  });
+});
+
 describe("presentClassInsights", () => {
-  it("turns topics into cards with a share under half and question numbers", () => {
+  it("turns topics into cards with learner counts and question numbers", () => {
     const view = presentClassInsights(
       {
         ...topicsPayload,
@@ -58,12 +73,14 @@ describe("presentClassInsights", () => {
     expect(view.reviewPath).toBe("/classes/class-1/evaluations/batch-1");
     expect(view.cards[0]).toMatchObject({
       title: "Fractions",
-      percentUnderHalf: 75,
+      struggled: 3,
+      scored: 4,
       questionNumbers: "1",
       reteachStep: "Redo one fraction with a shared diagram.",
     });
-    expect(view.cards[1]?.percentUnderHalf).toBe(25);
-    expect(view.note).toContain("Not a strand label");
+    expect(view.cards[1]).toMatchObject({ struggled: 1, scored: 4 });
+    expect(view.note).toBeNull();
+    expect(formatStruggleLine(view.cards[0]!)).toBe("3 of 4 learners struggled");
   });
 });
 
@@ -72,11 +89,14 @@ describe("formatClassInsightsChatMessage", () => {
     const text = formatClassInsightsChatMessage(topicsPayload);
     expect(text.startsWith("Class insights")).toBe(true);
     expect(text).toContain("Based on 4 scripts.");
+    expect(text).toContain("Based on this class set.");
     expect(text).toContain("Fractions");
+    expect(text).toContain("2 of 2 learners struggled");
     expect(text).toContain("Redo one fraction with a shared diagram.");
     expect(text).toContain("Place value");
     expect(text).toContain("Show the tens and ones with counters.");
-    expect(text).toContain("Not a strand label.");
+    expect(text).not.toContain("strand");
+    expect(text).not.toContain("under half");
     expect(text).not.toContain("linked_strand");
     expect(text).not.toContain("Next:");
   });
@@ -90,15 +110,19 @@ describe("formatClassInsightsChatMessage", () => {
         question({
           key: "1",
           label: "1",
-          percentBelowHalf: 50,
+          scored: 8,
+          belowHalf: 5,
+          percentBelowHalf: 62.5,
           commonMistakes: [{ text: "Dropped the denominator", count: 2 }],
         }),
       ],
     });
     expect(text).toContain("Based on 2 scripts.");
+    expect(text).toContain("Based on this class set.");
     expect(text).toContain("Question 1");
-    expect(text).toContain("50% under half");
+    expect(text).toContain("5 of 8 learners struggled");
     expect(text).toContain("Dropped the denominator");
+    expect(text).not.toContain("under half");
   });
 
   it("stays calm when nothing is under half", () => {

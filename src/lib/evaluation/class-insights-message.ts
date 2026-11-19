@@ -73,7 +73,10 @@ export function messageIsForBatch(
 
 export type ClassInsightsCardView = {
   title: string;
-  percentUnderHalf: number | null;
+  /** Learners under half marks. Null when nobody was scored. */
+  struggled: number | null;
+  /** Learners with a score on this card. */
+  scored: number | null;
   questionNumbers: string;
   reteachStep: string;
 };
@@ -94,15 +97,35 @@ function oneLine(text: string): string {
   return `${line.slice(0, 139).trimEnd()}…`;
 }
 
-function percentAcross(
+function countsAcross(
   questions: QuestionInsight[],
   keys: string[]
-): number | null {
+): { struggled: number; scored: number } | null {
   const matched = questions.filter((question) => keys.includes(question.key));
   const scored = matched.reduce((sum, question) => sum + question.scored, 0);
   if (scored <= 0) return null;
-  const below = matched.reduce((sum, question) => sum + question.belowHalf, 0);
-  return Math.round((below / scored) * 100);
+  const struggled = matched.reduce(
+    (sum, question) => sum + question.belowHalf,
+    0
+  );
+  return { struggled, scored };
+}
+
+/** "5 of 8 learners struggled", or "No score yet" when nobody was scored. */
+export function formatStruggleLine(card: {
+  struggled?: number | null;
+  scored?: number | null;
+}): string {
+  const { struggled, scored } = card;
+  if (
+    typeof struggled !== "number" ||
+    typeof scored !== "number" ||
+    scored <= 0
+  ) {
+    return "No score yet";
+  }
+  const noun = scored === 1 ? "learner" : "learners";
+  return `${struggled} of ${scored} ${noun} struggled`;
 }
 
 function numbersFor(questions: QuestionInsight[], keys: string[]): string {
@@ -124,13 +147,17 @@ export function presentClassInsights(
     return {
       scriptCount: payload.scriptCount,
       reviewPath,
-      note: "From this set. Not a strand label.",
-      cards: payload.topics.slice(0, 3).map((topic) => ({
-        title: oneLine(topic.title),
-        percentUnderHalf: percentAcross(payload.questions, topic.questionKeys),
-        questionNumbers: numbersFor(payload.questions, topic.questionKeys),
-        reteachStep: oneLine(topic.reteachStep),
-      })),
+      note: null,
+      cards: payload.topics.slice(0, 3).map((topic) => {
+        const counts = countsAcross(payload.questions, topic.questionKeys);
+        return {
+          title: oneLine(topic.title),
+          struggled: counts?.struggled ?? null,
+          scored: counts?.scored ?? null,
+          questionNumbers: numbersFor(payload.questions, topic.questionKeys),
+          reteachStep: oneLine(topic.reteachStep),
+        };
+      }),
     };
   }
 
@@ -144,7 +171,8 @@ export function presentClassInsights(
     note: null,
     cards: weak.map((question) => ({
       title: `Question ${question.label}`,
-      percentUnderHalf: question.percentBelowHalf,
+      struggled: question.scored > 0 ? question.belowHalf : null,
+      scored: question.scored > 0 ? question.scored : null,
       questionNumbers: question.label,
       reteachStep: oneLine(question.commonMistakes[0]?.text ?? FALLBACK_RETEACH),
     })),
@@ -171,25 +199,26 @@ export function formatClassInsightsChatMessage(
   const view = presentClassInsights(payload);
   const countLabel =
     view.scriptCount === 1 ? "1 script" : `${view.scriptCount} scripts`;
-  const lines = ["Class insights", "", `Based on ${countLabel}.`, ""];
+  const lines = [
+    "Class insights",
+    "",
+    `Based on ${countLabel}.`,
+    "Based on this class set.",
+    "",
+  ];
 
   if (view.cards.length === 0) {
     lines.push("Nothing stands out on this set.");
   } else {
     for (const card of view.cards) {
-      const score =
-        card.percentUnderHalf === null
-          ? "No score yet"
-          : `${card.percentUnderHalf}% under half`;
       lines.push(
         card.title,
-        `${score} · Questions ${card.questionNumbers}`,
+        `${formatStruggleLine(card)} · Questions ${card.questionNumbers}`,
         card.reteachStep,
         ""
       );
     }
   }
 
-  if (view.note) lines.push(view.note);
   return lines.join("\n").trim();
 }
